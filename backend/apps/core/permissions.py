@@ -17,9 +17,38 @@ class HasActionPermission(BasePermission):
         if request.user.is_superuser:
             return True
 
-        required = getattr(view, "required_permission", None)
+        required = self.get_required_permission(view)
         if not required:
             return True
 
         return request.user.has_app_permission(required)
 
+    def get_required_permission(self, view):
+        explicit = getattr(view, "required_permission", None)
+        if explicit:
+            return explicit
+
+        module = getattr(view, "permission_module", None)
+        if not module:
+            return None
+
+        action = getattr(view, "action", None)
+        action_map = {
+            "list": "view",
+            "retrieve": "view",
+            "create": "create",
+            "update": "edit",
+            "partial_update": "edit",
+            "destroy": "delete",
+            "approve": "approve",
+            "reject": "reject",
+            "process": "process",
+            "process_result": "process",
+            "publish": "publish",
+            "queue": "send",
+            "generate_salary": "create",
+        }
+        permission_action = action_map.get(action)
+        if not permission_action:
+            return f"{module}.view"
+        return f"{module}.{permission_action}"

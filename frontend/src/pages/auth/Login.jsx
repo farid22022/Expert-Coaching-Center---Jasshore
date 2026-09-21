@@ -9,6 +9,8 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useState } from "react";
+import { getApiErrorMessage } from "../../services/api.js";
+import { login } from "../../services/authApi.js";
 
 const inputWrapClass =
   "flex min-h-12 items-center gap-3 rounded-xl border border-emerald-100 bg-white px-3 shadow-sm transition focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-100";
@@ -54,17 +56,11 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      console.log("Login:", {
-        email,
-        password,
-        remember: formData.remember,
-      });
-
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      await login(email, password);
       navigate("/profile");
     } catch (err) {
       console.error(err);
-      setError("Unable to sign in. Please try again.");
+      setError(getApiErrorMessage(err, "Invalid email or password."));
     } finally {
       setIsLoading(false);
     }

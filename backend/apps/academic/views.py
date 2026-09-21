@@ -5,6 +5,7 @@ from . import models, serializers
 
 class BaseAcademicViewSet(OrganizationScopedModelViewSet):
     permission_classes = [HasActionPermission]
+    permission_module = "academic"
     search_fields = ("name",)
 
 
@@ -87,4 +88,3 @@ class ClassRoutineViewSet(BaseAcademicViewSet):
     queryset = models.ClassRoutine.objects.select_related("session", "academic_class", "section", "shift", "subject", "teacher", "classroom")
     serializer_class = serializers.ClassRoutineSerializer
     filterset_fields = ("session", "academic_class", "section", "shift", "teacher", "weekday", "status")
-

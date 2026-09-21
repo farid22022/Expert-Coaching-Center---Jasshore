@@ -1,10 +1,18 @@
 import api from "./api";
 
+const USER_STORAGE_KEY = "current_user";
+
 export async function login(email, password) {
   const { data } = await api.post("/auth/login/", { email, password });
   if (data.access) localStorage.setItem("access_token", data.access);
   if (data.refresh) localStorage.setItem("refresh_token", data.refresh);
+  if (data.user) localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
   return data;
+}
+
+export async function register(payload) {
+  const { data } = await api.post("/auth/register/", payload);
+  return data.data || data;
 }
 
 export async function logout() {
@@ -14,11 +22,27 @@ export async function logout() {
   } finally {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
+    localStorage.removeItem(USER_STORAGE_KEY);
+    localStorage.removeItem("demoAdminSession");
   }
 }
 
 export async function me() {
   const { data } = await api.get("/auth/me/");
-  return data;
+  const user = data.data || data.user || data;
+  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+  return user;
 }
 
+export function getStoredUser() {
+  try {
+    const stored = localStorage.getItem(USER_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function isAuthenticated() {
+  return Boolean(localStorage.getItem("access_token"));
+}

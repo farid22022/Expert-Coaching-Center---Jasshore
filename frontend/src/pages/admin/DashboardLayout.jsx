@@ -1,18 +1,43 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { LogOut, Menu, UserRound } from "lucide-react";
 
 import DashboardSidebar from "./DashboardSidebar.jsx";
+import { getStoredUser, isAuthenticated, logout, me } from "../../services/authApi.js";
 
 import "../../styles/dashboardSidebar.css";
+
+function canUseAdminDashboard(user) {
+  if (!user) return false;
+  if (user.is_superuser || user.is_staff) return true;
+  return Array.isArray(user.role_codes) && user.role_codes.includes("institute-admin");
+}
 
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] =
     useState(false);
+  const [currentUser, setCurrentUser] = useState(getStoredUser);
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    localStorage.removeItem("demoAdminSession");
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      navigate("/admin/login", { replace: true });
+      return;
+    }
+
+    me()
+      .then((user) => {
+        if (!canUseAdminDashboard(user)) {
+          navigate("/profile", { replace: true });
+          return;
+        }
+        setCurrentUser(user);
+      })
+      .catch(() => navigate("/admin/login", { replace: true }));
+  }, [navigate]);
+
+  const handleLogout = async () => {
+    await logout();
     navigate("/");
   };
 
@@ -43,7 +68,7 @@ export default function DashboardLayout() {
           <div className="dashboard-top-actions ml-auto flex items-center gap-2">
             <div className="dashboard-admin-chip hidden min-h-10 items-center gap-2 rounded-lg border border-emerald-100 bg-emerald-50 px-3 text-sm font-black text-emerald-950 sm:inline-flex">
               <UserRound size={17} />
-              <span>Administrator</span>
+              <span>{currentUser?.first_name || currentUser?.username || "Administrator"}</span>
             </div>
             <button
               type="button"

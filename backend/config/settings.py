@@ -1,6 +1,7 @@
 from datetime import timedelta
 from pathlib import Path
 import os
+import sys
 
 import pymysql
 from dotenv import load_dotenv
@@ -88,6 +89,12 @@ DATABASES = {
     }
 }
 
+if "test" in sys.argv:
+    DATABASES["default"] = {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "test.sqlite3",
+    }
+
 AUTH_USER_MODEL = "accounts.User"
 LOGIN_REDIRECT_URL = "/api/v1/"
 LOGOUT_REDIRECT_URL = "/api/v1/"
@@ -120,7 +127,14 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
 }
 
-CORS_ALLOWED_ORIGINS = [u.strip() for u in env("CORS_ALLOWED_ORIGINS", env("FRONTEND_URL", "http://localhost:5173")).split(",") if u.strip()]
+CORS_ALLOWED_ORIGINS = [
+    u.strip()
+    for u in env("CORS_ALLOWED_ORIGINS", env("FRONTEND_URL", "http://localhost:5173")).split(",")
+    if u.strip()
+]
+for local_origin in ("http://localhost:5173", "http://127.0.0.1:5173"):
+    if local_origin not in CORS_ALLOWED_ORIGINS:
+        CORS_ALLOWED_ORIGINS.append(local_origin)
 CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
 
 LANGUAGE_CODE = "en-us"

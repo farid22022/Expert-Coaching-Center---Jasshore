@@ -13,7 +13,7 @@ PERMISSIONS = [
     "application.view", "application.approve", "application.reject",
     "result.view", "result.process", "result.publish",
     "payroll.view", "payroll.create", "payroll.update", "payroll.delete",
-    "sms.send", "sms.configure",
+    "sms.view", "sms.send", "sms.configure",
     "report.view",
 ]
 
@@ -81,4 +81,3 @@ class Command(BaseCommand):
         )
 
         self.stdout.write(self.style.SUCCESS(f"Seed complete for {org.name}. Active session: {session.name}"))
-

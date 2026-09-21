@@ -8,6 +8,7 @@ from .services import ResultService
 
 class ExamBaseViewSet(OrganizationScopedModelViewSet):
     permission_classes = [HasActionPermission]
+    permission_module = "result"
 
 
 class GradeScaleViewSet(ExamBaseViewSet):
@@ -62,4 +63,3 @@ class GrandResultViewSet(ExamBaseViewSet):
     queryset = models.GrandResult.objects.select_related("configuration", "student")
     serializer_class = serializers.GrandResultSerializer
     filterset_fields = ("configuration", "student", "promoted")
-

@@ -1,7 +1,14 @@
 import axios from "axios";
 
-export const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+function resolveApiBaseUrl() {
+  const configuredUrl = import.meta.env.VITE_API_URL;
+  if (!configuredUrl || configuredUrl === "/api") {
+    return "http://127.0.0.1:8000/api/v1";
+  }
+  return configuredUrl.replace(/\/$/, "");
+}
+
+export const API_BASE_URL = resolveApiBaseUrl();
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -42,6 +49,31 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+export function unwrapApiData(payload) {
+  if (payload && typeof payload === "object" && "data" in payload) {
+    return payload.data;
+  }
+  return payload;
+}
+
+export function unwrapResults(payload) {
+  const data = unwrapApiData(payload);
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.results)) return data.results;
+  return [];
+}
+
+export function getApiErrorMessage(error, fallback = "Request failed. Please try again.") {
+  const data = error?.response?.data;
+  if (typeof data?.message === "string") return data.message;
+  if (typeof data?.detail === "string") return data.detail;
+  if (data?.errors && typeof data.errors === "object") {
+    const first = Object.values(data.errors).flat?.()[0];
+    if (first) return String(first);
+  }
+  return fallback;
+}
 
 export const admissionService = {
   async submit(payload) {

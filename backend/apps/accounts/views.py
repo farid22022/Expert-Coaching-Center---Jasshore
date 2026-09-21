@@ -1,5 +1,6 @@
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.generics import CreateAPIView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -9,6 +10,7 @@ from .models import Permission, Role, User, UserLoginHistory
 from .serializers import (
     LoginSerializer,
     PermissionSerializer,
+    RegisterSerializer,
     RoleSerializer,
     UserLoginHistorySerializer,
     UserSerializer,
@@ -32,6 +34,16 @@ class LoginView(TokenObtainPairView):
 
 class RefreshView(TokenRefreshView):
     pass
+
+
+class RegisterView(CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = RegisterSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        return success_response(response.data, message="Account created successfully.", status=response.status_code)
 
 
 @api_view(["POST"])
@@ -78,4 +90,3 @@ class UserLoginHistoryViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = UserLoginHistorySerializer
     permission_classes = [HasActionPermission]
     search_fields = ("user__username", "user__email", "ip_address")
-

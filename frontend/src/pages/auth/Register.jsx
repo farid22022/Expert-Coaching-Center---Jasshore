@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -12,6 +12,8 @@ import {
   UserPlus,
 } from "lucide-react";
 import { useState } from "react";
+import { getApiErrorMessage } from "../../services/api.js";
+import { register } from "../../services/authApi.js";
 
 const inputWrapClass =
   "flex min-h-12 items-center gap-3 rounded-xl border border-emerald-100 bg-white px-3 shadow-sm transition focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-100";
@@ -19,8 +21,12 @@ const inputClass = "min-w-0 flex-1 bg-transparent text-sm font-semibold outline-
 const labelClass = "grid gap-1 text-sm font-black text-slate-700";
 
 export default function Register() {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const [formData, setFormData] = useState({
     name: "",
@@ -39,17 +45,37 @@ export default function Register() {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+    setError("");
+    setSuccess("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match.");
+      setError("Passwords do not match.");
       return;
     }
 
-    console.log("Register:", formData);
+    setIsLoading(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      await register({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        role: formData.role,
+        password: formData.password,
+      });
+      setSuccess("Account created. Please sign in.");
+      setTimeout(() => navigate("/login"), 700);
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, "Unable to create account."));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -116,6 +142,18 @@ export default function Register() {
               <h2 className="text-3xl font-black text-emerald-950">Join Our Community</h2>
               <p className="font-medium text-slate-500">Create your account to access our services.</p>
             </motion.div>
+
+            {error && (
+              <div className="alert alert-error text-sm">
+                <span>{error}</span>
+              </div>
+            )}
+
+            {success && (
+              <div className="alert alert-success text-sm">
+                <span>{success}</span>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="grid gap-4">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -254,13 +292,23 @@ export default function Register() {
               </label>
 
               <motion.button
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={!isLoading ? { scale: 1.01 } : {}}
+                whileTap={!isLoading ? { scale: 0.98 } : {}}
                 type="submit"
+                disabled={isLoading}
                 className="btn min-h-12 border-0 bg-emerald-700 text-white hover:bg-emerald-800"
               >
-                Create Account
-                <ArrowRight size={18} />
+                {isLoading ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm" />
+                    Creating account...
+                  </>
+                ) : (
+                  <>
+                    Create Account
+                    <ArrowRight size={18} />
+                  </>
+                )}
               </motion.button>
             </form>
 

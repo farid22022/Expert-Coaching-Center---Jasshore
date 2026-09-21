@@ -10,6 +10,7 @@ class AdmissionApplicationViewSet(OrganizationScopedModelViewSet):
     queryset = models.AdmissionApplication.objects.select_related("session", "academic_class", "group", "shift")
     serializer_class = serializers.AdmissionApplicationSerializer
     permission_classes = [HasActionPermission]
+    permission_module = "application"
     search_fields = ("application_no", "applicant_name", "applicant_phone")
     filterset_fields = ("session", "academic_class", "group", "shift", "status")
 
@@ -41,6 +42,7 @@ class ApplicantDocumentViewSet(OrganizationScopedModelViewSet):
     queryset = models.ApplicantDocument.objects.select_related("application")
     serializer_class = serializers.ApplicantDocumentSerializer
     permission_classes = [HasActionPermission]
+    permission_module = "application"
     filterset_fields = ("application",)
 
 
@@ -48,6 +50,7 @@ class AdmissionPaymentViewSet(OrganizationScopedModelViewSet):
     queryset = models.AdmissionPayment.objects.select_related("application")
     serializer_class = serializers.AdmissionPaymentSerializer
     permission_classes = [HasActionPermission]
+    permission_module = "application"
     filterset_fields = ("application", "status", "method")
 
 
@@ -55,6 +58,7 @@ class AdmissionExamViewSet(OrganizationScopedModelViewSet):
     queryset = models.AdmissionExam.objects.select_related("session", "academic_class")
     serializer_class = serializers.AdmissionExamSerializer
     permission_classes = [HasActionPermission]
+    permission_module = "application"
     filterset_fields = ("session", "academic_class")
 
     @action(detail=True, methods=["post"])
@@ -67,6 +71,7 @@ class AdmissionExamMarkViewSet(OrganizationScopedModelViewSet):
     queryset = models.AdmissionExamMark.objects.select_related("exam", "application")
     serializer_class = serializers.AdmissionExamMarkSerializer
     permission_classes = [HasActionPermission]
+    permission_module = "application"
     filterset_fields = ("exam", "application")
 
 
@@ -74,5 +79,5 @@ class AdmissionResultViewSet(OrganizationScopedModelViewSet):
     queryset = models.AdmissionResult.objects.select_related("exam", "application")
     serializer_class = serializers.AdmissionResultSerializer
     permission_classes = [HasActionPermission]
+    permission_module = "application"
     filterset_fields = ("exam", "is_selected")
-

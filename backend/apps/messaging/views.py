@@ -8,6 +8,7 @@ from .services import SmsService
 
 class MessagingViewSet(OrganizationScopedModelViewSet):
     permission_classes = [HasActionPermission]
+    permission_module = "sms"
 
 
 class ContactCategoryViewSet(MessagingViewSet):
@@ -70,4 +71,3 @@ class EmailLogViewSet(MessagingViewSet):
     queryset = models.EmailLog.objects.all()
     serializer_class = serializers.EmailLogSerializer
     filterset_fields = ("status",)
-

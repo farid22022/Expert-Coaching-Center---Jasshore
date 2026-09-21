@@ -5,6 +5,7 @@ from . import models, serializers
 
 class FinanceViewSet(OrganizationScopedModelViewSet):
     permission_classes = [HasActionPermission]
+    permission_module = "payroll"
 
 
 class FeeCategoryViewSet(FinanceViewSet):
@@ -60,4 +61,3 @@ class IncomeViewSet(FinanceViewSet):
     queryset = models.Income.objects.select_related("category")
     serializer_class = serializers.IncomeSerializer
     filterset_fields = ("category", "income_date")
-

@@ -8,6 +8,7 @@ from .services import PayrollService
 
 class HrViewSet(OrganizationScopedModelViewSet):
     permission_classes = [HasActionPermission]
+    permission_module = "payroll"
 
 
 class PayrollStructureViewSet(HrViewSet):
@@ -66,4 +67,3 @@ class LeaveApplicationViewSet(HrViewSet):
         leave.remarks = request.data.get("remarks", leave.remarks)
         leave.save(update_fields=["status", "approved_by", "remarks", "updated_at"])
         return success_response(message="Leave rejected.")
-

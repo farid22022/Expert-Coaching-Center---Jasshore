@@ -6,6 +6,7 @@ from . import models, serializers
 
 class WebsiteViewSet(OrganizationScopedModelViewSet):
     permission_classes = [HasActionPermission]
+    permission_module = "academic"
 
     def get_permissions(self):
         if self.request.method == "GET":
@@ -37,4 +38,3 @@ class WebsiteSettingViewSet(WebsiteViewSet):
     queryset = models.WebsiteSetting.objects.all()
     serializer_class = serializers.WebsiteSettingSerializer
     filterset_fields = ("key",)
-
