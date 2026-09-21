@@ -1419,4 +1419,662 @@ function resultRoutes(basePath) {
 }
 
 /* =========================================================
-   GR
+   GRAND FINAL RESULT ROUTES
+========================================================= */
+
+function grandFinalResultRoutes(basePath) {
+  return (
+    <>
+      <Route path={basePath} element={<GrandFinalResultDashboard />} />
+      <Route path={`${basePath}/grand-exam-configure-manage`} element={<GrandExamConfigureManagePage />} />
+      <Route path={`${basePath}/grand-result-process`} element={<GrandResultProcessPage />} />
+      <Route path={`${basePath}/mark-sheet`} element={<GrandMarkSheetPage />} />
+      <Route path={`${basePath}/tabulation-sheet`} element={<GrandTabulationSheetPage />} />
+      <Route path={`${basePath}/merit-list`} element={<GrandMeritListPage />} />
+      <Route path={`${basePath}/grade-sheet-report`} element={<GrandGradeSheetReportPage />} />
+      <Route path={`${basePath}/fail-report`} element={<GrandFailReportPage />} />
+      <Route path={`${basePath}/subject-wise-fail`} element={<GrandSubjectWiseFailPage />} />
+      <Route path={`${basePath}/subject-wise-result`} element={<GrandSubjectWiseResultPage />} />
+      <Route path={`${basePath}/teacher-wise-result`} element={<GrandTeacherWiseResultPage />} />
+      <Route path={`${basePath}/student-promotion`} element={<GrandStudentPromotionPage />} />
+    </>
+  );
+}
+
+/* =========================================================
+   MANAGE LIBRARY ROUTES
+========================================================= */
+
+function manageLibraryRoutes(basePath) {
+  return (
+    <>
+      <Route path={basePath} element={<ManageLibraryDashboard />} />
+      <Route path={`${basePath}/publisher/publisher-create`} element={<PublisherCreatePage />} />
+      <Route path={`${basePath}/publisher/publisher-list`} element={<PublisherListPage />} />
+      <Route path={`${basePath}/author/author-create`} element={<AuthorCreatePage />} />
+      <Route path={`${basePath}/author/author-list`} element={<AuthorListPage />} />
+      <Route path={`${basePath}/book-category/book-category-create`} element={<BookCategoryCreatePage />} />
+      <Route path={`${basePath}/book-category/book-category-list`} element={<BookCategoryListPage />} />
+      <Route path={`${basePath}/book/book-create`} element={<BookCreatePage />} />
+      <Route path={`${basePath}/book/book-list`} element={<BookListPage />} />
+      <Route path={`${basePath}/book-issue/book-issue-create`} element={<BookIssueCreatePage />} />
+      <Route path={`${basePath}/book-issue/book-issue-list`} element={<BookIssueListPage />} />
+      <Route path={`${basePath}/book-return`} element={<BookReturnPage />} />
+      <Route path={`${basePath}/book-returned-list`} element={<BookReturnedListPage />} />
+    </>
+  );
+}
+
+/* =========================================================
+   ALL REPORTS ROUTES
+========================================================= */
+
+function allReportsRoutes(basePath) {
+  return (
+    <>
+      <Route path={basePath} element={<AllReportsDashboard />} />
+      <Route path={`${basePath}/student-report`} element={<StudentReportPage />} />
+      <Route path={`${basePath}/create-inactive-student`} element={<CreateInactiveStudentPage />} />
+      <Route path={`${basePath}/inactive-student-list`} element={<InactiveStudentListPage />} />
+      <Route path={`${basePath}/class-summary-report`} element={<ClassSummaryReportPage />} />
+    </>
+  );
+}
+
+/* =========================================================
+   ADMIN PANEL ROUTES
+========================================================= */
+
+function adminPanelRoutes(basePath) {
+  return (
+    <>
+      <Route path={basePath} element={<AdminPanelDashboard />} />
+      <Route path={`${basePath}/pay-bill`} element={<PayBillPage />} />
+      <Route path={`${basePath}/academic-year`} element={<AcademicYearPage />} />
+      <Route path={`${basePath}/admin-list`} element={<AdminListPage />} />
+      <Route path={`${basePath}/reset-password`} element={<ResetPasswordPage />} />
+      <Route path={`${basePath}/role`} element={<RolePage />} />
+      <Route path={`${basePath}/user-login-history`} element={<UserLoginHistoryPage />} />
+      <Route path={`${basePath}/admin-disable`} element={<AdminDisablePage />} />
+      <Route path={`${basePath}/admin-restore`} element={<AdminRestorePage />} />
+    </>
+  );
+}
+
+/* =========================================================
+   SYSTEM SETUP ROUTES
+
+   The sidebar generates repeated child slugs such as:
+   /leave-category/leave-category-create
+
+   Older module-local navigation uses the shorter /create and /list
+   aliases, so both forms are intentionally supported.
+========================================================= */
+
+function systemSetupRoutes(basePath) {
+  const pair = (group, createSlug, CreatePage, listSlug, ListPage) => (
+    <>
+      <Route path={`${basePath}/${group}/${createSlug}`} element={<CreatePage />} />
+      <Route path={`${basePath}/${group}/create`} element={<CreatePage />} />
+      <Route path={`${basePath}/${group}/${listSlug}`} element={<ListPage />} />
+      <Route path={`${basePath}/${group}/list`} element={<ListPage />} />
+    </>
+  );
+
+  return (
+    <>
+      <Route path={basePath} element={<SystemSetupDashboard />} />
+      {pair("leave-category", "leave-category-create", LeaveCategoryCreatePage, "leave-category-list", LeaveCategoryListPage)}
+      {pair("holiday-category", "holiday-category-create", HolidayCategoryCreatePage, "holiday-category-list", HolidayCategoryListPage)}
+      {pair("yearly-holiday", "yearly-holiday-create", YearlyHolidayCreatePage, "yearly-holiday-list", YearlyHolidayListPage)}
+      {pair("blood-group", "blood-group-create", BloodGroupCreatePage, "blood-group-list", BloodGroupListPage)}
+      {pair("designation", "designation-create", DesignationCreatePage, "designation-list", DesignationListPage)}
+      {pair("religion", "religion-create", ReligionCreatePage, "religion-list", ReligionListPage)}
+      {pair("gender", "gender-create", GenderCreatePage, "gender-list", GenderListPage)}
+      {pair("education", "education-create", EducationCreatePage, "education-list", EducationListPage)}
+      {pair("profession", "profession-create", ProfessionCreatePage, "profession-list", ProfessionListPage)}
+      {pair("divisions", "divisions-create", DivisionsCreatePage, "divisions-list", DivisionsListPage)}
+      {pair("districts", "districts-create", DistrictsCreatePage, "districts-list", DistrictsListPage)}
+      {pair("upazilas", "upazilas-create", UpazilasCreatePage, "upazilas-list", UpazilasListPage)}
+    </>
+  );
+}
+
+/* =========================================================
+   STUDENT WORK ROUTES
+========================================================= */
+
+function studentWorkRoutes(basePath) {
+  return (
+    <>
+      <Route path={basePath} element={<StudentWorkDashboard />} />
+
+      <Route path={`${basePath}/class-work/class-work-create`} element={<ClassWorkCreatePage />} />
+      <Route path={`${basePath}/class-work/create`} element={<ClassWorkCreatePage />} />
+      <Route path={`${basePath}/class-work/class-work-list`} element={<ClassWorkListPage />} />
+      <Route path={`${basePath}/class-work/list`} element={<ClassWorkListPage />} />
+
+      <Route path={`${basePath}/assignment/assignment-create`} element={<AssignmentCreatePage />} />
+      <Route path={`${basePath}/assignment/create`} element={<AssignmentCreatePage />} />
+      <Route path={`${basePath}/assignment/assignment-list`} element={<AssignmentListPage />} />
+      <Route path={`${basePath}/assignment/list`} element={<AssignmentListPage />} />
+
+      <Route path={`${basePath}/home-work/home-work-create`} element={<HomeWorkCreatePage />} />
+      <Route path={`${basePath}/home-work/create`} element={<HomeWorkCreatePage />} />
+      <Route path={`${basePath}/home-work/home-work-list`} element={<HomeWorkListPage />} />
+      <Route path={`${basePath}/home-work/list`} element={<HomeWorkListPage />} />
+      <Route path={`${basePath}/home-work/home-work-at-a-glance`} element={<HomeWorkAtAGlancePage />} />
+      <Route path={`${basePath}/home-work/at-a-glance`} element={<HomeWorkAtAGlancePage />} />
+    </>
+  );
+}
+
+/* =========================================================
+   SIMPLE MODULE DASHBOARD ROUTES
+========================================================= */
+
+function hostelManagementRoutes(basePath) {
+  return (
+    <>
+      <Route path={basePath} element={<HostelManagementDashboard />} />
+      <Route path={`${basePath}/*`} element={<AdminModulePage />} />
+    </>
+  );
+}
+
+function dynamicWebsiteRoutes(basePath) {
+  return (
+    <>
+      <Route path={basePath} element={<DynamicWebsiteDashboard />} />
+      <Route path={`${basePath}/*`} element={<AdminModulePage />} />
+    </>
+  );
+}
+
+function adminDashboardChildren() {
+  return (
+    <>
+      {userManagementRoutes("user-management")}
+
+      {userManagementRoutes("1-user-management")}
+
+      {onlineApplicationRoutes("online-application")}
+
+      {onlineApplicationRoutes("2-online-application")}
+
+      {academicRoutes("academic")}
+
+      {academicRoutes("3-academic")}
+
+      {attendanceRoutes("attendance")}
+
+      {attendanceRoutes("4-attendance")}
+
+      {examinationRoutes("examination")}
+
+      {examinationRoutes("5-examination")}
+
+      {resultRoutes("result")}
+
+      {resultRoutes("7-result")}
+
+      {grandFinalResultRoutes("grand-final-result")}
+
+      {grandFinalResultRoutes("8-grand-final-result")}
+
+      {manageAccountsRoutes("manage-accounts")}
+
+      {manageAccountsRoutes("10-manage-accounts")}
+
+      {hrPayrollRoutes("hr-and-payroll")}
+
+      {hrPayrollRoutes("11-hr-and-payroll")}
+
+      {mailSmsRoutes("mail-sms-service")}
+
+      {mailSmsRoutes("12-mail-sms-service")}
+
+      {manageLibraryRoutes("manage-library")}
+
+      {manageLibraryRoutes("13-manage-library")}
+
+      {certificateReportRoutes("certificate-report")}
+
+      {certificateReportRoutes("14-certificate-report")}
+
+      {allReportsRoutes("all-reports")}
+
+      {allReportsRoutes("15-all-reports")}
+
+      {hostelManagementRoutes("hostel-management")}
+
+      {hostelManagementRoutes("16-hostel-management")}
+
+      {coachingManagementRoutes("coaching-management")}
+
+      {coachingManagementRoutes("17-coaching-management")}
+
+      {adminPanelRoutes("admin-panel")}
+
+      {adminPanelRoutes("18-admin-panel")}
+
+      {dynamicWebsiteRoutes("dynamic-website")}
+
+      {dynamicWebsiteRoutes("19-dynamic-website")}
+
+      {systemSetupRoutes("system-setup")}
+
+      {systemSetupRoutes("20-system-setup")}
+
+      {studentWorkRoutes("student-work")}
+
+      <Route index element={<DashboardHome />} />
+
+      <Route path=":module/*" element={<AdminModulePage />} />
+
+      <Route path="*" element={<DashboardPlaceholder />} />
+    </>
+  );
+}
+
+
+/* =========================================================
+   APPLICATION ROUTES
+========================================================= */
+
+export default function AppRoutes() {
+  return (
+    <Routes>
+
+      {/* =====================================================
+          PUBLIC WEBSITE
+      ===================================================== */}
+
+      <Route
+        path="/"
+        element={<Home />}
+      />
+
+
+      {/* ABOUT */}
+
+      <Route
+        path="/about/history"
+        element={
+          <AboutText type="history" />
+        }
+      />
+
+      <Route
+        path="/about/founder"
+        element={
+          <ProfilePage type="founder" />
+        }
+      />
+
+      <Route
+        path="/about/chairman"
+        element={
+          <ProfilePage type="chairman" />
+        }
+      />
+
+      <Route
+        path="/about/principal"
+        element={
+          <ProfilePage type="principal" />
+        }
+      />
+
+      <Route
+        path="/about/teachers"
+        element={<TeachersPage />}
+      />
+
+      <Route
+        path="/about/committee"
+        element={
+          <AboutText type="committee" />
+        }
+      />
+
+      <Route
+        path="/about/staff"
+        element={
+          <AboutText type="staff" />
+        }
+      />
+
+      <Route
+        path="/about/institution-details"
+        element={
+          <AboutText type="institution-details" />
+        }
+      />
+
+
+      {/* =====================================================
+          ACADEMIC
+      ===================================================== */}
+
+      <Route
+        path="/academic/students"
+        element={<StudentsPage />}
+      />
+
+      <Route
+        path="/academic/class-routine"
+        element={<ClassRoutinePage />}
+      />
+
+      <Route
+        path="/academic/exam-routine"
+        element={<ExamRoutinePage />}
+      />
+
+      <Route
+        path="/academic/rules"
+        element={<RulesPage />}
+      />
+
+      <Route
+        path="/academic/uniform"
+        element={<UniformPage />}
+      />
+
+      <Route
+        path="/academic/holidays"
+        element={<HolidaysPage />}
+      />
+
+
+      {/* =====================================================
+          RESULT
+      ===================================================== */}
+
+      <Route
+        path="/result/individual"
+        element={<IndividualResultPage />}
+      />
+
+      <Route
+        path="/result/assessment"
+        element={<AssessmentPage />}
+      />
+
+      <Route
+        path="/result/board"
+        element={<BoardResultPage />}
+      />
+
+
+      {/* =====================================================
+          ADMISSION
+      ===================================================== */}
+
+      <Route
+        path="/admission/online"
+        element={<OnlineAdmissionPage />}
+      />
+
+      <Route
+        path="/admission/result"
+        element={<AdmissionResultPage />}
+      />
+
+      <Route
+        path="/admission/form"
+        element={<BlankFormPage />}
+      />
+
+      <Route
+        path="/admission/applicant"
+        element={<ApplicantPage />}
+      />
+
+      <Route
+        path="/admission/admit-card"
+        element={<AdmitCardPage />}
+      />
+
+
+      {/* =====================================================
+          ADMISSION TEST
+      ===================================================== */}
+
+      <Route
+        path="/admission-tests"
+        element={<AdmissionTestsDashboard />}
+      />
+
+      <Route
+        path="/admission-tests/:group"
+        element={<AdmissionTestGroup />}
+      />
+
+      <Route
+        path="/admission-tests/:group/instructions"
+        element={<AdmissionTestInstructions />}
+      />
+
+      <Route
+        path="/admission-tests/:group/start"
+        element={<AdmissionLiveTest />}
+      />
+
+      <Route
+        path="/admission-tests/:group/result"
+        element={<AdmissionTestResult />}
+      />
+
+      <Route
+        path="/admission-tests/:group/review"
+        element={<AdmissionTestReview />}
+      />
+
+      <Route
+        path="/my-tests"
+        element={<MyTestsPage />}
+      />
+
+
+      {/* =====================================================
+          CONTENT
+      ===================================================== */}
+
+      <Route
+        path="/notices"
+        element={
+          <ListingPage
+            type="notices"
+            title="Notices"
+          />
+        }
+      />
+
+      <Route
+        path="/notices/:id"
+        element={
+          <DetailPage
+            type="notices"
+            title="Notices"
+          />
+        }
+      />
+
+      <Route
+        path="/news"
+        element={
+          <ListingPage
+            type="news"
+            title="News"
+          />
+        }
+      />
+
+      <Route
+        path="/news/:id"
+        element={
+          <DetailPage
+            type="news"
+            title="News"
+          />
+        }
+      />
+
+      <Route
+        path="/events"
+        element={
+          <ListingPage
+            type="events"
+            title="Events"
+          />
+        }
+      />
+
+      <Route
+        path="/events/:id"
+        element={
+          <DetailPage
+            type="events"
+            title="Events"
+          />
+        }
+      />
+
+
+      {/* =====================================================
+          GALLERY
+      ===================================================== */}
+
+      <Route
+        path="/gallery/photos"
+        element={<PhotoGalleryPage />}
+      />
+
+      <Route
+        path="/gallery/videos"
+        element={<VideoGalleryPage />}
+      />
+
+
+      {/* =====================================================
+          CONTACT / SEARCH
+      ===================================================== */}
+
+      <Route
+        path="/contact"
+        element={<Contact />}
+      />
+
+      <Route
+        path="/search"
+        element={<SearchPage />}
+      />
+
+
+      {/* =====================================================
+          AUTH
+      ===================================================== */}
+
+      <Route
+        path="/login"
+        element={<Login title="Login" />}
+      />
+
+      <Route
+        path="/register"
+        element={
+          <Register title="Register" />
+        }
+      />
+
+      <Route
+        path="/profile"
+        element={
+          <StudentProfile title="Profile" />
+        }
+      />
+
+
+      {/* =====================================================
+          ADMIN LOGIN
+      ===================================================== */}
+
+      <Route
+        path="/Admin/login"
+        element={<AdminLogin />}
+      />
+
+      <Route
+        path="/admin/login"
+        element={<AdminLogin />}
+      />
+
+
+      {/* =====================================================
+          ADMIN DASHBOARD
+      ===================================================== */}
+
+      <Route
+        path="/dashboard"
+        element={<DashboardLayout />}
+      >
+        {adminDashboardChildren()}
+      </Route>
+
+
+      {/* =====================================================
+          ADMIN DASHBOARD ALIAS
+      ===================================================== */}
+
+      <Route
+        path="/admin/dashboard"
+        element={<DashboardLayout />}
+      >
+        {adminDashboardChildren()}
+      </Route>
+
+
+      {/* =====================================================
+          UTILITY
+      ===================================================== */}
+
+      {[
+        "attendance",
+        "due-report",
+        "digital-content",
+        "boys-scout",
+        "student-statistics",
+        "nctb-books",
+      ].map((p) => (
+        <Route
+          key={p}
+          path={`/${p}`}
+          element={
+            <UtilityPage
+              title={p
+                .split("-")
+                .map(
+                  (x) =>
+                    x[0].toUpperCase() +
+                    x.slice(1)
+                )
+                .join(" ")}
+            />
+          }
+        />
+      ))}
+
+
+      {/* =====================================================
+          NOT FOUND
+      ===================================================== */}
+
+      <Route
+        path="*"
+        element={<NotFound />}
+      />
+    </Routes>
+  );
+}

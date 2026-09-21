@@ -1,0 +1,81 @@
+from rest_framework import permissions, viewsets
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from apps.core.permissions import HasActionPermission
+from apps.core.responses import success_response
+from .models import Permission, Role, User, UserLoginHistory
+from .serializers import (
+    LoginSerializer,
+    PermissionSerializer,
+    RoleSerializer,
+    UserLoginHistorySerializer,
+    UserSerializer,
+)
+
+
+class LoginView(TokenObtainPairView):
+    serializer_class = LoginSerializer
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        user_data = response.data.get("user")
+        if user_data:
+            UserLoginHistory.objects.create(
+                user_id=user_data["id"],
+                ip_address=request.META.get("REMOTE_ADDR"),
+                user_agent=request.META.get("HTTP_USER_AGENT", ""),
+            )
+        return response
+
+
+class RefreshView(TokenRefreshView):
+    pass
+
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def logout_view(request):
+    refresh = request.data.get("refresh")
+    if refresh:
+        RefreshToken(refresh).blacklist()
+    return success_response(message="Logged out successfully.")
+
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def me_view(request):
+    return success_response(UserSerializer(request.user).data)
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.select_related("organization", "branch").prefetch_related("roles")
+    serializer_class = UserSerializer
+    permission_classes = [HasActionPermission]
+    search_fields = ("username", "email", "first_name", "last_name", "phone")
+    filterset_fields = ("organization", "branch", "is_active", "is_staff")
+
+
+class RoleViewSet(viewsets.ModelViewSet):
+    queryset = Role.objects.prefetch_related("permissions")
+    serializer_class = RoleSerializer
+    permission_classes = [HasActionPermission]
+    search_fields = ("name", "code")
+    filterset_fields = ("organization", "is_system")
+
+
+class PermissionViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Permission.objects.all()
+    serializer_class = PermissionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    search_fields = ("code", "name", "module")
+    filterset_fields = ("module",)
+
+
+class UserLoginHistoryViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = UserLoginHistory.objects.select_related("user")
+    serializer_class = UserLoginHistorySerializer
+    permission_classes = [HasActionPermission]
+    search_fields = ("user__username", "user__email", "ip_address")
+

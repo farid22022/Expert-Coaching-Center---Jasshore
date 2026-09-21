@@ -182,4 +182,28 @@ export default function AdminModulePage() {
     };
   }, [normalizedPath, root]);
 
-  c
+  const activeItem = currentItem || module;
+  const title = stripNumber(activeItem?.label || "Admin Module");
+  const isModuleHome = activeItem?.path === module?.path;
+
+  return (
+    <div className="space-y-6">
+      <AdminModuleNav module={module} root={root} />
+
+      <div className="text-center">
+        <h1 className="text-3xl font-black uppercase text-emerald-950 md:text-4xl">
+          {isModuleHome ? `${stripNumber(module.label)} Dashboard` : title}
+        </h1>
+        <p className="mt-2 text-sm font-semibold text-slate-600">
+          This section is ready for future admin workflow implementation.
+        </p>
+      </div>
+
+      {activeItem?.children?.length ? (
+        <TaskGrid item={activeItem} root={root} />
+      ) : (
+        <DemoPanel title={title} />
+      )}
+    </div>
+  );
+}
