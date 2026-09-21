@@ -1,0 +1,1760 @@
+# EXPERT COACHING CENTER — PUBLIC WEBSITE CLONE
+
+## ROLE
+
+You are a senior full-stack web developer and UI/UX engineer.
+
+Your task is to **recreate the complete public-facing website of EXPERT COACHING CENTER**:
+
+Reference website:
+
+https://expertjashore.com/
+
+The goal is to build a functional, responsive, production-quality clone of the **public website only**.
+
+Do NOT implement or access the authenticated Admin Dashboard at this stage.
+
+The final website should reproduce the reference site's:
+
+* Public navigation
+* Pages
+* Information architecture
+* Forms
+* Search/filter functionality
+* Student-facing features
+* Admission functionality
+* Academic information
+* Results
+* Notices
+* News
+* Events
+* Galleries
+* Contact functionality
+* Responsive behavior
+
+while using a cleaner, modern, maintainable frontend architecture.
+
+---
+
+# 1. FIRST: ANALYZE THE REFERENCE WEBSITE
+
+Before writing code, thoroughly inspect:
+
+https://expertjashore.com/
+
+Explore all publicly accessible routes.
+
+Do not assume that the homepage contains everything.
+
+Inspect:
+
+* Navigation
+* Dropdown menus
+* Footer
+* Homepage sections
+* Internal pages
+* Forms
+* Search/filter controls
+* Tables
+* Cards
+* Pagination
+* Images
+* Documents/download links
+* Result pages
+* Admission pages
+* Notices
+* News
+* Events
+* Gallery
+* Contact
+* Student-related pages
+* Academic pages
+
+Create an internal route/feature map before implementation.
+
+Preserve the reference site's information architecture while improving the visual design where appropriate.
+
+---
+
+# 2. IMPORTANT SCOPE
+
+## Clone ONLY the public website.
+
+Do NOT implement:
+
+* Admin login
+* Admin dashboard
+* Admin authentication
+* Admin CRUD
+* Admin APIs
+* Admin settings
+* Admin user management
+
+The public website should behave as if it is connected to a backend, but initially use mock/local data where necessary.
+
+Structure the code so a real API can be connected later.
+
+---
+
+# 3. RECOMMENDED TECHNOLOGY
+
+Use:
+
+* React
+* Vite
+* JavaScript or TypeScript
+* Tailwind CSS
+* React Router
+* Axios
+* Lucide React icons
+
+Optional:
+
+* Framer Motion for subtle animations
+* React Hook Form for forms
+* Zod for validation
+
+Use a clean component-based architecture.
+
+Do not create one huge component.
+
+---
+
+# 4. GENERAL DESIGN DIRECTION
+
+The reference site is an educational/coaching institution website.
+
+Maintain the overall educational/institutional character, but make the implementation modern.
+
+Design should feel:
+
+* Professional
+* Trustworthy
+* Academic
+* Clean
+* Responsive
+* Easy for Bangladeshi students/parents to use
+
+Support:
+
+* Desktop
+* Laptop
+* Tablet
+* Mobile
+
+Use proper spacing and typography.
+
+Do not make the website look like a generic SaaS dashboard.
+
+---
+
+# 5. MAIN NAVIGATION
+
+Recreate the complete public navigation.
+
+The navigation should contain approximately the following structure.
+
+## HOME
+
+Route:
+
+`/`
+
+---
+
+# ABOUT
+
+Create an About dropdown containing:
+
+* History
+* Founder
+* Chairman
+* Principal
+* Teachers
+* Committee Members
+* Staff List
+* Institution Details
+
+Routes:
+
+`/about/history`
+
+`/about/founder`
+
+`/about/chairman`
+
+`/about/principal`
+
+`/about/teachers`
+
+`/about/committee`
+
+`/about/staff`
+
+`/about/institution-details`
+
+---
+
+# ACADEMIC
+
+Create an Academic dropdown containing:
+
+* Student List
+* Class Routine
+* Exam Routine
+* Rules & Regulations
+* Uniform Details
+* List of Holidays
+
+Routes:
+
+`/academic/students`
+
+`/academic/class-routine`
+
+`/academic/exam-routine`
+
+`/academic/rules`
+
+`/academic/uniform`
+
+`/academic/holidays`
+
+---
+
+# RESULT
+
+Create a Result dropdown containing:
+
+* Individual Academic Result
+* Assessment Reports
+* Board Result
+
+Routes:
+
+`/result/individual`
+
+`/result/assessment`
+
+`/result/board`
+
+---
+
+# ADMISSION
+
+Create an Admission dropdown containing:
+
+* Online Admission
+* Admission Result
+* Blank Admission Form Download
+* Applicant's Form
+* Admit Card
+
+Routes:
+
+`/admission/online`
+
+`/admission/result`
+
+`/admission/form`
+
+`/admission/applicant`
+
+`/admission/admit-card`
+
+---
+
+# OTHERS
+
+Create an Others dropdown containing:
+
+* Notices
+* News
+* Events
+* Photo Gallery
+* Video Gallery
+
+Routes:
+
+`/notices`
+
+`/news`
+
+`/events`
+
+`/gallery/photos`
+
+`/gallery/videos`
+
+---
+
+# CONTACT US
+
+Route:
+
+`/contact`
+
+---
+
+# 6. HEADER
+
+Build a reusable website header.
+
+Include:
+
+* Institution logo
+* Institution name
+* Main navigation
+* Dropdown menus
+* Mobile menu
+* Contact/important information if present in reference site
+* Responsive hamburger menu
+
+Desktop:
+
+Use dropdown navigation.
+
+Mobile:
+
+Use a slide-down/side navigation menu.
+
+Dropdowns must work using React state.
+
+Do not rely on hover-only functionality because mobile users need access.
+
+---
+
+# 7. HOMEPAGE
+
+Recreate the complete homepage structure.
+
+The homepage should include the important sections found on the reference site.
+
+## Hero / Banner
+
+Include:
+
+* Institution branding
+* Main banner/slideshow
+* Relevant educational messaging
+* CTA buttons
+
+Possible CTA:
+
+* Online Admission
+* Student Result
+* Notice Board
+* Contact
+
+Use a carousel if the reference site uses multiple banners.
+
+---
+
+# 8. INSTITUTION INTRODUCTION
+
+Create a section introducing:
+
+**EXPERT COACHING CENTER**
+
+Include:
+
+* Short history
+* Institution description
+* Establishment information
+* Mission/vision
+* Location
+* Educational purpose
+
+Include a:
+
+`Read More`
+
+button leading to the About/History page.
+
+---
+
+# 9. QUICK LINKS / REPORT CORNER
+
+Recreate the reference site's quick-access functionality.
+
+Include cards/buttons for:
+
+* Attendance
+* Class Routine
+* Exam Result
+* Assessment Report
+* Admit Card
+* Due Report
+
+Each should navigate to an appropriate page.
+
+Example:
+
+Attendance → `/attendance`
+
+Class Routine → `/academic/class-routine`
+
+Exam Result → `/result/individual`
+
+Assessment → `/result/assessment`
+
+Admit Card → `/admission/admit-card`
+
+Due Report → `/due-report`
+
+If Due Report is not publicly available, create a suitable informational/search page rather than exposing private financial data.
+
+---
+
+# 10. TEACHER SECTION
+
+Create a teacher showcase.
+
+Each teacher card should support:
+
+* Photo
+* Name
+* Designation
+* Subject if available
+* Short profile
+
+Create:
+
+`/about/teachers`
+
+with a complete teacher listing.
+
+Use reusable:
+
+`TeacherCard`
+
+component.
+
+---
+
+# 11. MANAGEMENT SECTION
+
+Create a management section.
+
+Include:
+
+* Founder
+* Chairman
+* Principal
+* Committee members
+
+Create reusable profile cards.
+
+Each profile can include:
+
+* Photo
+* Name
+* Position
+* Biography
+* Educational background
+* Message
+
+---
+
+# 12. STUDENTS CORNER
+
+Create a prominent Student Corner section.
+
+Include links/cards for:
+
+* Digital Content
+* Notice Board
+* Boys Scout
+* Exam Routine
+* Form Download
+* Students Statistics
+* NCTB Books Download
+* Results Archive
+
+Each should have a functional route.
+
+For unavailable backend resources, create a realistic placeholder/data-driven page rather than broken links.
+
+---
+
+# 13. STUDENT LIST
+
+Create:
+
+`/academic/students`
+
+The page should provide student search/filter functionality.
+
+Filters:
+
+* Session Year
+* Shift
+* Class
+* Section
+* Design/category if applicable
+
+Display results in a responsive table/card layout.
+
+Student information may include:
+
+* Student name
+* Photo
+* Student ID
+* Class
+* Section
+* Roll
+* Session
+* Shift
+
+Use mock data initially.
+
+Add:
+
+* Search
+* Filter
+* Reset
+* Pagination if necessary
+
+---
+
+# 14. CLASS ROUTINE
+
+Create:
+
+`/academic/class-routine`
+
+Provide filters:
+
+* Session Year
+* Shift
+* Class
+* Section
+
+Display a timetable containing:
+
+* Day
+* Period
+* Start time
+* End time
+* Subject
+* Teacher
+* Room/building if available
+
+Desktop:
+
+Use a table.
+
+Mobile:
+
+Use responsive cards or horizontally scrollable table.
+
+---
+
+# 15. EXAM ROUTINE
+
+Create:
+
+`/academic/exam-routine`
+
+Include:
+
+* Session
+* Exam name
+* Class
+* Section
+* Subject
+* Exam date
+* Start time
+* End time
+* Room
+
+Allow filtering.
+
+---
+
+# 16. RULES & REGULATIONS
+
+Create:
+
+`/academic/rules`
+
+Display institution rules in organized sections.
+
+Examples:
+
+* Attendance rules
+* Examination rules
+* Discipline
+* Uniform
+* Fees
+* Student behavior
+* Academic requirements
+
+Use expandable accordions if appropriate.
+
+---
+
+# 17. UNIFORM DETAILS
+
+Create:
+
+`/academic/uniform`
+
+Include:
+
+* Boys uniform
+* Girls uniform
+* Shoes
+* Accessories
+* Seasonal requirements
+
+Use images where appropriate.
+
+---
+
+# 18. HOLIDAY LIST
+
+Create:
+
+`/academic/holidays`
+
+Display holidays in a table.
+
+Columns:
+
+* Date
+* Day
+* Holiday
+* Description
+
+Allow year filtering.
+
+---
+
+# 19. INDIVIDUAL ACADEMIC RESULT
+
+Create:
+
+`/result/individual`
+
+Build a result-search interface.
+
+Possible fields:
+
+* Student ID
+* Roll
+* Registration number
+* Session
+* Class
+* Exam
+
+After search, show:
+
+* Student name
+* Photo
+* Class
+* Roll
+* Session
+* Subject-wise marks
+* Total marks
+* GPA/grade
+* Position if available
+* Overall result
+
+Include a printable result view.
+
+Add:
+
+`Print Result`
+
+button.
+
+---
+
+# 20. ASSESSMENT REPORT
+
+Create:
+
+`/result/assessment`
+
+Allow searching by:
+
+* Student
+* Class
+* Session
+* Assessment/exam
+
+Display:
+
+* Subject
+* Marks
+* Grade
+* Teacher remarks
+* Overall performance
+
+---
+
+# 21. BOARD RESULT
+
+Create:
+
+`/result/board`
+
+Provide board-result information.
+
+Include:
+
+* Examination
+* Year
+* Board
+* Result statistics
+* GPA-5 count
+* Pass rate
+* Student result information
+
+Use realistic mock data.
+
+---
+
+# 22. ONLINE ADMISSION
+
+Create:
+
+`/admission/online`
+
+This is one of the most important public features.
+
+Build a multi-section admission form.
+
+## Student Information
+
+Fields:
+
+* Full Name
+* Bengali Name
+* Blood Group
+* Student UID
+* Mobile
+* Email
+* Date of Birth
+* Birth Place
+* Birth Certificate Number
+* Religion
+* Gender
+* Country
+* Tribal Status
+* Student Photograph
+
+## Father Information
+
+* Name
+* Bengali Name
+* Mobile
+* NID
+* Date of Birth
+* Profession
+
+## Mother Information
+
+* Name
+* Bengali Name
+* Mobile
+* NID
+* Date of Birth
+* Profession
+
+## Guardian
+
+* Name
+* Mobile
+* Relationship
+
+## Academic Information
+
+* Category
+* Session
+* Shift
+* Class
+* Section
+* Group
+* Roll
+* Version
+* Register Number
+* Student ID
+* Admission Date
+
+## Previous Institution
+
+* Previous School Name
+* Previous Class
+* Previous Roll
+
+## Payment
+
+Include:
+
+* Payment method
+* Amount
+* Sender number
+* Transaction number
+* Transaction ID
+
+Do NOT implement real payment processing yet.
+
+Use mock submission.
+
+After submission:
+
+* Validate form
+* Show success message
+* Generate application/reference number
+* Display submitted information
+* Provide printable application form
+
+---
+
+# 23. ADMISSION RESULT
+
+Create:
+
+`/admission/result`
+
+Allow applicant to search admission status using:
+
+* Application ID
+* Mobile number
+
+Possible statuses:
+
+* Pending
+* Under Review
+* Selected
+* Rejected
+* Waitlisted
+
+Use mock data.
+
+---
+
+# 24. BLANK ADMISSION FORM
+
+Create:
+
+`/admission/form`
+
+Provide a printable/downloadable admission form.
+
+The form should contain:
+
+* Student information
+* Parent information
+* Academic information
+* Guardian information
+* Photograph area
+* Signature areas
+
+Add:
+
+`Print`
+
+and
+
+`Download`
+
+buttons.
+
+---
+
+# 25. APPLICANT FORM
+
+Create:
+
+`/admission/applicant`
+
+Provide applicant/application search.
+
+Fields:
+
+* Application ID
+* Mobile
+* Name
+
+Display submitted application details.
+
+---
+
+# 26. ADMIT CARD
+
+Create:
+
+`/admission/admit-card`
+
+Allow searching by:
+
+* Student ID
+* Roll
+* Application ID
+
+Display:
+
+* Institution logo
+* Institution name
+* Student photo
+* Student name
+* Roll
+* Class
+* Exam
+* Subjects
+* Exam dates
+* Venue
+
+Add:
+
+`Print Admit Card`
+
+button.
+
+---
+
+# 27. NOTICES
+
+Create:
+
+`/notices`
+
+Display all notices.
+
+Each notice card should show:
+
+* Title
+* Date
+* Category
+* Short description
+* Read More
+
+Create:
+
+`/notices/:id`
+
+for individual notice details.
+
+Add search/filter.
+
+---
+
+# 28. NEWS
+
+Create:
+
+`/news`
+
+Include:
+
+* News cards
+* Featured news
+* Date
+* Thumbnail
+* Title
+* Summary
+
+Create:
+
+`/news/:id`
+
+for full news articles.
+
+---
+
+# 29. EVENTS
+
+Create:
+
+`/events`
+
+Display:
+
+* Event image
+* Event title
+* Date
+* Location
+* Description
+
+Create:
+
+`/events/:id`
+
+for event details.
+
+---
+
+# 30. PHOTO GALLERY
+
+Create:
+
+`/gallery/photos`
+
+Include:
+
+* Image grid
+* Album/category filters
+* Lightbox
+* Image preview
+* Responsive gallery
+
+Clicking an image should open a lightbox.
+
+---
+
+# 31. VIDEO GALLERY
+
+Create:
+
+`/gallery/videos`
+
+Display:
+
+* Video thumbnail
+* Title
+* Date
+* Description
+
+Support embedded YouTube videos where appropriate.
+
+Do not autoplay videos.
+
+---
+
+# 32. CONTACT PAGE
+
+Create:
+
+`/contact`
+
+Include:
+
+* Institution name
+* Address
+* Phone
+* Email
+* Location
+* Google Maps section if appropriate
+
+Create contact form:
+
+* Name
+* Email
+* Mobile
+* Subject
+* Message
+
+Add client-side validation.
+
+After submission show:
+
+"Your message has been submitted successfully."
+
+Initially store/mock the submission locally.
+
+Structure it so an API can be connected later.
+
+---
+
+# 33. ABOUT PAGES
+
+Implement separate pages for:
+
+### History
+
+Institution history and timeline.
+
+### Founder
+
+Founder profile.
+
+### Chairman
+
+Chairman profile.
+
+### Principal
+
+Principal profile and message.
+
+### Teachers
+
+Teacher directory.
+
+### Committee
+
+Committee members.
+
+### Staff
+
+Staff/employee list.
+
+### Institution Details
+
+Include:
+
+* Institution name
+* Address
+* Established year
+* Contact
+* Email
+* Educational information
+* Other official information
+
+---
+
+# 34. FOOTER
+
+Create a complete footer.
+
+Include:
+
+### Institution
+
+* About
+* History
+* Teachers
+* Contact
+
+### Academic
+
+* Student List
+* Class Routine
+* Exam Routine
+* Results
+
+### Admission
+
+* Online Admission
+* Admission Result
+* Admit Card
+
+### Important
+
+* Notices
+* News
+* Events
+* Gallery
+
+### Contact
+
+* Address
+* Phone
+* Email
+
+### Social media
+
+Add social icons if they exist on the reference website.
+
+### Copyright
+
+Use the institution's official name and current year.
+
+---
+
+# 35. SEARCH
+
+Implement a global search UI.
+
+Search across:
+
+* Notices
+* News
+* Events
+* Pages
+* Academic information
+
+Display grouped search results.
+
+Example:
+
+```text
+Search Results
+
+Notices
+ ├─ Admission Notice
+ └─ Holiday Notice
+
+News
+ └─ Annual Sports Event
+
+Pages
+ └─ Class Routine
+```
+
+---
+
+# 36. RESPONSIVE DESIGN
+
+The entire site must work correctly at:
+
+* 320px
+* 375px
+* 425px
+* 768px
+* 1024px
+* 1280px
+* 1440px
+* 1920px
+
+Pay special attention to:
+
+* Navigation
+* Tables
+* Admission forms
+* Result pages
+* Routine
+* Gallery
+* Footer
+
+Do not allow horizontal overflow except intentionally scrollable tables.
+
+---
+
+# 37. COMPONENT ARCHITECTURE
+
+Create reusable components.
+
+Suggested structure:
+
+```text
+src/
+├── components/
+│   ├── layout/
+│   │   ├── Header.jsx
+│   │   ├── Navbar.jsx
+│   │   ├── Footer.jsx
+│   │   └── MobileMenu.jsx
+│   │
+│   ├── common/
+│   │   ├── PageHeader.jsx
+│   │   ├── Breadcrumb.jsx
+│   │   ├── SearchBox.jsx
+│   │   ├── FilterBar.jsx
+│   │   ├── Pagination.jsx
+│   │   ├── EmptyState.jsx
+│   │   └── LoadingState.jsx
+│   │
+│   ├── home/
+│   │   ├── Hero.jsx
+│   │   ├── AboutPreview.jsx
+│   │   ├── QuickLinks.jsx
+│   │   ├── TeachersPreview.jsx
+│   │   ├── StudentsCorner.jsx
+│   │   └── Statistics.jsx
+│   │
+│   ├── teachers/
+│   ├── students/
+│   ├── admission/
+│   ├── results/
+│   ├── routines/
+│   ├── notices/
+│   ├── news/
+│   ├── events/
+│   └── gallery/
+│
+├── pages/
+│   ├── Home.jsx
+│   ├── about/
+│   ├── academic/
+│   ├── result/
+│   ├── admission/
+│   ├── notices/
+│   ├── news/
+│   ├── events/
+│   ├── gallery/
+│   └── Contact.jsx
+│
+├── data/
+│   ├── students.js
+│   ├── teachers.js
+│   ├── notices.js
+│   ├── news.js
+│   ├── events.js
+│   ├── routines.js
+│   └── results.js
+│
+├── services/
+│   └── api.js
+│
+├── routes/
+│   └── AppRoutes.jsx
+│
+└── App.jsx
+```
+
+---
+
+# 38. DATA ARCHITECTURE
+
+For now use mock data.
+
+Do NOT hard-code every card directly inside JSX.
+
+Create structured data files.
+
+Example:
+
+```js
+const teachers = [
+  {
+    id: 1,
+    name: "Teacher Name",
+    designation: "Senior Teacher",
+    subject: "Mathematics",
+    image: "/images/teachers/teacher-1.jpg"
+  }
+];
+```
+
+The UI should consume the data.
+
+This will make future backend integration easy.
+
+---
+
+# 39. API-READY ARCHITECTURE
+
+Create an API service layer.
+
+Example:
+
+```js
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "/api";
+```
+
+Create services such as:
+
+```text
+studentService
+teacherService
+noticeService
+newsService
+eventService
+admissionService
+resultService
+routineService
+```
+
+Initially these can return mock data.
+
+Later they can be replaced with Axios requests without rewriting the UI.
+
+---
+
+# 40. ERROR / LOADING STATES
+
+Every data-driven page must have:
+
+* Loading state
+* Empty state
+* Error state
+* Success state
+
+Example:
+
+```text
+No notices available.
+```
+
+instead of leaving a blank page.
+
+---
+
+# 41. SEO
+
+Implement basic SEO.
+
+Every page should have:
+
+* Unique title
+* Meta description
+* Proper heading hierarchy
+* Open Graph metadata where appropriate
+
+Examples:
+
+```text
+Expert Coaching Center | Home
+
+Expert Coaching Center | Online Admission
+
+Expert Coaching Center | Class Routine
+
+Expert Coaching Center | Student Result
+```
+
+---
+
+# 42. ACCESSIBILITY
+
+Use:
+
+* Semantic HTML
+* Proper labels
+* Keyboard-accessible buttons
+* Alt text
+* Accessible dropdowns
+* Accessible dialogs/lightboxes
+* Good color contrast
+
+Do not use clickable `<div>` elements when a button/link is appropriate.
+
+---
+
+# 43. PRINT SUPPORT
+
+The following pages should have print-friendly layouts:
+
+* Result
+* Admit Card
+* Admission Form
+* Class Routine
+* Exam Routine
+
+Hide navigation/footer when printing.
+
+---
+
+# 44. DOWNLOAD SUPPORT
+
+Where the reference website provides downloadable documents, recreate the behavior with appropriate placeholder/sample documents.
+
+Examples:
+
+* Admission form
+* Admit card
+* Academic documents
+* NCTB resources
+
+Do not link to nonexistent files.
+
+---
+
+# 45. 404 PAGE
+
+Create:
+
+`*`
+
+A professional 404 page.
+
+Include:
+
+```text
+404
+
+Page Not Found
+
+The page you're looking for doesn't exist.
+
+Back to Home
+```
+
+---
+
+# 46. SECURITY / PRIVACY
+
+Do not expose any private student information in the frontend mock data.
+
+Do not put:
+
+* Admin passwords
+* API secrets
+* Database credentials
+* Private keys
+
+inside the frontend.
+
+Never commit `.env`.
+
+Create:
+
+`.env.example`
+
+---
+
+# 47. IMPORTANT: DO NOT COPY PRIVATE ADMIN FUNCTIONALITY
+
+The public clone must stop at the public portal.
+
+Do not attempt to reproduce:
+
+`/Admin/dashboard`
+
+or other authenticated administrative routes.
+
+The architecture should, however, make it possible to add an admin application later.
+
+---
+
+# 48. VISUAL QUALITY REQUIREMENT
+
+Do not simply create a collection of plain forms.
+
+The final website should feel like a real educational institution portal.
+
+Use:
+
+* Cards
+* Sections
+* Proper typography
+* Icons
+* Tables
+* Badges
+* Breadcrumbs
+* Hero banners
+* Responsive layouts
+* Hover states
+* Smooth transitions
+* Consistent spacing
+
+Avoid excessive animation.
+
+The primary goal is usability.
+
+---
+
+# 49. CONTENT
+
+Use the actual publicly available institutional information from:
+
+https://expertjashore.com/
+
+where appropriate.
+
+Do not invent official facts when they can be obtained from the public website.
+
+For data that cannot be retrieved or is dynamic, use clearly structured placeholder/mock data.
+
+Do not falsely represent mock student results or admissions as real records.
+
+---
+
+# 50. FINAL ROUTE CHECKLIST
+
+Before considering the project complete, verify that these routes exist and work:
+
+```text
+/
+ 
+/about/history
+/about/founder
+/about/chairman
+/about/principal
+/about/teachers
+/about/committee
+/about/staff
+/about/institution-details
+
+/academic/students
+/academic/class-routine
+/academic/exam-routine
+/academic/rules
+/academic/uniform
+/academic/holidays
+
+/result/individual
+/result/assessment
+/result/board
+
+/admission/online
+/admission/result
+/admission/form
+/admission/applicant
+/admission/admit-card
+
+/notices
+/notices/:id
+
+/news
+/news/:id
+
+/events
+/events/:id
+
+/gallery/photos
+/gallery/videos
+
+/contact
+
+/attendance
+/due-report
+```
+
+---
+
+# 51. FINAL TESTING
+
+Before finishing:
+
+### Navigation
+
+Verify every navbar item works.
+
+### Dropdowns
+
+Verify desktop and mobile dropdowns.
+
+### Mobile
+
+Test all pages at mobile width.
+
+### Forms
+
+Test:
+
+* Admission
+* Contact
+* Result search
+* Student search
+* Routine filters
+* Admission result
+
+### Tables
+
+Verify tables don't break mobile layout.
+
+### Gallery
+
+Verify image lightbox.
+
+### Printing
+
+Verify:
+
+* Result
+* Admit Card
+* Admission Form
+* Routine
+
+### Browser
+
+Test:
+
+* Chrome
+* Edge
+* Firefox
+
+### Console
+
+There must be no:
+
+* React errors
+* Broken imports
+* 404 assets
+* Unhandled promises
+* Invalid links
+
+---
+
+# 52. DEVELOPMENT WORKFLOW
+
+Do not build everything as one massive component.
+
+Work in this order:
+
+1. Inspect reference website
+2. Create route map
+3. Initialize React/Vite project
+4. Configure Tailwind
+5. Build global layout
+6. Build Header/Navbar
+7. Build Footer
+8. Build Homepage
+9. Build About pages
+10. Build Academic pages
+11. Build Results
+12. Build Admission
+13. Build Notices
+14. Build News
+15. Build Events
+16. Build Galleries
+17. Build Contact
+18. Add responsive design
+19. Add mock data
+20. Add loading/error states
+21. Add SEO
+22. Add print styles
+23. Test all routes
+24. Fix UI issues
+25. Run production build
+
+---
+
+# 53. IMPORTANT IMPLEMENTATION RULE
+
+Do not stop after creating a homepage.
+
+The task is considered incomplete until the **entire public navigation and its corresponding pages are implemented**.
+
+Do not create fake navigation links that lead nowhere.
+
+Every visible navigation item must lead to a functioning page.
+
+---
+
+# 54. FINAL DELIVERABLE
+
+At completion provide:
+
+1. Complete React/Vite source code
+2. All public pages
+3. Responsive design
+4. Mock data
+5. Reusable components
+6. Route configuration
+7. API-ready service layer
+8. `.env.example`
+9. README
+10. Production build that runs successfully
+
+Run:
+
+```bash
+npm install
+npm run dev
+```
+
+and verify the application.
+
+Also verify:
+
+```bash
+npm run build
+```
+
+completes successfully.
+
+---
+
+# SUCCESS CRITERIA
+
+The project is successful when a visitor can enter the cloned website and navigate through the entire public experience of EXPERT COACHING CENTER without encountering dead links.
+
+The clone must contain:
+
+* Complete navbar
+* All dropdown menus
+* All public pages
+* Homepage sections
+* Student portal features
+* Academic features
+* Result features
+* Admission features
+* Notice/news/event features
+* Gallery
+* Contact
+* Search/filter functionality
+* Print functionality
+* Responsive mobile layout
+* Professional educational UI
+
+The result should be a **functional public coaching-center management portal**, not merely a visual homepage clone.
+
+Reference:
+
+https://expertjashore.com/

@@ -1,0 +1,41 @@
+// AppRoutes.jsx imports
+import AttendanceDashboard, {
+  TimeAttendance,
+  StudentAttendance,
+  StudentAttendanceReport,
+  StudentAttendanceOverviewReport,
+  StudentDetailsAttendance,
+  StudentAttendanceSummary,
+  StudentAbsent,
+  TeacherEmployeeAttendance,
+  TeacherEmployeeAttendanceReport,
+  TeacherEmployeeDetailsAttendance,
+  TeacherEmployeeAttendanceSummary,
+  TeacherEmployeeAbsent,
+  TeacherClassAttendance,
+} from "../pages/admin/Dashboard/attendance/AttendanceDashboard.jsx";
+
+function attendanceRoutes(basePath) {
+  return (
+    <>
+      <Route path={basePath} element={<AttendanceDashboard />} />
+      <Route path={`${basePath}/time-attendance`} element={<TimeAttendance />} />
+      <Route path={`${basePath}/student-attendance`} element={<StudentAttendance />} />
+      <Route path={`${basePath}/student-attendance-report`} element={<StudentAttendanceReport />} />
+      <Route path={`${basePath}/student-attendance-overview-report`} element={<StudentAttendanceOverviewReport />} />
+      <Route path={`${basePath}/student-details-attendance`} element={<StudentDetailsAttendance />} />
+      <Route path={`${basePath}/student-attendance-summary`} element={<StudentAttendanceSummary />} />
+      <Route path={`${basePath}/student-absent`} element={<StudentAbsent />} />
+      <Route path={`${basePath}/teacher-employee-attendance`} element={<TeacherEmployeeAttendance />} />
+      <Route path={`${basePath}/teacher-employee-attendance-report`} element={<TeacherEmployeeAttendanceReport />} />
+      <Route path={`${basePath}/teacher-employee-details-attendance`} element={<TeacherEmployeeDetailsAttendance />} />
+      <Route path={`${basePath}/teacher-employee-attendance-summary`} element={<TeacherEmployeeAttendanceSummary />} />
+      <Route path={`${basePath}/teacher-employee-absent`} element={<TeacherEmployeeAbsent />} />
+      <Route path={`${basePath}/teacher-class-attendance`} element={<TeacherClassAttendance />} />
+    </>
+  );
+}
+
+// Add inside BOTH /dashboard and /admin/dashboard route trees
+{attendanceRoutes("attendance")}
+{attendanceRoutes("4-attendance")}
