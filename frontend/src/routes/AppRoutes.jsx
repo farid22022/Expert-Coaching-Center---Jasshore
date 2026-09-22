@@ -89,6 +89,7 @@ import AttendanceDashboard, {
 } from "../pages/admin/Dashboard/attendance/AttendanceDashboard.jsx";
 
 import ExaminationDashboard from "../pages/admin/Dashboard/examination/ExaminationDashboard.jsx";
+import { ExaminationPageShell } from "../pages/admin/Dashboard/examination/examinationShared.jsx";
 
 import {
   MarksDistributionExcelEntry,
@@ -113,6 +114,7 @@ import {
 } from "../pages/admin/Dashboard/examination/ExaminationSimplePages.jsx";
 
 import ManageAccountsDashboard from "../pages/admin/Dashboard/manage-accounts/ManageAccountsDashboard.jsx";
+import { ManageAccountsPageShell } from "../pages/admin/Dashboard/manage-accounts/manageAccountsShared.jsx";
 
 import {
   FeesCollectionCreatePage,
@@ -176,6 +178,7 @@ import {
 } from "../pages/admin/Dashboard/manage-accounts/ManageAccountsSimplePages.jsx";
 
 import HrAndPayrollDashboard from "../pages/admin/Dashboard/hr-and-payroll/HrAndPayrollDashboard.jsx";
+import { HrPayrollPageShell } from "../pages/admin/Dashboard/hr-and-payroll/hrPayrollShared.jsx";
 
 import {
   SalaryCreatePage,
@@ -325,7 +328,7 @@ import {
   StudentGroupPage,
   SubjectCombineCreatePage,
   SyllabusPage,
-} from "../pages/admin/Dashboard/academic/AcademicSimplePages.jsx";
+} from "../pages/admin/Dashboard/academic/AcademicFunctionalPages.jsx";
 
 import UserManagementDashboard, {
   UserManagementSectionPage,
@@ -390,31 +393,22 @@ import {
   ApplicationListPage,
   PendingApplicationPage,
   ApplicationFormSettingPage,
-} from "../pages/admin/Dashboard/online-application/application/ApplicationPages.jsx";
-
-import {
   AdmissionExamDashboard,
   MarkConfigurePage,
   AddMarkPage,
   DeleteMarksPage,
   UpdateMarkPage,
   SeatPlanPage,
-} from "../pages/admin/Dashboard/online-application/admission-exam/AdmissionExamPages.jsx";
-
-import {
   AdmissionResultDashboard,
   ResultProcessPage,
   TabulationSheetPage,
   PromotedListPage,
   SubjectWiseResultPage,
-} from "../pages/admin/Dashboard/online-application/admission-result/AdmissionResultPages.jsx";
-
-import {
   ApplicationReportDashboard,
   FeesReportPage,
   ApplicationReportPage,
   AmountCollectedPage,
-} from "../pages/admin/Dashboard/online-application/application-report/ApplicationReportPages.jsx";
+} from "../pages/admin/Dashboard/online-application/OnlineApplicationFunctionalPages.jsx";
 
 
 /* =========================================================
@@ -521,6 +515,7 @@ import {
 ========================================================= */
 
 import SystemSetupDashboard from "../pages/admin/Dashboard/system-setup/SystemSetupDashboard.jsx";
+import { SystemSetupPageShell } from "../pages/admin/Dashboard/system-setup/systemSetupShared.jsx";
 import { LeaveCategoryCreatePage, LeaveCategoryListPage } from "../pages/admin/Dashboard/system-setup/leave-category/LeaveCategoryPages.jsx";
 import { HolidayCategoryCreatePage, HolidayCategoryListPage } from "../pages/admin/Dashboard/system-setup/holiday-category/HolidayCategoryPages.jsx";
 import { YearlyHolidayCreatePage, YearlyHolidayListPage } from "../pages/admin/Dashboard/system-setup/yearly-holiday/YearlyHolidayPages.jsx";
@@ -539,6 +534,7 @@ import { UpazilasCreatePage, UpazilasListPage } from "../pages/admin/Dashboard/s
 ========================================================= */
 
 import StudentWorkDashboard from "../pages/admin/Dashboard/student-work/StudentWorkDashboard.jsx";
+import { StudentWorkPageShell } from "../pages/admin/Dashboard/student-work/studentWorkShared.jsx";
 import { ClassWorkCreatePage, ClassWorkListPage } from "../pages/admin/Dashboard/student-work/class-work/ClassWorkPages.jsx";
 import { AssignmentCreatePage, AssignmentListPage } from "../pages/admin/Dashboard/student-work/assignment/AssignmentPages.jsx";
 import { HomeWorkCreatePage, HomeWorkListPage, HomeWorkAtAGlancePage } from "../pages/admin/Dashboard/student-work/home-work/HomeWorkPages.jsx";
@@ -1071,6 +1067,11 @@ function examinationRoutes(basePath) {
       <Route path={basePath} element={<ExaminationDashboard />} />
 
       <Route
+        path={`${basePath}/marks-configure`}
+        element={<ExaminationPageShell title="Marks Configure" />}
+      />
+
+      <Route
         path={`${basePath}/marks-configure/marks-distribution-excel-entry`}
         element={<MarksDistributionExcelEntry />}
       />
@@ -1086,6 +1087,11 @@ function examinationRoutes(basePath) {
       />
 
       <Route path={`${basePath}/grade/grade`} element={<GradePage />} />
+
+      <Route
+        path={`${basePath}/grade`}
+        element={<ExaminationPageShell title="Grade" />}
+      />
 
       <Route
         path={`${basePath}/grade/grade-transfer`}
@@ -1138,6 +1144,7 @@ function manageAccountsRoutes(basePath) {
     <>
       <Route path={basePath} element={<ManageAccountsDashboard />} />
 
+      <Route path={`${basePath}/fees-collection`} element={<ManageAccountsPageShell title="Fees Collection" />} />
       <Route path={`${basePath}/fees-collection/fees-collection-create`} element={<FeesCollectionCreatePage />} />
       <Route path={`${basePath}/fees-collection/fees-collection-list`} element={<FeesCollectionListPage />} />
       <Route path={`${basePath}/fees-collection/fees-collection-due-details`} element={<FeesCollectionDueDetailsPage />} />
@@ -1147,31 +1154,39 @@ function manageAccountsRoutes(basePath) {
       <Route path={`${basePath}/fees-collection/fees-collection-approve`} element={<FeesCollectionApprovePage />} />
       <Route path={`${basePath}/fees-collection/student-fee-method-setup`} element={<StudentFeeMethodSetupPage />} />
 
+      <Route path={`${basePath}/fees-category`} element={<ManageAccountsPageShell title="Fees Category" />} />
       <Route path={`${basePath}/fees-category/fees-category-create`} element={<FeesCategoryCreatePage />} />
       <Route path={`${basePath}/fees-category/fees-category-list`} element={<FeesCategoryListPage />} />
       <Route path={`${basePath}/fees-category/student-waiver`} element={<StudentWaiverPage />} />
       <Route path={`${basePath}/fees-category/mid-year-fees-reduction`} element={<MidYearFeesReductionPage />} />
 
+      <Route path={`${basePath}/custom-fee`} element={<ManageAccountsPageShell title="Custom Fee" />} />
       <Route path={`${basePath}/custom-fee/custom-fee-create`} element={<CustomFeeCreatePage />} />
       <Route path={`${basePath}/custom-fee/custom-fee-list`} element={<CustomFeeListPage />} />
 
+      <Route path={`${basePath}/expense-category`} element={<ManageAccountsPageShell title="Expense Category" />} />
       <Route path={`${basePath}/expense-category/expense-category-create`} element={<ExpenseCategoryCreatePage />} />
       <Route path={`${basePath}/expense-category/expense-category-list`} element={<ExpenseCategoryListPage />} />
 
+      <Route path={`${basePath}/expense`} element={<ManageAccountsPageShell title="Expense" />} />
       <Route path={`${basePath}/expense/expense-create`} element={<ExpenseCreatePage />} />
       <Route path={`${basePath}/expense/expense-list`} element={<ExpenseListPage />} />
 
+      <Route path={`${basePath}/income-category`} element={<ManageAccountsPageShell title="Income Category" />} />
       <Route path={`${basePath}/income-category/income-category-create`} element={<IncomeCategoryCreatePage />} />
       <Route path={`${basePath}/income-category/income-category-list`} element={<IncomeCategoryListPage />} />
 
+      <Route path={`${basePath}/income`} element={<ManageAccountsPageShell title="Income" />} />
       <Route path={`${basePath}/income/income-create`} element={<IncomeCreatePage />} />
       <Route path={`${basePath}/income/income-list`} element={<IncomeListPage />} />
 
       <Route path={`${basePath}/general-ledger`} element={<GeneralLedgerPage />} />
 
+      <Route path={`${basePath}/fund-transfer`} element={<ManageAccountsPageShell title="Fund Transfer" />} />
       <Route path={`${basePath}/fund-transfer/fund-transfer-create`} element={<FundTransferCreatePage />} />
       <Route path={`${basePath}/fund-transfer/fund-transfer-list`} element={<FundTransferListPage />} />
 
+      <Route path={`${basePath}/payment-gateway`} element={<ManageAccountsPageShell title="Payment Gateway" />} />
       <Route path={`${basePath}/payment-gateway/payment-gateway-create`} element={<PaymentGatewayCreatePage />} />
       <Route path={`${basePath}/payment-gateway/payment-gateway-list`} element={<PaymentGatewayListPage />} />
 
@@ -1193,6 +1208,11 @@ function hrPayrollRoutes(basePath) {
       <Route path={basePath} element={<HrAndPayrollDashboard />} />
 
       <Route
+        path={`${basePath}/salary`}
+        element={<HrPayrollPageShell title="Salary" />}
+      />
+
+      <Route
         path={`${basePath}/salary/salary-create`}
         element={<SalaryCreatePage />}
       />
@@ -1203,6 +1223,11 @@ function hrPayrollRoutes(basePath) {
       />
 
       <Route
+        path={`${basePath}/leave-application`}
+        element={<HrPayrollPageShell title="Leave Application" />}
+      />
+
+      <Route
         path={`${basePath}/leave-application/leave-application-create`}
         element={<LeaveApplicationCreatePage />}
       />
@@ -1210,6 +1235,11 @@ function hrPayrollRoutes(basePath) {
       <Route
         path={`${basePath}/leave-application/leave-application-list`}
         element={<LeaveApplicationListPage />}
+      />
+
+      <Route
+        path={`${basePath}/payroll`}
+        element={<HrPayrollPageShell title="Payroll" />}
       />
 
       <Route
@@ -1449,14 +1479,19 @@ function manageLibraryRoutes(basePath) {
   return (
     <>
       <Route path={basePath} element={<ManageLibraryDashboard />} />
+      <Route path={`${basePath}/publisher`} element={<AdminModulePage />} />
       <Route path={`${basePath}/publisher/publisher-create`} element={<PublisherCreatePage />} />
       <Route path={`${basePath}/publisher/publisher-list`} element={<PublisherListPage />} />
+      <Route path={`${basePath}/author`} element={<AdminModulePage />} />
       <Route path={`${basePath}/author/author-create`} element={<AuthorCreatePage />} />
       <Route path={`${basePath}/author/author-list`} element={<AuthorListPage />} />
+      <Route path={`${basePath}/book-category`} element={<AdminModulePage />} />
       <Route path={`${basePath}/book-category/book-category-create`} element={<BookCategoryCreatePage />} />
       <Route path={`${basePath}/book-category/book-category-list`} element={<BookCategoryListPage />} />
+      <Route path={`${basePath}/book`} element={<AdminModulePage />} />
       <Route path={`${basePath}/book/book-create`} element={<BookCreatePage />} />
       <Route path={`${basePath}/book/book-list`} element={<BookListPage />} />
+      <Route path={`${basePath}/book-issue`} element={<AdminModulePage />} />
       <Route path={`${basePath}/book-issue/book-issue-create`} element={<BookIssueCreatePage />} />
       <Route path={`${basePath}/book-issue/book-issue-list`} element={<BookIssueListPage />} />
       <Route path={`${basePath}/book-return`} element={<BookReturnPage />} />
@@ -1512,8 +1547,15 @@ function adminPanelRoutes(basePath) {
 ========================================================= */
 
 function systemSetupRoutes(basePath) {
+  const titleize = (value) =>
+    value
+      .split("-")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+
   const pair = (group, createSlug, CreatePage, listSlug, ListPage) => (
     <>
+      <Route path={`${basePath}/${group}`} element={<SystemSetupPageShell title={titleize(group)} />} />
       <Route path={`${basePath}/${group}/${createSlug}`} element={<CreatePage />} />
       <Route path={`${basePath}/${group}/create`} element={<CreatePage />} />
       <Route path={`${basePath}/${group}/${listSlug}`} element={<ListPage />} />
@@ -1549,16 +1591,19 @@ function studentWorkRoutes(basePath) {
     <>
       <Route path={basePath} element={<StudentWorkDashboard />} />
 
+      <Route path={`${basePath}/class-work`} element={<StudentWorkPageShell title="Class Work" />} />
       <Route path={`${basePath}/class-work/class-work-create`} element={<ClassWorkCreatePage />} />
       <Route path={`${basePath}/class-work/create`} element={<ClassWorkCreatePage />} />
       <Route path={`${basePath}/class-work/class-work-list`} element={<ClassWorkListPage />} />
       <Route path={`${basePath}/class-work/list`} element={<ClassWorkListPage />} />
 
+      <Route path={`${basePath}/assignment`} element={<StudentWorkPageShell title="Assignment" />} />
       <Route path={`${basePath}/assignment/assignment-create`} element={<AssignmentCreatePage />} />
       <Route path={`${basePath}/assignment/create`} element={<AssignmentCreatePage />} />
       <Route path={`${basePath}/assignment/assignment-list`} element={<AssignmentListPage />} />
       <Route path={`${basePath}/assignment/list`} element={<AssignmentListPage />} />
 
+      <Route path={`${basePath}/home-work`} element={<StudentWorkPageShell title="Home Work" />} />
       <Route path={`${basePath}/home-work/home-work-create`} element={<HomeWorkCreatePage />} />
       <Route path={`${basePath}/home-work/create`} element={<HomeWorkCreatePage />} />
       <Route path={`${basePath}/home-work/home-work-list`} element={<HomeWorkListPage />} />

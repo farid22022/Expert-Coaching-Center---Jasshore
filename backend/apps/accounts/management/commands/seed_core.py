@@ -4,13 +4,15 @@ from django.core.management.base import BaseCommand
 from apps.accounts.models import Permission, Role
 from apps.academic.models import AcademicSession, AcademicClass, Shift
 from apps.organizations.models import Organization
+from apps.people.models import Department, Designation, Employee, Student
 
 
 PERMISSIONS = [
     "student.view", "student.create", "student.edit", "student.delete",
     "employee.view", "employee.create", "employee.edit", "employee.delete",
     "academic.view", "academic.create", "academic.edit", "academic.delete",
-    "application.view", "application.approve", "application.reject",
+    "application.view", "application.create", "application.edit", "application.delete",
+    "application.approve", "application.reject", "application.process",
     "result.view", "result.process", "result.publish",
     "payroll.view", "payroll.create", "payroll.update", "payroll.delete",
     "sms.view", "sms.send", "sms.configure",
@@ -49,6 +51,22 @@ class Command(BaseCommand):
         )
         role.permissions.set(permission_objs)
 
+        student_role, _ = Role.objects.get_or_create(
+            organization=org,
+            code="student",
+            defaults={"name": "Student", "is_system": True},
+        )
+        teacher_role, _ = Role.objects.get_or_create(
+            organization=org,
+            code="teacher",
+            defaults={"name": "Teacher", "is_system": True},
+        )
+        parent_role, _ = Role.objects.get_or_create(
+            organization=org,
+            code="parent",
+            defaults={"name": "Parent / Guardian", "is_system": True},
+        )
+
         User = get_user_model()
         admin, created = User.objects.get_or_create(
             email="expertjashore@gmail.com",
@@ -80,4 +98,83 @@ class Command(BaseCommand):
             defaults={"created_by": admin, "updated_by": admin},
         )
 
+        department, _ = Department.objects.get_or_create(
+            organization=org,
+            name="Academic",
+            defaults={"created_by": admin, "updated_by": admin},
+        )
+        teacher_designation, _ = Designation.objects.get_or_create(
+            organization=org,
+            name="Teacher",
+            defaults={"created_by": admin, "updated_by": admin},
+        )
+
+        demo_password = "2633123"
+
+        for index in range(1, 11):
+            email = f"test.student{index:02d}@gmail.com"
+            user, _ = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    "username": email,
+                    "first_name": "Test",
+                    "last_name": f"Student {index:02d}",
+                    "phone": f"0171000{index:04d}",
+                    "organization": org,
+                    "is_active": True,
+                },
+            )
+            user.organization = org
+            user.set_password(demo_password)
+            user.save()
+            user.roles.set([student_role])
+
+            Student.objects.get_or_create(
+                organization=org,
+                student_id=f"STU-{index:03d}",
+                defaults={
+                    "full_name": f"Test Student {index:02d}",
+                    "phone": user.phone,
+                    "email": email,
+                    "session": session,
+                    "created_by": admin,
+                    "updated_by": admin,
+                },
+            )
+
+        for index in range(1, 11):
+            email = f"test.teacher{index:02d}@gmail.com"
+            user, _ = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    "username": email,
+                    "first_name": "Test",
+                    "last_name": f"Teacher {index:02d}",
+                    "phone": f"0181000{index:04d}",
+                    "organization": org,
+                    "is_active": True,
+                },
+            )
+            user.organization = org
+            user.set_password(demo_password)
+            user.save()
+            user.roles.set([teacher_role])
+
+            Employee.objects.get_or_create(
+                organization=org,
+                employee_id=f"TCH-{index:03d}",
+                defaults={
+                    "full_name": f"Test Teacher {index:02d}",
+                    "employee_type": "teacher",
+                    "department": department,
+                    "designation": teacher_designation,
+                    "phone": user.phone,
+                    "email": email,
+                    "created_by": admin,
+                    "updated_by": admin,
+                },
+            )
+
         self.stdout.write(self.style.SUCCESS(f"Seed complete for {org.name}. Active session: {session.name}"))
+        self.stdout.write(self.style.SUCCESS(f"Demo students: test.student01@gmail.com ... test.student10@gmail.com / password: {demo_password}"))
+        self.stdout.write(self.style.SUCCESS(f"Demo teachers: test.teacher01@gmail.com ... test.teacher10@gmail.com / password: {demo_password}"))

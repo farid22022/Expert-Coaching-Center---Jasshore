@@ -66,6 +66,28 @@ class AuthPermissionApiTests(APITestCase):
         self.assertEqual(login.status_code, 200)
         self.assertIn("access", login.data)
 
+    def test_public_register_assigns_requested_user_role(self):
+        response = self.client.post(
+            "/api/v1/auth/register/",
+            {
+                "name": "E2E_TEST Teacher",
+                "email": "e2e_test_teacher_register@example.com",
+                "phone": "01000000001",
+                "role": "teacher",
+                "password": "2633123",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, 201)
+
+        login = self.client.post(
+            "/api/v1/auth/login/",
+            {"email": "e2e_test_teacher_register@example.com", "password": "2633123"},
+            format="json",
+        )
+        self.assertEqual(login.status_code, 200)
+        self.assertEqual(login.data["user"]["role_codes"], ["teacher"])
+
     def test_plain_authenticated_user_is_denied_student_admin_api(self):
         self.create_user("e2e_test_plain_api@example.com")
         self.login("e2e_test_plain_api@example.com")

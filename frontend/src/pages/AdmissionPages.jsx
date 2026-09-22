@@ -1,6 +1,7 @@
 import { useState } from "react";
 import PageHeader from "../components/common/PageHeader.jsx";
 import SEO from "../components/common/SEO.jsx";
+import { getAdmissionPrograms } from "../data/admissionPrograms.js";
 import { admissionService } from "../services/api.js";
 
 const containerClass = "mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8";
@@ -19,12 +20,14 @@ const sections = {
 };
 
 export function OnlineAdmissionPage() {
+  const [programs] = useState(() => getAdmissionPrograms());
+  const [selectedProgram, setSelectedProgram] = useState(null);
   const [submitted, setSubmitted] = useState(null);
 
   async function submit(e) {
     e.preventDefault();
     const data = Object.fromEntries(new FormData(e.currentTarget));
-    setSubmitted(await admissionService.submit(data));
+    setSubmitted(await admissionService.submit({ ...data, programId: selectedProgram?.id }));
   }
 
   return (
@@ -33,41 +36,149 @@ export function OnlineAdmissionPage() {
       <PageHeader
         title="Online Admission"
         eyebrow="Admission"
-        description="Mock admission submission with printable application preview."
+        description="Choose an admission program, review fees, teachers, dates, subjects, and submit the form."
       />
       <section>
         <div className={containerClass}>
-          <form className="grid gap-5" onSubmit={submit}>
-            {Object.entries(sections).map(([title, fields]) => (
-              <fieldset className="rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm" key={title}>
-                <legend className="px-2 text-lg font-black text-emerald-950">{title}</legend>
-                <div className="grid gap-4 pt-3 md:grid-cols-2 lg:grid-cols-3">
-                  {fields.map((f) => (
-                    <label className={fieldClass} key={f}>
-                      {f}
-                      <input
-                        className={inputClass}
-                        required={["Full Name", "Mobile", "Class"].includes(f)}
-                        name={f}
-                        type={f.includes("Date") ? "date" : "text"}
-                      />
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-            ))}
-            <button className={`${primaryButton} w-fit`}>Submit Application</button>
-          </form>
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {programs.map((program) => (
+              <article
+                key={program.id}
+                className="overflow-hidden rounded-2xl border border-emerald-100 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+              >
+                <img
+                  src={program.image}
+                  alt={program.title}
+                  className="h-48 w-full object-cover"
+                />
+                <div className="grid gap-4 p-5">
+                  <div>
+                    <span className="badge badge-success badge-outline font-black">{program.className}</span>
+                    <h2 className="mt-3 text-2xl font-black text-emerald-950">{program.title}</h2>
+                    <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">{program.description}</p>
+                  </div>
 
-          {submitted && (
-            <div className="printable alert alert-success mt-6 flex-col items-start">
-              <h2 className="text-xl font-black">Application Submitted</h2>
-              <p>
-                Reference: <strong>{submitted.applicationId}</strong>
-              </p>
-              <button className="btn no-print" onClick={() => window.print()}>
-                Print Application
-              </button>
+                  <dl className="grid gap-3 text-sm">
+                    <div className="rounded-xl bg-emerald-50 p-3">
+                      <dt className="font-black text-emerald-800">Admission Date</dt>
+                      <dd className="font-semibold text-slate-700">{program.startDate} to {program.endDate}</dd>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-xl bg-slate-50 p-3">
+                        <dt className="font-black text-slate-950">Fee</dt>
+                        <dd className="font-semibold text-slate-700">৳ {program.admissionFee}</dd>
+                      </div>
+                      <div className="rounded-xl bg-slate-50 p-3">
+                        <dt className="font-black text-slate-950">Seats</dt>
+                        <dd className="font-semibold text-slate-700">{program.seats}</dd>
+                      </div>
+                    </div>
+                    <div>
+                      <dt className="font-black text-slate-950">Teachers</dt>
+                      <dd className="mt-1 font-semibold text-slate-600">{program.teachers}</dd>
+                    </div>
+                    <div>
+                      <dt className="font-black text-slate-950">Subjects Covered</dt>
+                      <dd className="mt-1 font-semibold text-slate-600">{program.subjects}</dd>
+                    </div>
+                    <div>
+                      <dt className="font-black text-slate-950">Schedule</dt>
+                      <dd className="mt-1 font-semibold text-slate-600">{program.schedule}</dd>
+                    </div>
+                  </dl>
+
+                  <button
+                    type="button"
+                    className={`${primaryButton} w-full`}
+                    onClick={() => {
+                      setSelectedProgram(program);
+                      setSubmitted(null);
+                    }}
+                  >
+                    Fill Admission Form
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          {selectedProgram && (
+            <div className="mt-10 rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm">
+              <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <span className="badge badge-success font-black">{selectedProgram.className}</span>
+                  <h2 className="mt-2 text-2xl font-black text-emerald-950">{selectedProgram.title} Form</h2>
+                  <p className="mt-1 text-sm font-semibold text-slate-500">
+                    Admission fee ৳ {selectedProgram.admissionFee}. Required fields are marked automatically.
+                  </p>
+                </div>
+                <button type="button" className="btn btn-sm" onClick={() => setSelectedProgram(null)}>
+                  Close
+                </button>
+              </div>
+
+              <form className="grid gap-5" onSubmit={submit}>
+                <fieldset className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-5">
+                  <legend className="px-2 text-lg font-black text-emerald-950">Program Information</legend>
+                  <div className="grid gap-4 pt-3 md:grid-cols-2 lg:grid-cols-3">
+                    {["Program", "Class", "Admission Fee", "Admission Date", "Teachers"].map((field) => (
+                      <label className={fieldClass} key={field}>
+                        {field}
+                        <input
+                          className={inputClass}
+                          name={field}
+                          value={
+                            field === "Program"
+                              ? selectedProgram.title
+                              : field === "Class"
+                                ? selectedProgram.className
+                                : field === "Admission Fee"
+                                  ? selectedProgram.admissionFee
+                                  : field === "Admission Date"
+                                    ? `${selectedProgram.startDate} to ${selectedProgram.endDate}`
+                                    : selectedProgram.teachers
+                          }
+                          readOnly
+                        />
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+
+                {Object.entries(sections).map(([title, fields]) => (
+                  <fieldset className="rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm" key={title}>
+                    <legend className="px-2 text-lg font-black text-emerald-950">{title}</legend>
+                    <div className="grid gap-4 pt-3 md:grid-cols-2 lg:grid-cols-3">
+                      {fields.map((f) => (
+                        <label className={fieldClass} key={f}>
+                          {f}
+                          <input
+                            className={inputClass}
+                            required={["Full Name", "Mobile", "Class"].includes(f)}
+                            name={f}
+                            defaultValue={f === "Class" ? selectedProgram.className : ""}
+                            type={f.includes("Date") ? "date" : "text"}
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                ))}
+
+                <button className={`${primaryButton} w-fit`}>Submit Application</button>
+              </form>
+
+              {submitted && (
+                <div className="printable alert alert-success mt-6 flex-col items-start">
+                  <h2 className="text-xl font-black">Application Submitted</h2>
+                  <p>
+                    Reference: <strong>{submitted.applicationId}</strong>
+                  </p>
+                  <button className="btn no-print" onClick={() => window.print()}>
+                    Print Application
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

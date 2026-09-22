@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from apps.organizations.models import Organization
 from .models import Permission, Role, User, UserLoginHistory
 
 
@@ -59,7 +60,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         password = validated_data.pop("password")
         name = validated_data.pop("name", "").strip()
-        validated_data.pop("role", None)
+        role_code = validated_data.pop("role", "").strip().lower()
         email = validated_data.pop("email").strip().lower()
         username = validated_data.get("username") or email
         validated_data.pop("username", None)
@@ -70,12 +71,36 @@ class RegisterSerializer(serializers.ModelSerializer):
             if len(parts) > 1:
                 validated_data["last_name"] = parts[1]
 
-        return User.objects.create_user(
+        organization = validated_data.get("organization")
+        if not organization:
+            organization, _ = Organization.objects.get_or_create(
+                code="expert-jashore",
+                defaults={
+                    "name": "Expert Coaching Center",
+                    "email": "expertjashore@gmail.com",
+                    "phone": "01719486254",
+                    "address": "Stadium Road, Jashore",
+                    "established_year": 2017,
+                },
+            )
+            validated_data["organization"] = organization
+
+        user = User.objects.create_user(
             username=username,
             email=email,
             password=password,
             **validated_data,
         )
+
+        if role_code in {"student", "teacher", "parent"}:
+            role, _ = Role.objects.get_or_create(
+                organization=organization,
+                code=role_code,
+                defaults={"name": role_code.title(), "is_system": True},
+            )
+            user.roles.add(role)
+
+        return user
 
 
 class LoginSerializer(TokenObtainPairSerializer):

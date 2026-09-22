@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import {
@@ -28,6 +28,8 @@ import {
   upazilas,
 } from "./../data/studentAdminData.js";
 import { UserManagementNav } from "./UserManagementDashboard.jsx";
+import { getApiErrorMessage, unwrapApiData } from "../../../../services/api.js";
+import { studentApi } from "../../../../services/resourceApi.js";
 
 import "./../styles/studentManagement.css";
 
@@ -93,6 +95,7 @@ function TextInput({
   value,
   onChange,
   name,
+  ...props
 }) {
   return (
     <input
@@ -102,6 +105,7 @@ function TextInput({
       onChange={onChange}
       placeholder={placeholder}
       className="student-input"
+      {...props}
     />
   );
 }
@@ -113,6 +117,7 @@ function Select({
   value,
   onChange,
   name,
+  ...props
 }) {
   return (
     <select
@@ -120,6 +125,7 @@ function Select({
       value={value}
       onChange={onChange}
       name={name}
+      {...props}
     >
       <option value="">
         {placeholder}
@@ -385,6 +391,12 @@ export function StudentCreate() {
 
   const [sameAddress, setSameAddress] =
     useState(false);
+  const [saving, setSaving] =
+    useState(false);
+  const [message, setMessage] =
+    useState("");
+  const [error, setError] =
+    useState("");
 
   const change = (event) => {
     const { name, value } =
@@ -394,6 +406,8 @@ export function StudentCreate() {
       ...previous,
       [name]: value,
     }));
+    setMessage("");
+    setError("");
   };
 
 
@@ -434,17 +448,38 @@ export function StudentCreate() {
   };
 
 
-  const submit = (event) => {
+  const submit = async (event) => {
     event.preventDefault();
 
-    console.log(
-      "Student Create:",
-      form
-    );
+    if (!form.academicId.trim() || !form.fullName.trim()) {
+      setError("Academic ID and Full Name are required.");
+      return;
+    }
 
-    alert(
-      "Demo student successfully created."
-    );
+    if (form.password || form.confirmPassword) {
+      if (form.password !== form.confirmPassword) {
+        setError("Password and Confirm Password do not match.");
+        return;
+      }
+    }
+
+    setSaving(true);
+    setMessage("");
+    setError("");
+
+    try {
+      const created = await studentApi.create(toStudentPayload(form));
+      setMessage(`Student ${created.full_name || form.fullName} created successfully.`);
+      setForm({
+        ...initialCreateStudent,
+        academicId: "",
+      });
+      setSameAddress(false);
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, "Unable to create student."));
+    } finally {
+      setSaving(false);
+    }
   };
 
 
@@ -465,6 +500,18 @@ export function StudentCreate() {
         <div className="student-alert">
           (*) Field required
         </div>
+
+        {message && (
+          <div className="student-alert" style={{ borderColor: "#86efac", color: "#166534", background: "#f0fdf4" }}>
+            {message}
+          </div>
+        )}
+
+        {error && (
+          <div className="student-alert" style={{ borderColor: "#fecaca", color: "#991b1b", background: "#fef2f2" }}>
+            {error}
+          </div>
+        )}
 
         <form
           onSubmit={submit}
@@ -488,6 +535,7 @@ export function StudentCreate() {
                     value={form.academicId}
                     onChange={change}
                     placeholder="Enter Student ID"
+                    required
                   />
                 </Field>
 
@@ -500,6 +548,7 @@ export function StudentCreate() {
                     value={form.fullName}
                     onChange={change}
                     placeholder="Enter Full Name"
+                    required
                   />
                 </Field>
 
@@ -562,6 +611,7 @@ export function StudentCreate() {
                     value={form.password}
                     onChange={change}
                     placeholder="Enter password"
+                    minLength={6}
                   />
                 </Field>
               </div>
@@ -647,6 +697,7 @@ export function StudentCreate() {
                     }
                     onChange={change}
                     placeholder="Confirm Password"
+                    minLength={6}
                   />
                 </Field>
 
@@ -1112,9 +1163,10 @@ export function StudentCreate() {
             <button
               type="submit"
               className="student-btn student-btn-success"
+              disabled={saving}
             >
               <Plus size={15} />
-              Submit
+              {saving ? "Saving..." : "Submit"}
             </button>
           </div>
         </form>
@@ -1412,6 +1464,17 @@ export function StudentList() {
   const { form, change } =
     useSearchForm();
 
+  const [students, setStudents] =
+    useState([]);
+  const [totalCount, setTotalCount] =
+    useState(0);
+  const [loading, setLoading] =
+    useState(false);
+  const [error, setError] =
+    useState("");
+  const [message, setMessage] =
+    useState("");
+
   const [religion, setReligion] =
     useState("");
 
@@ -1423,14 +1486,65 @@ export function StudentList() {
       "Serial, Roll, Student ID, Student Name, Photo, Gender"
     );
 
+  const loadStudents = async (params = {}) => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await studentApi.list(params);
+      setStudents(getPaginatedRows(response));
+      setTotalCount(getPaginatedCount(response));
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, "Unable to load students."));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadStudents();
+  }, []);
+
+  const submitSearch = (event) => {
+    event.preventDefault();
+    const params = {};
+
+    if (form.studentId.trim()) {
+      params.search = form.studentId.trim();
+    }
+
+    if (gender) {
+      params.gender = genderValueMap[gender] || gender;
+    }
+
+    loadStudents(params);
+  };
+
+  const deleteStudent = async (student) => {
+    const confirmed = window.confirm(
+      `Delete student "${student.full_name}"?`
+    );
+
+    if (!confirmed) return;
+
+    setMessage("");
+    setError("");
+
+    try {
+      await studentApi.remove(student.id);
+      setMessage("Student deleted successfully.");
+      await loadStudents();
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, "Unable to delete student."));
+    }
+  };
+
   return (
     <div className="student-admin-page">
       <UserManagementNav />
       <Panel title="Student Search">
         <form
-          onSubmit={(event) =>
-            event.preventDefault()
-          }
+          onSubmit={submitSearch}
         >
           <SearchLayout>
             <Field label="Session Year">
@@ -1593,6 +1707,18 @@ export function StudentList() {
 
 
       <Panel title="Student List">
+        {message && (
+          <div className="student-alert" style={{ borderColor: "#86efac", color: "#166534", background: "#f0fdf4" }}>
+            {message}
+          </div>
+        )}
+
+        {error && (
+          <div className="student-alert" style={{ borderColor: "#fecaca", color: "#991b1b", background: "#fef2f2" }}>
+            {error}
+          </div>
+        )}
+
         <div className="student-action-row student-list-actions">
           <CreateStudentButton />
 
@@ -1609,33 +1735,71 @@ export function StudentList() {
           </button>
         </div>
 
-        <h2 className="student-batch-heading">
-          EXAM BATCH HSC 2026
-        </h2>
+        <div className="overflow-x-auto">
+          <table className="table table-sm min-w-[950px] border border-base-300 bg-white">
+            <thead className="bg-base-200 text-slate-950">
+              <tr>
+                <th>#</th>
+                <th>Student ID</th>
+                <th>Name</th>
+                <th>Roll</th>
+                <th>Gender</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
 
-        <div className="student-batch-grid">
-          {demoStudentBatches.map(
-            (batch) => (
-              <article
-                key={batch.id}
-                className="student-batch-card"
-              >
-                <h3>
-                  {batch.title}
-                </h3>
+            <tbody>
+              {loading && (
+                <tr>
+                  <td colSpan={9} className="py-8 text-center font-semibold text-slate-500">
+                    Loading students...
+                  </td>
+                </tr>
+              )}
 
-                <strong>
-                  Total: {batch.total}
-                  {" | "}
-                  Male: {batch.male}
-                  {" | "}
-                  Female:{" "}
-                  {batch.female}
-                </strong>
-              </article>
-            )
-          )}
+              {!loading && students.length === 0 && (
+                <tr>
+                  <td colSpan={9} className="py-8 text-center font-semibold text-slate-500">
+                    No students found.
+                  </td>
+                </tr>
+              )}
+
+              {!loading && students.map((student, index) => (
+                <tr key={student.id}>
+                  <td>{index + 1}</td>
+                  <td className="font-bold">{student.student_id}</td>
+                  <td>{student.full_name}</td>
+                  <td>{student.roll || "-"}</td>
+                  <td>{student.gender || "-"}</td>
+                  <td>{student.phone || "-"}</td>
+                  <td>{student.email || "-"}</td>
+                  <td>
+                    <span className="badge badge-success badge-outline">
+                      {student.status || "active"}
+                    </span>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      className="student-btn student-btn-danger"
+                      onClick={() => deleteStudent(student)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
+
+        <p className="mt-4 text-sm font-bold">
+          Showing {students.length ? 1 : 0} to {students.length} of {totalCount} results.
+        </p>
       </Panel>
     </div>
   );
@@ -2332,4 +2496,42 @@ function ExcelTools({
       </div>
     </div>
   );
+}
+
+const genderValueMap = {
+  Male: "male",
+  Female: "female",
+  Other: "other",
+};
+
+function toStudentPayload(form) {
+  return {
+    student_id: form.academicId.trim(),
+    admission_no: form.studentUid.trim(),
+    roll: form.roll.trim(),
+    registration_no: form.registrationNo.trim(),
+    full_name: form.fullName.trim(),
+    full_name_bn: form.fullNameBn.trim(),
+    gender: genderValueMap[form.gender] || "",
+    date_of_birth: form.dateOfBirth || null,
+    phone: form.contactNumber.trim(),
+    email: form.email.trim(),
+    rfid: "",
+    status: "active",
+  };
+}
+
+function getPaginatedRows(payload) {
+  const data = unwrapApiData(payload);
+  if (Array.isArray(data?.results)) return data.results;
+  if (Array.isArray(data)) return data;
+  return [];
+}
+
+function getPaginatedCount(payload) {
+  const data = unwrapApiData(payload);
+  if (typeof data?.count === "number") return data.count;
+  if (Array.isArray(data?.results)) return data.results.length;
+  if (Array.isArray(data)) return data.length;
+  return 0;
 }

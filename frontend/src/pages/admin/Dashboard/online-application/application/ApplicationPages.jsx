@@ -1,5 +1,10 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import {
+  defaultAdmissionPrograms,
+  getAdmissionPrograms,
+  saveAdmissionPrograms,
+} from "../../../../../data/admissionPrograms.js";
 
 /* =========================================================
    SHARED DATA
@@ -678,6 +683,186 @@ function SettingsBox({ title, children, className = "" }) {
   );
 }
 
+function AdmissionProgramManager() {
+  const emptyProgram = {
+    id: "",
+    title: "",
+    className: "",
+    image: "/slide1.jpeg",
+    startDate: "",
+    endDate: "",
+    admissionFee: "",
+    seats: "",
+    teachers: "",
+    subjects: "",
+    schedule: "",
+    eligibility: "",
+    description: "",
+    formFields: ["Student Name", "Guardian Phone", "School Name", "Preferred Shift"],
+  };
+
+  const [programs, setPrograms] = useState(() => getAdmissionPrograms());
+  const [editingId, setEditingId] = useState(programs[0]?.id || "");
+  const selectedProgram = programs.find((program) => program.id === editingId) || emptyProgram;
+  const [form, setForm] = useState(selectedProgram);
+
+  const selectProgram = (id) => {
+    const next = programs.find((program) => program.id === id);
+    setEditingId(id);
+    setForm(next || emptyProgram);
+  };
+
+  const update = (key, value) => {
+    setForm((previous) => ({ ...previous, [key]: value }));
+  };
+
+  const saveProgram = () => {
+    const id = form.id || form.title.toLowerCase().replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-");
+    const nextProgram = {
+      ...form,
+      id,
+      formFields: String(form.formFields || "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean),
+    };
+    const exists = programs.some((program) => program.id === id);
+    const nextPrograms = exists
+      ? programs.map((program) => (program.id === id ? nextProgram : program))
+      : [nextProgram, ...programs];
+
+    setPrograms(nextPrograms);
+    saveAdmissionPrograms(nextPrograms);
+    setEditingId(id);
+    setForm(nextProgram);
+    alert("Admission card saved.");
+  };
+
+  const createNew = () => {
+    setEditingId("");
+    setForm(emptyProgram);
+  };
+
+  const resetDefaults = () => {
+    setPrograms(defaultAdmissionPrograms);
+    saveAdmissionPrograms(defaultAdmissionPrograms);
+    setEditingId(defaultAdmissionPrograms[0]?.id || "");
+    setForm(defaultAdmissionPrograms[0] || emptyProgram);
+  };
+
+  const removeProgram = () => {
+    if (!editingId || !confirm("Delete this admission card?")) return;
+    const nextPrograms = programs.filter((program) => program.id !== editingId);
+    setPrograms(nextPrograms);
+    saveAdmissionPrograms(nextPrograms);
+    setEditingId(nextPrograms[0]?.id || "");
+    setForm(nextPrograms[0] || emptyProgram);
+  };
+
+  return (
+    <SettingsBox title="Admission Cards">
+      <div className="grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)]">
+        <div className="space-y-3">
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn btn-info btn-sm text-white" onClick={createNew}>
+              New Card
+            </button>
+            <button type="button" className="btn btn-outline btn-sm" onClick={resetDefaults}>
+              Reset Defaults
+            </button>
+          </div>
+
+          <div className="grid gap-2">
+            {programs.map((program) => (
+              <button
+                type="button"
+                key={program.id}
+                onClick={() => selectProgram(program.id)}
+                className={[
+                  "rounded border px-3 py-2 text-left text-sm font-bold",
+                  editingId === program.id
+                    ? "border-emerald-500 bg-emerald-50 text-emerald-900"
+                    : "border-slate-200 bg-white text-slate-700",
+                ].join(" ")}
+              >
+                <span className="block">{program.title}</span>
+                <small className="text-slate-500">{program.className} • ৳ {program.admissionFee}</small>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid gap-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="Card Title:">
+              <Input value={form.title} onChange={(event) => update("title", event.target.value)} placeholder="Class 9 Foundation Admission" />
+            </Field>
+            <Field label="Class/Program:">
+              <Input value={form.className} onChange={(event) => update("className", event.target.value)} placeholder="Class 9 / SSC / HSC" />
+            </Field>
+            <Field label="Image:">
+              <Select value={form.image} onChange={(event) => update("image", event.target.value)}>
+                <option value="/slide1.jpeg">slide1.jpeg</option>
+                <option value="/slide2.jpeg">slide2.jpeg</option>
+                <option value="/slide3.jpeg">slide3.jpeg</option>
+                <option value="/jasshoreExpert.png">Logo</option>
+              </Select>
+            </Field>
+            <Field label="Admission Fee:">
+              <Input value={form.admissionFee} onChange={(event) => update("admissionFee", event.target.value)} placeholder="1500" />
+            </Field>
+            <Field label="Start Date:">
+              <Input type="date" value={form.startDate} onChange={(event) => update("startDate", event.target.value)} />
+            </Field>
+            <Field label="End Date:">
+              <Input type="date" value={form.endDate} onChange={(event) => update("endDate", event.target.value)} />
+            </Field>
+            <Field label="Seats:">
+              <Input value={form.seats} onChange={(event) => update("seats", event.target.value)} placeholder="60" />
+            </Field>
+            <Field label="Teachers:">
+              <Input value={form.teachers} onChange={(event) => update("teachers", event.target.value)} placeholder="Teacher names" />
+            </Field>
+            <Field label="Subjects:">
+              <Input value={form.subjects} onChange={(event) => update("subjects", event.target.value)} placeholder="Bangla, English, Math" />
+            </Field>
+            <Field label="Schedule:">
+              <Input value={form.schedule} onChange={(event) => update("schedule", event.target.value)} placeholder="Morning and Day batches" />
+            </Field>
+            <Field label="Eligibility:">
+              <Input value={form.eligibility} onChange={(event) => update("eligibility", event.target.value)} placeholder="Who can apply" />
+            </Field>
+            <Field label="Form Fields:">
+              <Input value={Array.isArray(form.formFields) ? form.formFields.join(", ") : form.formFields} onChange={(event) => update("formFields", event.target.value)} placeholder="Student Name, Guardian Phone" />
+            </Field>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-bold text-black">Description:</label>
+            <textarea
+              value={form.description}
+              onChange={(event) => update("description", event.target.value)}
+              className="textarea textarea-bordered min-h-24 w-full bg-white"
+              placeholder="Short public card description"
+            />
+          </div>
+
+          <div className="flex flex-wrap justify-end gap-2">
+            {editingId && (
+              <button type="button" className="btn btn-error btn-sm text-white" onClick={removeProgram}>
+                Delete
+              </button>
+            )}
+            <button type="button" className="btn btn-success btn-sm text-white" onClick={saveProgram}>
+              Save Admission Card
+            </button>
+          </div>
+        </div>
+      </div>
+    </SettingsBox>
+  );
+}
+
 /* =========================================================
    FORM SETTING
 ========================================================= */
@@ -742,6 +927,8 @@ export function FormSettingPage() {
         }
       >
         <div className="space-y-4 p-4">
+          <AdmissionProgramManager />
+
           {/* ADMISSION FORM */}
           <SettingsBox title="Admission Form">
             <CheckItem
