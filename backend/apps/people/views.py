@@ -22,6 +22,14 @@ class StudentViewSet(PeopleViewSet):
     filterset_fields = ("session", "academic_class", "section", "group", "shift", "category", "status", "gender")
 
 
+class StudentProfileViewSet(PeopleViewSet):
+    permission_module = "student"
+    queryset = models.StudentProfile.objects.select_related("user")
+    serializer_class = serializers.StudentProfileSerializer
+    search_fields = ("full_name", "phone", "email", "guardian_name", "institution")
+    filterset_fields = ("user", "gender")
+
+
 class StudentAddressViewSet(PeopleViewSet):
     permission_module = "student"
     queryset = models.StudentAddress.objects.select_related("student")

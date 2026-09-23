@@ -1,6 +1,9 @@
 import api, { unwrapApiData, unwrapResults } from "./api";
 
 export function createResourceApi(prefix) {
+  const configFor = (payload) =>
+    payload instanceof FormData ? { headers: { "Content-Type": "multipart/form-data" } } : undefined;
+
   return {
     list: (params) => api.get(prefix, { params }).then((response) => response.data),
     listResults: (params) => api.get(prefix, { params }).then((response) => unwrapResults(response.data)),
@@ -13,8 +16,8 @@ export function createResourceApi(prefix) {
         return 0;
       }),
     get: (id) => api.get(`${prefix}${id}/`).then((response) => unwrapApiData(response.data)),
-    create: (payload) => api.post(prefix, payload).then((response) => unwrapApiData(response.data)),
-    update: (id, payload) => api.patch(`${prefix}${id}/`, payload).then((response) => unwrapApiData(response.data)),
+    create: (payload) => api.post(prefix, payload, configFor(payload)).then((response) => unwrapApiData(response.data)),
+    update: (id, payload) => api.patch(`${prefix}${id}/`, payload, configFor(payload)).then((response) => unwrapApiData(response.data)),
     remove: (id) => api.delete(`${prefix}${id}/`).then((response) => response.data),
     action: (id, name, payload = {}) =>
       api.post(`${prefix}${id}/${name}/`, payload).then((response) => unwrapApiData(response.data)),
@@ -46,6 +49,26 @@ export const classroomApi = createResourceApi("/academic/classrooms/");
 export const classTeacherApi = createResourceApi("/academic/class-teachers/");
 export const syllabusApi = createResourceApi("/academic/syllabus/");
 export const classRoutineApi = createResourceApi("/academic/routines/");
+export const courseApi = createResourceApi("/courses/courses/");
+export const publicAdmissionCardApi = {
+  list: () => api.get("/courses/courses/public-admissions/").then((response) => unwrapResults(response.data)),
+  get: (identifier) => api.get(`/courses/courses/public-admissions/${identifier}/`).then((response) => unwrapApiData(response.data)),
+};
+export const courseSectionApi = createResourceApi("/courses/sections/");
+export const courseSubjectApi = createResourceApi("/courses/subjects/");
+export const teacherAssignmentApi = createResourceApi("/courses/teacher-assignments/");
+export const enrollmentApi = createResourceApi("/courses/enrollments/");
+export const teacherDashboardApi = createResourceApi("/courses/teacher/dashboard/");
+export const questionApi = createResourceApi("/assessments/questions/");
+export const questionOptionApi = createResourceApi("/assessments/options/");
+export const materialApi = createResourceApi("/assessments/materials/");
+export const assessmentApi = createResourceApi("/assessments/assessments/");
+export const assessmentQuestionApi = createResourceApi("/assessments/assessment-questions/");
+export const assessmentAttemptApi = createResourceApi("/assessments/attempts/");
+export const assignmentSubmissionApi = createResourceApi("/assessments/submissions/");
+export const submissionAttachmentApi = createResourceApi("/assessments/submission-attachments/");
+export const studentAssessmentApi = createResourceApi("/assessments/student/assessments/");
+export const notificationApi = createResourceApi("/sms/notifications/");
 export const applicationApi = createResourceApi("/applications/");
 export const admissionPaymentApi = createResourceApi("/applications/payments/");
 export const admissionExamApi = createResourceApi("/applications/exams/");

@@ -39,6 +39,8 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.academic",
     "apps.people",
+    "apps.courses",
+    "apps.assessments",
     "apps.admissions",
     "apps.exams",
     "apps.finance",
@@ -118,6 +120,13 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 20,
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "EXCEPTION_HANDLER": "apps.core.exceptions.api_exception_handler",
+    "DEFAULT_THROTTLE_CLASSES": (
+        "rest_framework.throttling.UserRateThrottle",
+    ),
+    "DEFAULT_THROTTLE_RATES": {
+        "user": "120/min",
+        "assessment_submit": "20/min",
+    },
 }
 
 SIMPLE_JWT = {

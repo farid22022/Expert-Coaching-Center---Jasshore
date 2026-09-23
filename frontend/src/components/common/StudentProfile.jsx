@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 
 import { getStoredUser, isAuthenticated, me } from "../../services/authApi.js";
+import { getDashboardPathForUser, hasRole } from "../../services/authApi.js";
 
 export default function StudentProfile() {
   const navigate = useNavigate();
@@ -52,6 +53,10 @@ export default function StudentProfile() {
     shift: "Not assigned",
     status: user?.is_active ? "Active" : "Inactive",
   };
+  const isTeacher = hasRole(user, "teacher");
+  const isStudent = hasRole(user, "student");
+  const dashboardPath = getDashboardPathForUser(user);
+  const roleTitle = isTeacher ? "Teacher Profile" : isStudent ? "Student Profile" : "Profile";
 
   const infoRows = [
     [User, "Full Name", profile.name],
@@ -74,7 +79,7 @@ export default function StudentProfile() {
             <User size={13} />
             Dashboard
           </span>
-          <h1 className="text-3xl font-black text-emerald-950">Student Profile</h1>
+          <h1 className="text-3xl font-black text-emerald-950">{roleTitle}</h1>
         </div>
 
         <section className="card border border-emerald-100 bg-base-100 shadow-sm">
@@ -113,7 +118,7 @@ export default function StudentProfile() {
           <div className="card-body">
             <div className="mb-2 flex items-center gap-2">
               <User size={17} className="text-emerald-700" />
-              <h2 className="text-xl font-black text-emerald-950">Backend Account Information</h2>
+              <h2 className="text-xl font-black text-emerald-950">{isTeacher ? "Teacher Account Information" : "Backend Account Information"}</h2>
             </div>
 
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
@@ -130,6 +135,7 @@ export default function StudentProfile() {
           </div>
         </section>
 
+        {!isTeacher && (
         <section className="card border border-emerald-100 bg-base-100 shadow-sm">
           <div className="card-body">
             <div className="mb-2 flex items-center gap-2">
@@ -144,6 +150,7 @@ export default function StudentProfile() {
             </div>
           </div>
         </section>
+        )}
 
         <section className="card border border-emerald-100 bg-base-100 shadow-sm">
           <div className="card-body">
@@ -153,14 +160,33 @@ export default function StudentProfile() {
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3">
-              <Link to="/admission/online" className="btn min-h-16 justify-start bg-emerald-700 text-white hover:bg-emerald-800">
-                <FileText size={22} />
-                Admission Test
+              <Link to={dashboardPath} className="btn min-h-16 justify-start bg-emerald-700 text-white hover:bg-emerald-800">
+                <ClipboardList size={22} />
+                {isTeacher ? "Teacher Dashboard" : "My Dashboard"}
               </Link>
-              <Link to="/result/individual" className="btn min-h-16 justify-start bg-emerald-700 text-white hover:bg-emerald-800">
-                <Award size={22} />
-                My Results
-              </Link>
+              {isTeacher ? (
+                <>
+                  <Link to="/teacher/dashboard#assessments" className="btn min-h-16 justify-start bg-emerald-700 text-white hover:bg-emerald-800">
+                    <FileText size={22} />
+                    Assessments
+                  </Link>
+                  <Link to="/teacher/dashboard#question-bank" className="btn min-h-16 justify-start bg-emerald-700 text-white hover:bg-emerald-800">
+                    <Award size={22} />
+                    Question Bank
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link to="/admission/online" className="btn min-h-16 justify-start bg-emerald-700 text-white hover:bg-emerald-800">
+                    <FileText size={22} />
+                    Admission Test
+                  </Link>
+                  <Link to="/result/individual" className="btn min-h-16 justify-start bg-emerald-700 text-white hover:bg-emerald-800">
+                    <Award size={22} />
+                    My Results
+                  </Link>
+                </>
+              )}
               <Link to="/profile" className="btn min-h-16 justify-start bg-amber-500 text-white hover:bg-amber-600">
                 <Edit3 size={22} />
                 Edit Profile

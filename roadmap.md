@@ -100,6 +100,112 @@ Next backend priority:
 - Store card image, fee, dates, teachers, subjects, and form fields in the database.
 - Connect submitted admission forms to backend `admissions` APIs.
 
+### Course Foundation
+
+Purpose: Phase 1 foundation for the multi-role learning platform: courses, sections/groups, course subjects, teacher assignments, and enrollments.
+
+Admin routes:
+
+- `/admin/dashboard/courses`
+- `/admin/dashboard/courses/sections`
+- `/admin/dashboard/courses/subjects`
+- `/admin/dashboard/teacher-assignments`
+- `/admin/dashboard/enrollments`
+- Sidebar aliases under `/admin/dashboard/course-foundation/...`
+
+Backend APIs:
+
+- `/api/v1/courses/courses/`
+- `/api/v1/courses/sections/`
+- `/api/v1/courses/subjects/`
+- `/api/v1/courses/teacher-assignments/`
+- `/api/v1/courses/enrollments/`
+
+Current behavior:
+
+- Admin can create and manage courses.
+- Admin can create sections/groups inside courses.
+- Admin can create course-level subjects inside sections.
+- Admin can assign teachers as head teachers, subject teachers, assistant teachers, or coordinators.
+- Admin can create enrollments separately from user registration.
+- Student registration creates a `StudentProfile` only; it does not create an enrolled `Student`/`Enrollment` record.
+
+Next backend priority:
+
+- Add student-facing course browse/enroll flow.
+- Add payment abstraction for course enrollment.
+- Add teacher dashboard scoped by `TeacherAssignment`.
+- Add assessment/question-bank models in the next phase.
+
+### Teacher And Assessment Foundation
+
+Purpose: Add scoped teacher dashboards, question bank, live/scheduled MCQ infrastructure, server-controlled attempts, auto evaluation, and in-app notifications.
+
+Teacher/student routes:
+
+- `/teacher/dashboard`
+- `/student/dashboard`
+
+Backend APIs:
+
+- `/api/v1/courses/teacher/dashboard/`
+- `/api/v1/assessments/questions/`
+- `/api/v1/assessments/options/`
+- `/api/v1/assessments/assessments/`
+- `/api/v1/assessments/assessment-questions/`
+- `/api/v1/assessments/attempts/`
+- `/api/v1/assessments/student/assessments/`
+- `/api/v1/sms/notifications/`
+
+Current behavior:
+
+- Teacher dashboard reads assigned courses, sections, subjects, and role scope from `TeacherAssignment`.
+- Question bank supports text, image, diagram, single-answer and multiple-answer questions.
+- MCQ assessments support scheduled/live windows, duration, publish state, question linking, attempts, autosaved answers, manual submit, and auto scoring.
+- Student assessment API hides `is_correct` and explanations while serving active test questions.
+- Student dashboard shows upcoming test count, live tests, result history count, and unread notification count.
+- Notifications support unread counters plus mark-one/read-all actions.
+
+Next backend priority:
+
+- Add assignment file submissions and teacher evaluation.
+- Add richer teacher-side question/assessment editors.
+- Add head-teacher-specific permission checks for section-level management.
+- Add server task/cron handling for auto-closing expired assessments.
+
+### Assignment, Analytics, And Hardening Foundation
+
+Purpose: Add assignment submissions/evaluation, performance analytics, file validation, rate limiting, and automated coverage for the assessment workflow.
+
+Backend APIs:
+
+- `/api/v1/assessments/submissions/`
+- `/api/v1/assessments/submissions/:id/evaluate/`
+- `/api/v1/assessments/submission-attachments/`
+- `/api/v1/assessments/student/assessments/:id/submit_assignment/`
+- `/api/v1/assessments/student/assessments/performance/`
+- `/api/v1/assessments/student/assessments/history/`
+- `/api/v1/assessments/analytics/teacher/`
+- `/api/v1/assessments/analytics/subject/:subject_id/`
+
+Current behavior:
+
+- Students can submit assignment PDFs/images.
+- Uploads are validated by extension, MIME type, and max size.
+- Teachers can evaluate submitted assignments with marks and feedback.
+- Student dashboard reads performance and assessment history.
+- Teacher dashboard reads participant, average, highest, and lowest score analytics.
+- Subject analytics are available by course subject.
+- DRF user throttling is enabled, with a stricter assessment submission scope.
+- Submission/evaluation models include audit fields through `OrganizationScopedModel`.
+- New indexes cover student/status and assessment/status reporting paths.
+
+Next backend priority:
+
+- Add teacher-side rich assignment review UI.
+- Add object-level teacher permission checks for every assigned subject action.
+- Add background jobs for expired assessment auto-submit/auto-close.
+
 ### 3. Academic
 
 Purpose: Manage academic setup, subjects, classes, sections, shifts, student groups/categories, classrooms, buildings, syllabus, and routines.

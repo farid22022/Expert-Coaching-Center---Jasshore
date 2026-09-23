@@ -46,3 +46,17 @@ export function getStoredUser() {
 export function isAuthenticated() {
   return Boolean(localStorage.getItem("access_token"));
 }
+
+export function hasRole(user, roleCode) {
+  return Array.isArray(user?.role_codes) && user.role_codes.includes(roleCode);
+}
+
+export function getDashboardPathForUser(user) {
+  if (!user) return "/login";
+  if (user.is_superuser || user.is_staff || hasRole(user, "institute-admin")) {
+    return "/admin/dashboard";
+  }
+  if (hasRole(user, "teacher")) return "/teacher/dashboard";
+  if (hasRole(user, "student")) return "/student/dashboard";
+  return "/profile";
+}

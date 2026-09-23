@@ -14,4 +14,4 @@ StudentStatusHistorySerializer = serializer_for(models.StudentStatusHistory)
 DepartmentSerializer = serializer_for(models.Department)
 DesignationSerializer = serializer_for(models.Designation)
 EmployeeSerializer = serializer_for(models.Employee)
-
+StudentProfileSerializer = serializer_for(models.StudentProfile)

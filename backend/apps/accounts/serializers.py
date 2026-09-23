@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from apps.organizations.models import Organization
+from apps.people.models import StudentProfile
 from .models import Permission, Role, User, UserLoginHistory
 
 
@@ -92,13 +93,27 @@ class RegisterSerializer(serializers.ModelSerializer):
             **validated_data,
         )
 
-        if role_code in {"student", "teacher", "parent"}:
+        if role_code in {"student", "learner", "teacher", "parent"}:
+            normalized_role_code = "student" if role_code == "learner" else role_code
             role, _ = Role.objects.get_or_create(
                 organization=organization,
-                code=role_code,
-                defaults={"name": role_code.title(), "is_system": True},
+                code=normalized_role_code,
+                defaults={"name": normalized_role_code.title(), "is_system": True},
             )
             user.roles.add(role)
+
+        if role_code in {"student", "learner"}:
+            StudentProfile.objects.get_or_create(
+                user=user,
+                defaults={
+                    "organization": organization,
+                    "full_name": f"{user.first_name} {user.last_name}".strip() or user.email,
+                    "phone": user.phone,
+                    "email": user.email,
+                    "created_by": user,
+                    "updated_by": user,
+                },
+            )
 
         return user
 

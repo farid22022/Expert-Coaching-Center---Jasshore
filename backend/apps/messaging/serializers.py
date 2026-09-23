@@ -15,4 +15,4 @@ SmsRecipientSerializer = serializer_for(models.SmsRecipient)
 SmsLogSerializer = serializer_for(models.SmsLog)
 EmailTemplateSerializer = serializer_for(models.EmailTemplate)
 EmailLogSerializer = serializer_for(models.EmailLog)
-
+NotificationSerializer = serializer_for(models.Notification)

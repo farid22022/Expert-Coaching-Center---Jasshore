@@ -9,7 +9,11 @@ export default function App() {
     pathname === "/dashboard" ||
     pathname.startsWith("/dashboard/") ||
     pathname === "/admin/dashboard" ||
-    pathname.startsWith("/admin/dashboard/");
+    pathname.startsWith("/admin/dashboard/") ||
+    pathname === "/teacher/dashboard" ||
+    pathname.startsWith("/teacher/dashboard/") ||
+    pathname === "/student/dashboard" ||
+    pathname.startsWith("/student/dashboard/");
 
   return (
     <div className="app-shell">

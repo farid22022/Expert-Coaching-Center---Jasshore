@@ -21,8 +21,8 @@ def browsable_api_root(request):
     return Response({
         name: request.build_absolute_uri(f"/api/v1/{name}/")
         for name in (
-            "auth", "organizations", "academic", "people", "applications",
-            "exams", "finance", "hr", "sms", "website", "audit",
+            "auth", "organizations", "academic", "people", "courses", "assessments",
+            "applications", "exams", "finance", "hr", "sms", "website", "audit",
         )
     })
 
@@ -50,6 +50,8 @@ urlpatterns = [
     path("api/v1/organizations/", include("apps.organizations.urls")),
     path("api/v1/academic/", include("apps.academic.urls")),
     path("api/v1/people/", include("apps.people.urls")),
+    path("api/v1/courses/", include("apps.courses.urls")),
+    path("api/v1/assessments/", include("apps.assessments.urls")),
     path("api/v1/applications/", include("apps.admissions.urls")),
     path("api/v1/exams/", include("apps.exams.urls")),
     path("api/v1/finance/", include("apps.finance.urls")),

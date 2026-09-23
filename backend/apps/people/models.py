@@ -21,6 +21,29 @@ class Guardian(OrganizationScopedModel):
         return self.name
 
 
+class StudentProfile(OrganizationScopedModel):
+    user = models.OneToOneField("accounts.User", on_delete=models.CASCADE, related_name="student_profile")
+    full_name = models.CharField(max_length=180)
+    gender = models.CharField(max_length=20, choices=PersonGender.choices, blank=True)
+    date_of_birth = models.DateField(null=True, blank=True)
+    phone = models.CharField(max_length=50, blank=True, db_index=True)
+    email = models.EmailField(blank=True)
+    photo = models.ImageField(upload_to="student-profiles/photos/", blank=True)
+    guardian_name = models.CharField(max_length=180, blank=True)
+    guardian_phone = models.CharField(max_length=50, blank=True)
+    present_address = models.TextField(blank=True)
+    permanent_address = models.TextField(blank=True)
+    previous_education = models.CharField(max_length=255, blank=True)
+    institution = models.CharField(max_length=255, blank=True)
+    emergency_contact = models.CharField(max_length=80, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["organization", "phone"])]
+
+    def __str__(self):
+        return self.full_name
+
+
 class Student(OrganizationScopedModel):
     student_id = models.CharField(max_length=80, db_index=True)
     admission_no = models.CharField(max_length=80, blank=True, db_index=True)
@@ -120,4 +143,3 @@ class Employee(OrganizationScopedModel):
     @property
     def is_teacher(self):
         return self.employee_type == "teacher"
-

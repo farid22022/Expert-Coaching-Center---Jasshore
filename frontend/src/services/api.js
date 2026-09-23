@@ -72,6 +72,13 @@ export function getApiErrorMessage(error, fallback = "Request failed. Please try
     const first = Object.values(data.errors).flat?.()[0];
     if (first) return String(first);
   }
+  if (data && typeof data === "object") {
+    const first = Object.entries(data)
+      .filter(([key]) => !["success", "message", "data"].includes(key))
+      .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
+      .find(Boolean);
+    if (first) return first;
+  }
   return fallback;
 }
 

@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { BookOpen, ClipboardList, GraduationCap, Megaphone, Users } from "lucide-react";
+import { BookOpen, ClipboardList, CreditCard, GraduationCap, Megaphone, Users } from "lucide-react";
 import SEO from "../../components/common/SEO.jsx";
 import { admissionTestGroups } from "../../data/admissionTests.js";
-import { dashboardMenu } from "./AdminDashboard.jsx";
 import {
   applicationApi,
   classRoutineApi,
@@ -76,9 +75,9 @@ export default function DashboardHome() {
   const statCards = useMemo(
     () => [
       ["Students", stats.students, Users],
-      ["Employees / Teachers", stats.teachers, GraduationCap],
-      ["Notices", stats.notices, Megaphone],
-      ["Admission Tests", stats.admissionTests, BookOpen],
+      ["Teachers", stats.teachers, GraduationCap],
+      ["Active Courses", stats.routines || 12, BookOpen],
+      ["Active Tests", stats.admissionTests, ClipboardList],
     ],
     [stats]
   );
@@ -104,31 +103,13 @@ export default function DashboardHome() {
         ))}
       </div>
 
-      <section className="dashboard-panel dashboard-module-panel">
-        <div className="dashboard-module-head">
-          <div>
-            <p>Overall dashboard</p>
-            <h2>All Management Modules</h2>
-          </div>
-          <span>{dashboardMenu.length} modules</span>
-        </div>
-        <div className="dashboard-module-grid">
-          {dashboardMenu.map((module, index) => (
-            <Link className="dashboard-module-card" to={module.path} key={module.path}>
-              <span className="dashboard-module-index">{String(index + 1).padStart(2, "0")}</span>
-              <strong>{module.label.replace(/^\d+\.\s*/, "")}</strong>
-              <small>{module.children?.length ? `${module.children.length} sections` : "Single section"}</small>
-            </Link>
-          ))}
-        </div>
-      </section>
-
       <div className="dashboard-panels">
         <section className="dashboard-panel">
-          <h2>Academic Snapshot</h2>
-          <div className="dashboard-list-row"><span>Class routine entries</span><strong>{loading ? "..." : stats.routines}</strong></div>
-          <div className="dashboard-list-row"><span>Exam records</span><strong>{loading ? "..." : stats.exams}</strong></div>
-          <div className="dashboard-list-row"><span>Active MCQ groups</span><strong>{stats.admissionTests}</strong></div>
+          <h2>Priority Work</h2>
+          <div className="dashboard-list-row"><span>Recent enrollments</span><Users size={16} /></div>
+          <div className="dashboard-list-row"><span>Recent payments</span><CreditCard size={16} /></div>
+          <div className="dashboard-list-row"><span>Upcoming assessments</span><ClipboardList size={16} /></div>
+          <div className="dashboard-list-row"><span>System activity</span><Megaphone size={16} /></div>
         </section>
 
         <section className="dashboard-panel">

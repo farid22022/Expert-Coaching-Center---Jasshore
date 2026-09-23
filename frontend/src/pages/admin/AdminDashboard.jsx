@@ -88,6 +88,18 @@ const rawDashboardMenu = [
   ]),
 
   /* =====================================================
+     COURSE FOUNDATION
+  ===================================================== */
+
+  item("Course Foundation", [
+    item("Courses"),
+    item("Sections"),
+    item("Subjects"),
+    item("Teacher Assignments"),
+    item("Enrollments"),
+  ]),
+
+  /* =====================================================
      2. ONLINE APPLICATION
   ===================================================== */
 

@@ -25,6 +25,7 @@ import {
 
 import {
   OnlineAdmissionPage,
+  AdmissionCardDetailPage,
   AdmissionResultPage,
   BlankFormPage,
   ApplicantPage,
@@ -62,6 +63,8 @@ import {
 } from "../pages/AdmissionTests.jsx";
 
 import StudentProfile from "../components/common/StudentProfile.jsx";
+import StudentPortalDashboard from "../pages/student/StudentDashboard.jsx";
+import { TeacherOverviewPage, TeacherCoursesPage, TeacherAssessmentsPage, TeacherQuestionBankPage, TeacherMaterialsPage, TeacherStudentsPage, TeacherNotificationsPage } from "../pages/teacher/TeacherModulePages.jsx";
 
 import AdminLogin from "../pages/admin/AdminLogin.jsx";
 import DashboardLayout from "../pages/admin/DashboardLayout.jsx";
@@ -333,6 +336,24 @@ import {
 import UserManagementDashboard, {
   UserManagementSectionPage,
 } from "../pages/admin/Dashboard/user-management/UserManagementDashboard.jsx";
+
+import {
+  CoursesPage,
+  CourseSectionsPage,
+  CourseSubjectsPage,
+  TeacherAssignmentsPage,
+  EnrollmentsPage,
+} from "../pages/admin/Dashboard/courses/CourseFoundationPages.jsx";
+
+import {
+  AdminAcademicPage,
+  AdminAssessmentsPage,
+  AdminEnrollmentsPage,
+  AdminNotificationsPage,
+  AdminPaymentsPage,
+  AdminSettingsPage,
+  AdminUsersPage,
+} from "../pages/admin/Dashboard/AdminCompactPages.jsx";
 
 
 /* =========================================================
@@ -1636,9 +1657,37 @@ function dynamicWebsiteRoutes(basePath) {
   );
 }
 
+function courseFoundationRoutes() {
+  return (
+    <>
+      <Route path="courses" element={<CoursesPage />} />
+      <Route path="courses/sections" element={<CourseSectionsPage />} />
+      <Route path="courses/subjects" element={<CourseSubjectsPage />} />
+      <Route path="teacher-assignments" element={<TeacherAssignmentsPage />} />
+      <Route path="enrollments" element={<EnrollmentsPage />} />
+      <Route path="course-foundation" element={<CoursesPage />} />
+      <Route path="course-foundation/courses" element={<CoursesPage />} />
+      <Route path="course-foundation/sections" element={<CourseSectionsPage />} />
+      <Route path="course-foundation/subjects" element={<CourseSubjectsPage />} />
+      <Route path="course-foundation/teacher-assignments" element={<TeacherAssignmentsPage />} />
+      <Route path="course-foundation/enrollments" element={<EnrollmentsPage />} />
+    </>
+  );
+}
+
 function adminDashboardChildren() {
   return (
     <>
+      <Route path="enrollments" element={<AdminEnrollmentsPage />} />
+      <Route path="academic" element={<AdminAcademicPage />} />
+      <Route path="users" element={<AdminUsersPage />} />
+      <Route path="assessments" element={<AdminAssessmentsPage />} />
+      <Route path="payments" element={<AdminPaymentsPage />} />
+      <Route path="notifications" element={<AdminNotificationsPage />} />
+      <Route path="settings" element={<AdminSettingsPage />} />
+
+      {courseFoundationRoutes()}
+
       {userManagementRoutes("user-management")}
 
       {userManagementRoutes("1-user-management")}
@@ -1863,6 +1912,11 @@ export default function AppRoutes() {
       />
 
       <Route
+        path="/admission/online/:identifier"
+        element={<AdmissionCardDetailPage />}
+      />
+
+      <Route
         path="/admission/result"
         element={<AdmissionResultPage />}
       />
@@ -2040,6 +2094,15 @@ export default function AppRoutes() {
           <StudentProfile title="Profile" />
         }
       />
+
+      <Route path="/student/dashboard" element={<StudentPortalDashboard />} />
+      <Route path="/teacher/dashboard" element={<TeacherOverviewPage />} />
+      <Route path="/teacher/dashboard/courses" element={<TeacherCoursesPage />} />
+      <Route path="/teacher/dashboard/assessments" element={<TeacherAssessmentsPage />} />
+      <Route path="/teacher/dashboard/question-bank" element={<TeacherQuestionBankPage />} />
+      <Route path="/teacher/dashboard/materials" element={<TeacherMaterialsPage />} />
+      <Route path="/teacher/dashboard/students" element={<TeacherStudentsPage />} />
+      <Route path="/teacher/dashboard/notifications" element={<TeacherNotificationsPage />} />
 
 
       {/* =====================================================

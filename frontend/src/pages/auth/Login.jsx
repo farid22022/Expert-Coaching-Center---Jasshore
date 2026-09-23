@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { getApiErrorMessage } from "../../services/api.js";
-import { login } from "../../services/authApi.js";
+import { getDashboardPathForUser, login } from "../../services/authApi.js";
 
 const inputWrapClass =
   "flex min-h-12 items-center gap-3 rounded-xl border border-emerald-100 bg-white px-3 shadow-sm transition focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-100";
@@ -56,8 +56,8 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      await login(email, password);
-      navigate("/profile");
+      const data = await login(email, password);
+      navigate(getDashboardPathForUser(data.user), { replace: true });
     } catch (err) {
       console.error(err);
       setError(getApiErrorMessage(err, "Invalid email or password."));

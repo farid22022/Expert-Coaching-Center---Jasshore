@@ -1,5 +1,7 @@
 from rest_framework import viewsets
 
+from apps.organizations.models import Organization
+
 
 def model_has_field(model, field_name):
     return any(field.name == field_name for field in model._meta.fields)
@@ -13,6 +15,22 @@ class OrganizationScopedModelViewSet(viewsets.ModelViewSet):
     search_fields = ("id",)
     ordering_fields = ("id", "created_at", "updated_at")
     ordering = ("-created_at",)
+
+    def get_request_organization(self):
+        user = self.request.user
+        if getattr(user, "organization_id", None):
+            return user.organization
+        organization, _ = Organization.objects.get_or_create(
+            code="expert-jashore",
+            defaults={
+                "name": "Expert Coaching Center",
+                "email": "expertjashore@gmail.com",
+                "phone": "01719486254",
+                "address": "Stadium Road, Jashore",
+                "established_year": 2017,
+            },
+        )
+        return organization
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -28,13 +46,13 @@ class OrganizationScopedModelViewSet(viewsets.ModelViewSet):
             data = kwargs["data"].copy()
             model = self.get_queryset().model
             if model_has_field(model, "organization") and "organization" not in data:
-                data["organization"] = self.request.user.organization_id
+                data["organization"] = self.get_request_organization().id
             kwargs["data"] = data
         elif self.request.method == "POST" and args and hasattr(args[0], "copy"):
             data = args[0].copy()
             model = self.get_queryset().model
             if model_has_field(model, "organization") and "organization" not in data:
-                data["organization"] = self.request.user.organization_id
+                data["organization"] = self.get_request_organization().id
             args = (data, *args[1:])
         return super().get_serializer(*args, **kwargs)
 
@@ -42,7 +60,7 @@ class OrganizationScopedModelViewSet(viewsets.ModelViewSet):
         user = self.request.user
         kwargs = {"created_by": user, "updated_by": user}
         if model_has_field(serializer.Meta.model, "organization"):
-            kwargs["organization"] = user.organization
+            kwargs["organization"] = self.get_request_organization()
         serializer.save(**kwargs)
 
     def perform_update(self, serializer):

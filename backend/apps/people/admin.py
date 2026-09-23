@@ -10,6 +10,7 @@ from .models import (
     StudentAddress,
     StudentDocument,
     StudentGuardian,
+    StudentProfile,
     StudentStatusHistory,
 )
 
@@ -70,6 +71,14 @@ class StudentAdmin(OrganizationScopedAdmin):
     actions = (activate, deactivate, mark_status("approved", "Approved"))
 
 
+@admin.register(StudentProfile)
+class StudentProfileAdmin(OrganizationScopedAdmin):
+    list_display = ("full_name", "user", "phone", "email", "guardian_name", "organization")
+    search_fields = ("full_name", "phone", "email", "guardian_name", "guardian_phone", "institution", "user__email")
+    list_filter = ("organization", "gender", "created_at")
+    raw_id_fields = ("organization", "user", "created_by", "updated_by")
+
+
 @admin.register(StudentGuardian)
 class StudentGuardianAdmin(admin.ModelAdmin):
     list_display = ("student", "guardian", "is_primary")
@@ -114,4 +123,3 @@ class EmployeeAdmin(OrganizationScopedAdmin):
     search_fields = ("employee_id", "full_name", "phone", "email", "rfid", "department__name", "designation__name")
     list_filter = ("organization", "employee_type", "department", "designation", "status", "joining_date")
     actions = (activate, deactivate, mark_status("approved", "Approved"))
-

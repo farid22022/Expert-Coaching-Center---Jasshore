@@ -72,3 +72,16 @@ class EmailLog(OrganizationScopedModel):
     provider_response = models.JSONField(default=dict, blank=True)
     sent_at = models.DateTimeField(null=True, blank=True)
 
+
+class Notification(OrganizationScopedModel):
+    recipient = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="notifications")
+    title = models.CharField(max_length=180)
+    body = models.TextField(blank=True)
+    notification_type = models.CharField(max_length=80, default="general", db_index=True)
+    target_url = models.CharField(max_length=255, blank=True)
+    is_read = models.BooleanField(default=False, db_index=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["organization", "recipient", "is_read"])]
+        ordering = ("-created_at",)
