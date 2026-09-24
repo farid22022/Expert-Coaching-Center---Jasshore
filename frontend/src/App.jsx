@@ -5,23 +5,23 @@ import { useLocation } from "react-router-dom";
 
 export default function App() {
   const { pathname } = useLocation();
-  const isDashboardRoute =
+  const isPortalRoute =
     pathname === "/dashboard" ||
     pathname.startsWith("/dashboard/") ||
-    pathname === "/admin/dashboard" ||
-    pathname.startsWith("/admin/dashboard/") ||
-    pathname === "/teacher/dashboard" ||
-    pathname.startsWith("/teacher/dashboard/") ||
-    pathname === "/student/dashboard" ||
-    pathname.startsWith("/student/dashboard/");
+    pathname === "/admin" ||
+    pathname.startsWith("/admin/") ||
+    pathname === "/teacher" ||
+    pathname.startsWith("/teacher/") ||
+    pathname === "/student" ||
+    pathname.startsWith("/student/");
 
   return (
     <div className="app-shell">
-      {!isDashboardRoute && <Header />}
+      {!isPortalRoute && <Header />}
       <main>
         <AppRoutes />
       </main>
-      {!isDashboardRoute && <Footer />}
+      {!isPortalRoute && <Footer />}
     </div>
   );
 }

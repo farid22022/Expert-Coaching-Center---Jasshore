@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import PageHeader from "../components/common/PageHeader.jsx";
 import SEO from "../components/common/SEO.jsx";
 import { getAdmissionPrograms } from "../data/admissionPrograms.js";
-import { API_BASE_URL, admissionService } from "../services/api.js";
+import { API_BASE_URL, admissionService, getApiErrorMessage } from "../services/api.js";
 import { publicAdmissionCardApi } from "../services/resourceApi.js";
 
 const containerClass = "mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8";
@@ -79,6 +79,8 @@ export function AdmissionCardDetailPage() {
   const { identifier } = useParams();
   const [program, setProgram] = useState(null);
   const [submitted, setSubmitted] = useState(null);
+  const [submitError, setSubmitError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     publicAdmissionCardApi
@@ -93,7 +95,15 @@ export function AdmissionCardDetailPage() {
   async function submit(e) {
     e.preventDefault();
     const data = Object.fromEntries(new FormData(e.currentTarget));
-    setSubmitted(await admissionService.submit({ ...data, programId: program?.id, course: program?.id }));
+    setSubmitError("");
+    setSubmitting(true);
+    try {
+      setSubmitted(await admissionService.submit({ ...data, programId: program?.id, course: program?.id }));
+    } catch (error) {
+      setSubmitError(getApiErrorMessage(error, "Your application could not be submitted. Please check the form and try again."));
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (!program) {
@@ -151,14 +161,20 @@ export function AdmissionCardDetailPage() {
                     </div>
                   </fieldset>
                 ))}
-                <button className={primaryButton}>Submit Application</button>
+                {submitError && <div className="alert border-red-100 bg-red-50 text-red-700">{submitError}</div>}
+                <button disabled={submitting} className={primaryButton}>{submitting ? "Submitting..." : "Submit Application"}</button>
               </form>
 
               {submitted && (
                 <div className="alert alert-success mt-5 flex-col items-start">
-                  <h3 className="font-black">Application Submitted</h3>
-                  <p>Reference: <strong>{submitted.applicationId}</strong></p>
-                  <button className="btn btn-sm" onClick={() => window.print()}>Print Application</button>
+                  <h3 className="font-black">Application Submitted Successfully</h3>
+                  <p>Application ID: <strong>{submitted.applicationId}</strong></p>
+                  <p>Status: <strong>Pending Review</strong></p>
+                  <p>Your application has been sent to the administration. You will be notified after review.</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Link className="btn btn-sm" to="/admission/applicant">View Application</Link>
+                    <Link className="btn btn-sm btn-success text-white" to="/student/dashboard">Go to Dashboard</Link>
+                  </div>
                 </div>
               )}
             </div>
@@ -220,6 +236,8 @@ function AdmissionFormField({ field, program }) {
           <option value="">{field.placeholder || `Select ${field.label}`}</option>
           {(field.options || []).map((option) => <option key={option} value={option}>{option}</option>)}
         </select>
+      ) : field.type === "file" ? (
+        <input name={name} required={Boolean(field.required)} type="file" className="file-input file-input-bordered w-full" />
       ) : (
         <input {...commonProps} type={field.type || "text"} />
       )}

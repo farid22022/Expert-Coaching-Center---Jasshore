@@ -82,30 +82,56 @@ export function getApiErrorMessage(error, fallback = "Request failed. Please try
   return fallback;
 }
 
+function admissionValue(payload, ...keys) {
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const normalizedKeys = keys.map(normalize);
+  const entry = Object.entries(payload).find(([key]) => normalizedKeys.includes(normalize(key)));
+  return entry?.[1] ?? "";
+}
+
 export const admissionService = {
   async submit(payload) {
-    try {
-      const mapped = {
-        applicant_name: payload["Full Name"],
-        applicant_phone: payload.Mobile,
-        applicant_email: payload.Email || "",
-        guardian_name: payload["Guardian Name"] || payload["Father Name"] || "",
-        guardian_phone: payload["Guardian Mobile"] || payload["Father Mobile"] || "",
-        previous_institute: payload["Previous School Name"] || "",
-        remarks: JSON.stringify(payload),
-      };
-      const { data } = await api.post("/applications/", mapped);
-      const record = data.data || data;
-      return {
-        applicationId: record.application_no || record.id,
-        ...record,
-      };
-    } catch {
-      return {
-        applicationId: `APP-${Date.now()}`,
-        offline: true,
-      };
-    }
+    const files = Object.entries(payload).filter(([, value]) => value instanceof File && value.size > 0);
+    const formData = Object.fromEntries(
+      Object.entries(payload).filter(([, value]) => !(value instanceof File))
+    );
+    const mapped = {
+      course: payload.course || payload.programId,
+      applicant_name: admissionValue(payload, "full name", "applicant name", "name"),
+      applicant_name_bn: admissionValue(payload, "bengali name", "name bn"),
+      applicant_phone: admissionValue(payload, "mobile", "phone", "applicant phone"),
+      applicant_email: admissionValue(payload, "email"),
+      date_of_birth: admissionValue(payload, "date of birth", "dob") || null,
+      blood_group: admissionValue(payload, "blood group"),
+      birth_certificate_no: admissionValue(payload, "birth certificate number", "birth certificate no"),
+      student_uid: admissionValue(payload, "student uid", "student id"),
+      guardian_name: admissionValue(payload, "guardian name", "father name"),
+      guardian_phone: admissionValue(payload, "guardian mobile", "father mobile", "guardian phone"),
+      guardian_relation: admissionValue(payload, "relationship", "guardian relation"),
+      father_name: admissionValue(payload, "father name"),
+      father_name_bn: admissionValue(payload, "father bengali name"),
+      father_phone: admissionValue(payload, "father mobile", "father phone"),
+      father_nid: admissionValue(payload, "father nid"),
+      mother_name: admissionValue(payload, "mother name"),
+      mother_name_bn: admissionValue(payload, "mother bengali name"),
+      mother_phone: admissionValue(payload, "mother mobile", "mother phone"),
+      mother_nid: admissionValue(payload, "mother nid"),
+      previous_institute: admissionValue(payload, "previous school name", "previous institution"),
+      payment_reference: admissionValue(payload, "transaction number", "payment reference"),
+      form_data: formData,
+    };
+    const requestPayload = files.length
+      ? (() => {
+          const multipart = new FormData();
+          Object.entries(mapped).forEach(([key, value]) => multipart.append(key, typeof value === "object" ? JSON.stringify(value) : value ?? ""));
+          multipart.append("document_labels", JSON.stringify(files.map(([name]) => name)));
+          files.forEach(([, file]) => multipart.append("documents", file));
+          return multipart;
+        })()
+      : mapped;
+    const { data } = await api.post("/admissions/", requestPayload, files.length ? { headers: { "Content-Type": "multipart/form-data" } } : undefined);
+    const record = data.data || data;
+    return { applicationId: record.application_no || record.id, ...record };
   },
 
   async status(params = {}) {

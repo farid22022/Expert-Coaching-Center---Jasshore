@@ -1,3 +1,9 @@
+from django.db import transaction
+from rest_framework import status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from apps.accounts.models import User
+from apps.core.responses import success_response
 from apps.core.permissions import HasActionPermission
 from apps.core.viewsets import OrganizationScopedModelViewSet
 from . import models, serializers
@@ -71,3 +77,31 @@ class EmployeeViewSet(PeopleViewSet):
     serializer_class = serializers.EmployeeSerializer
     search_fields = ("employee_id", "full_name", "phone", "email")
     filterset_fields = ("employee_type", "department", "designation", "status")
+
+    @action(detail=True, methods=["post"])
+    def deactivate(self, request, pk=None):
+        employee = self.get_object()
+        if employee.employee_type != "teacher":
+            return Response({"detail": "Only teacher accounts can be deactivated here."}, status=status.HTTP_400_BAD_REQUEST)
+        with transaction.atomic():
+            employee.status = "inactive"
+            employee.updated_by = request.user
+            employee.save(update_fields=["status", "updated_by", "updated_at"])
+            User.objects.filter(organization=employee.organization, email__iexact=employee.email).update(is_active=False)
+            from apps.courses.models import TeacherAssignment
+            TeacherAssignment.objects.filter(teacher=employee, is_active=True).update(is_active=False, updated_by=request.user)
+        return success_response(serializers.EmployeeSerializer(employee).data, "Teacher account deactivated. Academic history remains intact.")
+
+
+class TeacherAccountViewSet(PeopleViewSet):
+    """Creates a teacher login and matching employee record; email delivery stays external."""
+    permission_module = "employee"
+    queryset = models.Employee.objects.filter(employee_type="teacher")
+    serializer_class = serializers.TeacherAccountSerializer
+    http_method_names = ["post"]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        teacher = serializer.save()
+        return Response(serializers.EmployeeSerializer(teacher).data, status=status.HTTP_201_CREATED)

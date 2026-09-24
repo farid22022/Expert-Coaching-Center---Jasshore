@@ -35,11 +35,11 @@ function labelOf(item) {
 
 function defaultAdmissionFormSchema() {
   return [
-    { title: "Student Information", fields: ["Full Name", "Mobile", "Email", "Date of Birth"].map((label) => ({ label, type: label.includes("Date") ? "date" : label === "Email" ? "email" : "text", required: ["Full Name", "Mobile"].includes(label), placeholder: "", optionsText: "" })) },
-    { title: "Father Information", fields: ["Father Name", "Father Mobile"].map((label) => ({ label, type: "text", required: false, placeholder: "", optionsText: "" })) },
-    { title: "Mother Information", fields: ["Mother Name", "Mother Mobile"].map((label) => ({ label, type: "text", required: false, placeholder: "", optionsText: "" })) },
-    { title: "Academic Information", fields: ["Class", "Session", "Shift"].map((label) => ({ label, type: "text", required: label === "Class", placeholder: "", optionsText: "" })) },
-    { title: "Payment", fields: ["Payment Method", "Amount", "Transaction ID"].map((label) => ({ label, type: label === "Amount" ? "number" : "text", required: false, placeholder: "", optionsText: "" })) },
+    { id: crypto.randomUUID(), title: "Student Information", fields: ["Full Name", "Mobile", "Email", "Date of Birth"].map((label) => ({ id: crypto.randomUUID(), name: label.toLowerCase().replaceAll(" ", "-"), label, type: label.includes("Date") ? "date" : label === "Email" ? "email" : "text", required: ["Full Name", "Mobile"].includes(label), placeholder: "", optionsText: "" })) },
+    { id: crypto.randomUUID(), title: "Father Information", fields: ["Father Name", "Father Mobile"].map((label) => ({ id: crypto.randomUUID(), name: label.toLowerCase().replaceAll(" ", "-"), label, type: "text", required: false, placeholder: "", optionsText: "" })) },
+    { id: crypto.randomUUID(), title: "Mother Information", fields: ["Mother Name", "Mother Mobile"].map((label) => ({ id: crypto.randomUUID(), name: label.toLowerCase().replaceAll(" ", "-"), label, type: "text", required: false, placeholder: "", optionsText: "" })) },
+    { id: crypto.randomUUID(), title: "Academic Information", fields: ["Class", "Session", "Shift"].map((label) => ({ id: crypto.randomUUID(), name: label.toLowerCase().replaceAll(" ", "-"), label, type: "text", required: label === "Class", placeholder: "", optionsText: "" })) },
+    { id: crypto.randomUUID(), title: "Payment", fields: ["Payment Method", "Amount", "Transaction ID"].map((label) => ({ id: crypto.randomUUID(), name: label.toLowerCase().replaceAll(" ", "-"), label, type: label === "Amount" ? "number" : "text", required: false, placeholder: "", optionsText: "" })) },
   ];
 }
 
@@ -64,7 +64,7 @@ function Select({ children, ...props }) {
   return <select {...props} className="select select-bordered select-sm h-9 min-h-9 w-full rounded-[3px] bg-white">{children}</select>;
 }
 
-function Field({ field, value, update }) {
+function Field({ field, value, update, form }) {
   if (field.type === "admissionFormSchema") {
     const sections = Array.isArray(value) ? value : [];
     const updateSection = (index, key, nextValue) => {
@@ -84,7 +84,7 @@ function Field({ field, value, update }) {
     const addField = (sectionIndex) => {
       update(field.name, sections.map((section, index) => index === sectionIndex ? {
         ...section,
-        fields: [...(section.fields || []), { label: "", type: "text", placeholder: "", required: false, optionsText: "" }],
+        fields: [...(section.fields || []), { id: crypto.randomUUID(), name: "", label: "", type: "text", placeholder: "", required: false, optionsText: "" }],
       } : section));
     };
     const removeField = (sectionIndex, fieldIndex) => {
@@ -103,18 +103,19 @@ function Field({ field, value, update }) {
             </div>
             <div className="mt-3 space-y-2">
               {(section.fields || []).map((schemaField, fieldIndex) => (
-                <div key={`${fieldIndex}-${schemaField.label}`} className="grid gap-2 rounded bg-white p-2 md:grid-cols-[1fr_140px_1fr_170px_auto_auto]">
+                <div key={schemaField.id || `${fieldIndex}-${schemaField.label}`} className="grid gap-2 rounded bg-white p-2 md:grid-cols-[1fr_140px_1fr_170px_auto_auto_auto]">
                   <Input value={schemaField.label || ""} onChange={(event) => updateField(sectionIndex, fieldIndex, "label", event.target.value)} placeholder="Field label" />
                   <Select value={schemaField.type || "text"} onChange={(event) => updateField(sectionIndex, fieldIndex, "type", event.target.value)}>
                     {["text", "email", "tel", "number", "date", "textarea", "select", "file"].map((type) => <option key={type} value={type}>{type}</option>)}
                   </Select>
                   <Input value={schemaField.placeholder || ""} onChange={(event) => updateField(sectionIndex, fieldIndex, "placeholder", event.target.value)} placeholder="Placeholder" />
                   <Input value={schemaField.optionsText || (schemaField.options || []).join(", ")} onChange={(event) => updateField(sectionIndex, fieldIndex, "optionsText", event.target.value)} placeholder="Options, comma separated" />
-                  <label className="flex h-9 items-center gap-2 text-sm font-bold">
+                   <label className="flex h-9 items-center gap-2 text-sm font-bold">
                     <input type="checkbox" className="checkbox checkbox-sm" checked={Boolean(schemaField.required)} onChange={(event) => updateField(sectionIndex, fieldIndex, "required", event.target.checked)} />
                     Required
-                  </label>
-                  <button type="button" className="btn btn-error btn-sm h-9 min-h-9 text-white" onClick={() => removeField(sectionIndex, fieldIndex)}>Remove</button>
+                   </label>
+                   <div className="flex gap-1"><button type="button" className="btn btn-ghost btn-sm h-9 min-h-9 px-2" disabled={!fieldIndex} onClick={() => update(field.name, sections.map((current, index) => index !== sectionIndex ? current : { ...current, fields: current.fields.map((entry, entryIndex, all) => entryIndex === fieldIndex ? all[fieldIndex - 1] : entryIndex === fieldIndex - 1 ? all[fieldIndex] : entry) }))}>Up</button><button type="button" className="btn btn-ghost btn-sm h-9 min-h-9 px-2" disabled={fieldIndex === section.fields.length - 1} onClick={() => update(field.name, sections.map((current, index) => index !== sectionIndex ? current : { ...current, fields: current.fields.map((entry, entryIndex, all) => entryIndex === fieldIndex ? all[fieldIndex + 1] : entryIndex === fieldIndex + 1 ? all[fieldIndex] : entry) }))}>Down</button></div>
+                   <button type="button" className="btn btn-error btn-sm h-9 min-h-9 text-white" onClick={() => removeField(sectionIndex, fieldIndex)}>Remove</button>
                 </div>
               ))}
             </div>
@@ -124,7 +125,7 @@ function Field({ field, value, update }) {
         <button
           type="button"
           className="btn btn-success btn-sm text-white"
-          onClick={() => update(field.name, [...sections, { title: "New Section", fields: [] }])}
+          onClick={() => update(field.name, [...sections, { id: crypto.randomUUID(), title: "New Section", fields: [] }])}
         >
           Add Form Section
         </button>
@@ -156,7 +157,7 @@ function Field({ field, value, update }) {
         <button
           type="button"
           className="btn btn-outline btn-success btn-sm"
-          onClick={() => update(field.name, [...items, { type: "text", label: "", value: "", url: "" }])}
+          onClick={() => update(field.name, [...items, { id: crypto.randomUUID(), type: "text", label: "", value: "", url: "" }])}
         >
           Add Custom Input
         </button>
@@ -167,10 +168,11 @@ function Field({ field, value, update }) {
     return <input type="file" accept={field.accept} onChange={(event) => update(field.name, event.target.files?.[0] || null)} className="file-input file-input-bordered file-input-sm h-9 min-h-9 w-full rounded-[3px] bg-white" />;
   }
   if (field.type === "select") {
+    const options = typeof field.options === "function" ? field.options(form) : field.options || [];
     return (
       <Select value={value ?? ""} onChange={(event) => update(field.name, field.number ? Number(event.target.value) || "" : event.target.value)}>
         <option value="">{field.placeholder || `Select ${field.label}`}</option>
-        {(field.options || []).map((item) => <option key={item.id} value={item.id}>{labelOf(item)}</option>)}
+        {options.map((item) => <option key={item.id} value={item.id}>{labelOf(item)}</option>)}
       </Select>
     );
   }
@@ -282,7 +284,7 @@ function CrudPage({ title, api, initialForm, fields, columns, lookups = {}, norm
             {fields.map((field) => (
               <label key={field.name} className={["textarea", "customContent", "admissionFormSchema"].includes(field.type) ? "md:col-span-2 xl:col-span-3" : ""}>
                 <span className="mb-1 block text-sm font-bold text-slate-700">{field.label}</span>
-                <Field field={field} value={form[field.name]} update={update} />
+                <Field field={field} value={form[field.name]} update={update} form={form} />
               </label>
             ))}
             <div className="flex items-end gap-2 md:col-span-2 xl:col-span-3">
@@ -347,7 +349,8 @@ function cleanCoursePayload(form) {
     is_published: Boolean(form.is_published),
     custom_content: Array.isArray(form.custom_content)
       ? form.custom_content
-          .map((item) => ({
+            .map((item) => ({
+            id: item.id || crypto.randomUUID(),
             type: item.type || "text",
             label: item.label?.trim() || "",
             value: item.value?.trim() || "",
@@ -357,11 +360,13 @@ function cleanCoursePayload(form) {
       : [],
     admission_form_schema: Array.isArray(form.admission_form_schema)
       ? form.admission_form_schema
-          .map((section) => ({
+            .map((section) => ({
+            id: section.id || crypto.randomUUID(),
             title: section.title?.trim() || "",
             fields: Array.isArray(section.fields)
               ? section.fields
                   .map((field) => ({
+                    id: field.id || crypto.randomUUID(),
                     label: field.label?.trim() || "",
                     name: field.name?.trim() || "",
                     type: field.type || "text",
@@ -472,7 +477,12 @@ export function CourseSubjectsPage() {
 
 export function TeacherAssignmentsPage() {
   const { courses, sections, subjects, teachers } = useLookups();
-  return <CrudPage title="Teacher Assignments" api={teacherAssignmentApi} lookups={{ teacher: teachers, course: courses, course_section: sections, subject: subjects }} initialForm={{ teacher: "", course: "", course_section: "", subject: "", role: "subject_teacher", is_active: true }} fields={[{ name: "teacher", label: "Teacher", type: "select", number: true, options: teachers }, { name: "course", label: "Course", type: "select", number: true, options: courses }, { name: "course_section", label: "Section", type: "select", number: true, options: sections }, { name: "subject", label: "Subject", type: "select", number: true, options: subjects }, { name: "role", label: "Role", type: "select", options: ["head_teacher", "subject_teacher", "assistant_teacher", "coordinator"].map((id) => ({ id, title: id.replaceAll("_", " ") })) }, { name: "is_active", label: "Active", type: "checkbox" }]} columns={[{ key: "teacher", label: "Teacher", lookup: "teacher" }, { key: "course", label: "Course", lookup: "course" }, { key: "course_section", label: "Section", lookup: "course_section" }, { key: "subject", label: "Subject", lookup: "subject" }, { key: "role", label: "Role" }, { key: "is_active", label: "Active" }]} normalize={(form) => ({ ...form, course_section: form.course_section || null, subject: form.subject || null })} validate={(form) => (!form.teacher || !form.course) && "Teacher and course are required."} />;
+  const sectionsForCourse = (form) => sections.filter((section) => String(section.course) === String(form.course));
+  const subjectsForSelection = (form) => subjects.filter((subject) => {
+    const section = sections.find((item) => String(item.id) === String(subject.course_section));
+    return section && String(section.course) === String(form.course) && (!form.course_section || String(subject.course_section) === String(form.course_section));
+  });
+  return <CrudPage title="Teacher Assignments" api={teacherAssignmentApi} lookups={{ teacher: teachers, course: courses, course_section: sections, subject: subjects }} initialForm={{ teacher: "", course: "", course_section: "", subject: "", role: "head_teacher", is_active: true, assignment_status: "accepted" }} fields={[{ name: "teacher", label: "Teacher", type: "select", number: true, options: teachers }, { name: "course", label: "Admission Program", type: "select", number: true, options: courses }, { name: "course_section", label: "Section (optional for program head)", type: "select", number: true, options: sectionsForCourse }, { name: "subject", label: "Subject (optional for program head)", type: "select", number: true, options: subjectsForSelection }, { name: "role", label: "Role", type: "select", options: ["head_teacher", "subject_teacher", "assistant_teacher", "coordinator"].map((id) => ({ id, title: id.replaceAll("_", " ") })) }, { name: "is_active", label: "Active", type: "checkbox" }]} columns={[{ key: "teacher", label: "Teacher", lookup: "teacher" }, { key: "course", label: "Course", lookup: "course" }, { key: "course_section", label: "Section", lookup: "course_section" }, { key: "subject", label: "Subject", lookup: "subject" }, { key: "role", label: "Role" }, { key: "is_active", label: "Active" }]} normalize={(form) => ({ ...form, course_section: form.course_section || null, subject: form.subject || null, assignment_status: "accepted" })} validate={(form) => (!form.teacher || !form.course) && "Teacher and admission program are required."} />;
 }
 
 export function EnrollmentsPage() {

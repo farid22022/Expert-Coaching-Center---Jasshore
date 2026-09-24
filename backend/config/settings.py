@@ -124,7 +124,9 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.UserRateThrottle",
     ),
     "DEFAULT_THROTTLE_RATES": {
-        "user": "120/min",
+        # SPA screens legitimately make several parallel reads; keep a high
+        # configurable authenticated limit while retaining strict test-submit limits.
+        "user": env("API_USER_RATE_LIMIT", "1000/min"),
         "assessment_submit": "20/min",
     },
 }

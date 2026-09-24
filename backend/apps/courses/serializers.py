@@ -61,6 +61,7 @@ class CourseSerializer(serializers.ModelSerializer):
             if not isinstance(item, dict):
                 continue
             cleaned.append({
+                "id": str(item.get("id") or uuid4().hex[:12]),
                 "type": str(item.get("type") or "text")[:40],
                 "label": str(item.get("label") or "")[:180],
                 "value": str(item.get("value") or ""),
@@ -78,6 +79,7 @@ class CourseSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Admission form schema must be a list.")
 
         cleaned_sections = []
+        names = set()
         for section in value:
             if not isinstance(section, dict):
                 continue
@@ -88,9 +90,17 @@ class CourseSerializer(serializers.ModelSerializer):
                 label = str(field.get("label") or "").strip()
                 if not label:
                     continue
+                base_name = slugify(str(field.get("name") or label))[:180] or f"field-{uuid4().hex[:6]}"
+                name = base_name
+                suffix = 2
+                while name in names:
+                    name = f"{base_name[:170]}-{suffix}"
+                    suffix += 1
+                names.add(name)
                 fields.append({
+                    "id": str(field.get("id") or uuid4().hex[:12]),
                     "label": label[:180],
-                    "name": str(field.get("name") or slugify(label) or f"field-{uuid4().hex[:6]}")[:180],
+                    "name": name,
                     "type": str(field.get("type") or "text")[:40],
                     "placeholder": str(field.get("placeholder") or "")[:240],
                     "required": bool(field.get("required", False)),
@@ -98,7 +108,7 @@ class CourseSerializer(serializers.ModelSerializer):
                 })
             title = str(section.get("title") or "").strip()
             if title and fields:
-                cleaned_sections.append({"title": title[:180], "fields": fields})
+                cleaned_sections.append({"id": str(section.get("id") or uuid4().hex[:12]), "title": title[:180], "fields": fields})
         return cleaned_sections
 
     def validate(self, attrs):
@@ -147,9 +157,29 @@ class TeacherAssignmentSerializer(serializers.ModelSerializer):
         fields = "__all__"
         read_only_fields = ("assigned_by", "assigned_at")
 
+    def validate(self, attrs):
+        instance = self.instance
+        course = attrs.get("course") or getattr(instance, "course", None)
+        section = attrs.get("course_section", getattr(instance, "course_section", None))
+        subject = attrs.get("subject", getattr(instance, "subject", None))
+        teacher = attrs.get("teacher") or getattr(instance, "teacher", None)
+
+        if not course or not teacher:
+            raise serializers.ValidationError("Teacher and admission program are required.")
+        if teacher.employee_type != "teacher":
+            raise serializers.ValidationError({"teacher": "Only teacher accounts can receive teaching assignments."})
+        if section and section.course_id != course.id:
+            raise serializers.ValidationError({"course_section": "The selected section does not belong to this admission program."})
+        if subject:
+            if not section:
+                section = subject.course_section
+                attrs["course_section"] = section
+            if subject.course_section_id != section.id or section.course_id != course.id:
+                raise serializers.ValidationError({"subject": "The selected subject does not belong to this admission program."})
+        return attrs
+
 
 class EnrollmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Enrollment
         fields = "__all__"
-

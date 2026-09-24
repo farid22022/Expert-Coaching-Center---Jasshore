@@ -143,3 +143,21 @@ class Employee(OrganizationScopedModel):
     @property
     def is_teacher(self):
         return self.employee_type == "teacher"
+
+
+class TeacherProfile(OrganizationScopedModel):
+    """Teacher-specific professional data, kept separate from the shared employee record."""
+    user = models.OneToOneField("accounts.User", on_delete=models.PROTECT, related_name="teacher_profile")
+    employee = models.OneToOneField(Employee, on_delete=models.PROTECT, related_name="teacher_profile")
+    gender = models.CharField(max_length=20, choices=PersonGender.choices, blank=True)
+    qualification = models.CharField(max_length=255, blank=True)
+    specialization = models.CharField(max_length=255, blank=True)
+    bio = models.TextField(blank=True)
+    invitation_token_hash = models.CharField(max_length=255, blank=True)
+    invitation_expires_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["organization", "specialization"])]
+
+    def __str__(self):
+        return self.employee.full_name

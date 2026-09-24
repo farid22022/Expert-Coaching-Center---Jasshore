@@ -26,6 +26,12 @@ class AssignmentRole(models.TextChoices):
     COORDINATOR = "coordinator", "Coordinator"
 
 
+class AssignmentStatus(models.TextChoices):
+    PENDING = "pending", "Pending teacher response"
+    ACCEPTED = "accepted", "Accepted"
+    DECLINED = "declined", "Declined"
+
+
 class EnrollmentStatus(models.TextChoices):
     PENDING = "pending", "Pending"
     ACTIVE = "active", "Active"
@@ -128,6 +134,8 @@ class TeacherAssignment(OrganizationScopedModel):
     assigned_at = models.DateTimeField(auto_now_add=True)
     assigned_by = models.ForeignKey("accounts.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="teacher_assignments_made")
     is_active = models.BooleanField(default=True, db_index=True)
+    assignment_status = models.CharField(max_length=20, choices=AssignmentStatus.choices, default=AssignmentStatus.ACCEPTED, db_index=True)
+    responded_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         constraints = [
@@ -161,8 +169,7 @@ class Enrollment(OrganizationScopedModel):
         constraints = [
             models.UniqueConstraint(
                 fields=["student", "course"],
-                condition=models.Q(status__in=[EnrollmentStatus.PENDING, EnrollmentStatus.ACTIVE]),
-                name="unique_active_student_course_enrollment",
+                name="unique_student_course_enrollment",
             )
         ]
         indexes = [

@@ -14,6 +14,8 @@ from .validators import validate_submission_file
 class AssessmentService:
     @staticmethod
     def ensure_student_can_access(student, assessment):
+        if assessment.allowed_students.exists() and not assessment.allowed_students.filter(id=student.id).exists():
+            raise PermissionDenied("This assessment is not assigned to you.")
         enrollments = Enrollment.objects.filter(
             organization=assessment.organization,
             student=student,
@@ -29,6 +31,8 @@ class AssessmentService:
     @staticmethod
     def ensure_assessment_open(assessment):
         now = timezone.now()
+        if assessment.publish_at and now < assessment.publish_at:
+            raise ValidationError("Assessment has not been published yet.")
         if assessment.starts_at and now < assessment.starts_at:
             raise ValidationError("Assessment has not started yet.")
         if assessment.ends_at and now > assessment.ends_at:
@@ -100,7 +104,7 @@ class AssessmentService:
             correct_ids = set(question.options.filter(is_correct=True).values_list("id", flat=True))
             selected_ids = set(answer.selected_options.values_list("id", flat=True))
             answer.is_correct = selected_ids == correct_ids and bool(correct_ids)
-            answer.marks_obtained = link.marks if answer.is_correct else Decimal("0")
+            answer.marks_obtained = link.marks if answer.is_correct else -question.negative_marks
             answer.updated_by = user
             answer.save(update_fields=["is_correct", "marks_obtained", "updated_by", "updated_at"])
             score += answer.marks_obtained

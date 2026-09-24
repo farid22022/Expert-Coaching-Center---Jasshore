@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Navigate, Routes, Route } from "react-router-dom";
 
 import Home from "../pages/Home.jsx";
 
@@ -64,10 +64,19 @@ import {
 
 import StudentProfile from "../components/common/StudentProfile.jsx";
 import StudentPortalDashboard from "../pages/student/StudentDashboard.jsx";
-import { TeacherOverviewPage, TeacherCoursesPage, TeacherAssessmentsPage, TeacherQuestionBankPage, TeacherMaterialsPage, TeacherStudentsPage, TeacherNotificationsPage } from "../pages/teacher/TeacherModulePages.jsx";
+import StudentCoursePage from "../pages/student/StudentCoursePage.jsx";
+import { StudentAssessmentsPage, StudentCoursesPage, StudentMaterialsPage, StudentNotificationsPage, StudentProfilePage } from "../pages/student/StudentPortalPages.jsx";
+import { TeacherOverviewPage, TeacherCoursesPage, TeacherAssessmentsPage, TeacherCreateTestPage, TeacherQuestionBankPage, TeacherMaterialsPage, TeacherResultsSubmissionsPage, TeacherStudentsPage, TeacherNotificationsPage, TeacherAssignmentsPage as TeacherAssignmentManagementPage, TeacherReviewPage } from "../pages/teacher/TeacherModulePages.jsx";
 
 import AdminLogin from "../pages/admin/AdminLogin.jsx";
 import DashboardLayout from "../pages/admin/DashboardLayout.jsx";
+import {
+  AdminAdmissionApplicationsPage,
+  AdminAdmissionsPage,
+  AdminPortalDashboard,
+  AdminTeacherAssignmentsPage,
+  AdminTeachersPage,
+} from "../pages/admin/AdminPortalPages.jsx";
 
 import DashboardHome, {
   DashboardPlaceholder,
@@ -1678,6 +1687,19 @@ function courseFoundationRoutes() {
 function adminDashboardChildren() {
   return (
     <>
+      <Route index element={<AdminPortalDashboard />} />
+      <Route path="teachers" element={<AdminTeachersPage />} />
+      <Route path="admissions" element={<AdminAdmissionsPage />} />
+      <Route path="teacher-assignments" element={<AdminTeacherAssignmentsPage />} />
+      <Route path="admission-applications" element={<AdminAdmissionApplicationsPage />} />
+      <Route path="*" element={<Navigate to="" replace />} />
+    </>
+  );
+
+  /* Legacy admin modules are intentionally retained on disk for dependency
+     safety, but are no longer part of the portal route surface. */
+  return (
+    <>
       <Route path="enrollments" element={<AdminEnrollmentsPage />} />
       <Route path="academic" element={<AdminAcademicPage />} />
       <Route path="users" element={<AdminUsersPage />} />
@@ -2096,11 +2118,27 @@ export default function AppRoutes() {
       />
 
       <Route path="/student/dashboard" element={<StudentPortalDashboard />} />
+      <Route path="/student/courses" element={<StudentCoursesPage />} />
+      <Route path="/student/courses/:enrollmentId" element={<StudentCoursePage />} />
+      <Route path="/student/assessments" element={<StudentAssessmentsPage />} />
+      <Route path="/student/materials" element={<StudentMaterialsPage />} />
+      <Route path="/student/notifications" element={<StudentNotificationsPage />} />
+      <Route path="/student/profile" element={<StudentProfilePage />} />
       <Route path="/teacher/dashboard" element={<TeacherOverviewPage />} />
       <Route path="/teacher/dashboard/courses" element={<TeacherCoursesPage />} />
       <Route path="/teacher/dashboard/assessments" element={<TeacherAssessmentsPage />} />
+      <Route path="/teacher/online-tests" element={<TeacherAssessmentsPage />} />
+      <Route path="/teacher/online-tests/create" element={<TeacherCreateTestPage />} />
+      <Route path="/teacher/online-tests/mcq" element={<TeacherAssessmentsPage />} />
+      <Route path="/teacher/online-tests/file-tests" element={<TeacherAssessmentsPage />} />
+      <Route path="/teacher/online-tests/live" element={<TeacherAssessmentsPage />} />
+      <Route path="/teacher/online-tests/scheduled" element={<TeacherAssessmentsPage />} />
+      <Route path="/teacher/online-tests/drafts" element={<TeacherAssessmentsPage />} />
+      <Route path="/teacher/online-tests/results" element={<TeacherResultsSubmissionsPage />} />
       <Route path="/teacher/dashboard/question-bank" element={<TeacherQuestionBankPage />} />
       <Route path="/teacher/dashboard/materials" element={<TeacherMaterialsPage />} />
+      <Route path="/teacher/dashboard/assignments" element={<TeacherAssignmentManagementPage />} />
+      <Route path="/teacher/dashboard/review" element={<TeacherReviewPage />} />
       <Route path="/teacher/dashboard/students" element={<TeacherStudentsPage />} />
       <Route path="/teacher/dashboard/notifications" element={<TeacherNotificationsPage />} />
 
@@ -2141,6 +2179,22 @@ export default function AppRoutes() {
         element={<DashboardLayout />}
       >
         {adminDashboardChildren()}
+      </Route>
+
+      <Route path="/admin" element={<DashboardLayout />}>
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="teachers" element={<AdminTeachersPage />} />
+        <Route path="teachers/create" element={<AdminTeachersPage />} />
+        <Route path="teachers/:id" element={<AdminTeachersPage />} />
+        <Route path="teachers/:id/edit" element={<AdminTeachersPage />} />
+        <Route path="admissions" element={<AdminAdmissionsPage />} />
+        <Route path="admissions/create" element={<AdminAdmissionsPage />} />
+        <Route path="admissions/:id" element={<AdminAdmissionsPage />} />
+        <Route path="admissions/:id/edit" element={<AdminAdmissionsPage />} />
+        <Route path="teacher-assignments" element={<AdminTeacherAssignmentsPage />} />
+        <Route path="teacher-assignments/create" element={<AdminTeacherAssignmentsPage />} />
+        <Route path="admission-applications" element={<AdminAdmissionApplicationsPage />} />
+        <Route path="admission-applications/:id" element={<AdminAdmissionApplicationsPage />} />
       </Route>
 
 

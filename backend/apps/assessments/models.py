@@ -23,6 +23,19 @@ class MaterialType(models.TextChoices):
     FILE = "file", "File"
 
 
+class TimingMode(models.TextChoices):
+    PRACTICE = "practice", "Practice / Anytime"
+    LIVE = "live", "Fixed-time Live"
+    SCHEDULED = "scheduled", "Scheduled"
+    INDIVIDUAL = "individual", "Individual Timed"
+
+
+class Difficulty(models.TextChoices):
+    EASY = "easy", "Easy"
+    MEDIUM = "medium", "Medium"
+    HARD = "hard", "Hard"
+
+
 class AssessmentStatus(models.TextChoices):
     DRAFT = "draft", "Draft"
     PUBLISHED = "published", "Published"
@@ -30,6 +43,13 @@ class AssessmentStatus(models.TextChoices):
     LIVE = "live", "Live"
     CLOSED = "closed", "Closed"
     ARCHIVED = "archived", "Archived"
+
+
+class ContentReviewStatus(models.TextChoices):
+    DRAFT = "draft", "Draft"
+    PENDING = "pending", "Awaiting head teacher review"
+    APPROVED = "approved", "Approved"
+    REJECTED = "rejected", "Changes requested"
 
 
 class AttemptStatus(models.TextChoices):
@@ -51,13 +71,18 @@ class Question(OrganizationScopedModel):
     course_section = models.ForeignKey("courses.CourseSection", null=True, blank=True, on_delete=models.SET_NULL, related_name="questions")
     subject = models.ForeignKey("courses.CourseSubject", null=True, blank=True, on_delete=models.SET_NULL, related_name="questions")
     chapter = models.CharField(max_length=180, blank=True, db_index=True)
+    topic = models.CharField(max_length=180, blank=True, db_index=True)
     created_by_teacher = models.ForeignKey("people.Employee", null=True, blank=True, on_delete=models.SET_NULL, related_name="questions")
     text = models.TextField()
     explanation = models.TextField(blank=True)
     question_type = models.CharField(max_length=20, choices=QuestionType.choices, default=QuestionType.SINGLE)
     image = models.ImageField(upload_to="assessments/questions/", blank=True)
     diagram = models.ImageField(upload_to="assessments/diagrams/", blank=True)
+    attachment = models.FileField(upload_to="assessments/question-files/", blank=True)
     marks = models.DecimalField(max_digits=6, decimal_places=2, default=1)
+    negative_marks = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    difficulty = models.CharField(max_length=20, choices=Difficulty.choices, default=Difficulty.MEDIUM)
+    tags = models.JSONField(default=list, blank=True)
     status = models.CharField(max_length=20, default="active", db_index=True)
 
     class Meta:
@@ -86,13 +111,20 @@ class CourseMaterial(OrganizationScopedModel):
     course_section = models.ForeignKey("courses.CourseSection", null=True, blank=True, on_delete=models.SET_NULL, related_name="study_materials")
     subject = models.ForeignKey("courses.CourseSubject", null=True, blank=True, on_delete=models.SET_NULL, related_name="study_materials")
     chapter = models.CharField(max_length=180, blank=True, db_index=True)
+    topic = models.CharField(max_length=180, blank=True, db_index=True)
     created_by_teacher = models.ForeignKey("people.Employee", null=True, blank=True, on_delete=models.SET_NULL, related_name="study_materials")
     title = models.CharField(max_length=180)
     description = models.TextField(blank=True)
     material_type = models.CharField(max_length=20, choices=MaterialType.choices, default=MaterialType.NOTE)
     url = models.URLField(blank=True)
     file = models.FileField(upload_to="assessments/materials/", blank=True)
-    is_published = models.BooleanField(default=True, db_index=True)
+    is_published = models.BooleanField(default=False, db_index=True)
+    publish_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    status = models.CharField(max_length=20, default="published", db_index=True)
+    review_status = models.CharField(max_length=20, choices=ContentReviewStatus.choices, default=ContentReviewStatus.DRAFT, db_index=True)
+    reviewed_by = models.ForeignKey("people.Employee", null=True, blank=True, on_delete=models.SET_NULL, related_name="reviewed_study_materials")
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    review_note = models.TextField(blank=True)
 
     class Meta:
         indexes = [
@@ -111,14 +143,37 @@ class Assessment(OrganizationScopedModel):
     course_section = models.ForeignKey("courses.CourseSection", null=True, blank=True, on_delete=models.SET_NULL, related_name="assessments")
     subject = models.ForeignKey("courses.CourseSubject", null=True, blank=True, on_delete=models.SET_NULL, related_name="assessments")
     chapter = models.CharField(max_length=180, blank=True, db_index=True)
+    topic = models.CharField(max_length=180, blank=True, db_index=True)
     created_by_teacher = models.ForeignKey("people.Employee", null=True, blank=True, on_delete=models.SET_NULL, related_name="assessments")
     instructions = models.TextField(blank=True)
+    description = models.TextField(blank=True)
+    timing_mode = models.CharField(max_length=20, choices=TimingMode.choices, default=TimingMode.PRACTICE)
     duration_minutes = models.PositiveIntegerField(default=20)
     starts_at = models.DateTimeField(null=True, blank=True, db_index=True)
     ends_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    publish_at = models.DateTimeField(null=True, blank=True, db_index=True)
     status = models.CharField(max_length=20, choices=AssessmentStatus.choices, default=AssessmentStatus.DRAFT, db_index=True)
+    review_status = models.CharField(max_length=20, choices=ContentReviewStatus.choices, default=ContentReviewStatus.DRAFT, db_index=True)
+    reviewed_by = models.ForeignKey("people.Employee", null=True, blank=True, on_delete=models.SET_NULL, related_name="reviewed_assessments")
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    review_note = models.TextField(blank=True)
     published_at = models.DateTimeField(null=True, blank=True)
     allow_late_join = models.BooleanField(default=False)
+    late_deadline = models.DateTimeField(null=True, blank=True)
+    max_file_size_mb = models.PositiveIntegerField(default=10)
+    allowed_file_types = models.JSONField(default=list, blank=True)
+    question_file = models.FileField(upload_to="assessments/test-files/", blank=True)
+    question_image = models.ImageField(upload_to="assessments/test-images/", blank=True)
+    supporting_file = models.FileField(upload_to="assessments/supporting-files/", blank=True)
+    attempts_allowed = models.PositiveIntegerField(default=1, help_text="Use 0 for unlimited.")
+    shuffle_questions = models.BooleanField(default=False)
+    shuffle_options = models.BooleanField(default=False)
+    show_result_immediately = models.BooleanField(default=False)
+    show_correct_answers = models.BooleanField(default=False)
+    show_explanations = models.BooleanField(default=False)
+    allow_review_before_submit = models.BooleanField(default=True)
+    passing_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=40)
+    allowed_students = models.ManyToManyField("people.Student", blank=True, related_name="assigned_assessments")
 
     class Meta:
         indexes = [

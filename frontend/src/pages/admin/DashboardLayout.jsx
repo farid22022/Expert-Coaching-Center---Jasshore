@@ -63,7 +63,7 @@ export default function DashboardLayout() {
           </button>
 
           <h2 className="text-base font-black text-emerald-950 lg:text-lg">
-            Admin Dashboard
+            Admin Portal
           </h2>
 
           <div className="dashboard-top-actions ml-auto flex items-center gap-2">
@@ -79,8 +79,6 @@ export default function DashboardLayout() {
               {profileOpen && (
                 <div className="absolute right-0 mt-2 w-56 rounded-lg border border-slate-200 bg-white p-2 shadow-xl">
                   <button type="button" className="block w-full rounded-md px-3 py-2 text-left text-sm font-bold hover:bg-emerald-50" onClick={() => navigate("/profile")}>My Profile</button>
-                  <button type="button" className="block w-full rounded-md px-3 py-2 text-left text-sm font-bold hover:bg-emerald-50">Account Settings</button>
-                  <div className="my-1 border-t border-slate-100" />
                   <button type="button" className="block w-full rounded-md px-3 py-2 text-left text-sm font-bold text-red-600 hover:bg-red-50" onClick={handleLogout}>
                     <LogOut size={16} className="mr-2 inline" />
                     Logout

@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Bell, BookOpen, ClipboardList, CreditCard, LayoutDashboard, LogOut, Settings, UserRound, Users, X } from "lucide-react";
+import { BookOpen, ClipboardCheck, GraduationCap, LayoutDashboard, LogOut, Users, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { logout } from "../../services/authApi.js";
 
@@ -7,13 +7,10 @@ const dashboardPathFor = (path, basePath) => `${basePath}${path}`;
 
 const navItems = [
   { label: "Dashboard", path: "", icon: LayoutDashboard, end: true },
-  { label: "Academic", path: "/academic", icon: BookOpen },
-  { label: "Users", path: "/users", icon: Users },
-  { label: "Assessments", path: "/assessments", icon: ClipboardList },
-  { label: "Enrollments", path: "/enrollments", icon: UserRound },
-  { label: "Payments", path: "/payments", icon: CreditCard },
-  { label: "Notifications", path: "/notifications", icon: Bell },
-  { label: "Settings", path: "/settings", icon: Settings },
+  { label: "Teachers", path: "/teachers", icon: GraduationCap },
+  { label: "Admissions", path: "/admissions", icon: BookOpen },
+  { label: "Teacher Assignments", path: "/teacher-assignments", icon: Users },
+  { label: "Admission Applications", path: "/admission-applications", icon: ClipboardCheck },
 ];
 
 export default function DashboardSidebar({ mobileOpen, setMobileOpen }) {
@@ -22,7 +19,9 @@ export default function DashboardSidebar({ mobileOpen, setMobileOpen }) {
   const navigate = useNavigate();
   const basePath = location.pathname.startsWith("/admin/dashboard")
     ? "/admin/dashboard"
-    : "/dashboard";
+    : location.pathname.startsWith("/admin/")
+      ? "/admin"
+      : "/dashboard";
   const handleLogout = async () => {
     await logout();
     navigate("/");
@@ -47,7 +46,7 @@ export default function DashboardSidebar({ mobileOpen, setMobileOpen }) {
           />
           <div className="min-w-0">
             <strong className="block truncate text-sm font-black tracking-tight">EXPERT COACHING</strong>
-            <span className="block text-xs font-semibold text-white/60">Administration Panel</span>
+            <span className="block text-xs font-semibold text-white/60">Admin Portal</span>
           </div>
           <button type="button" className="btn btn-ghost btn-square btn-sm ml-auto text-white lg:hidden" onClick={close} aria-label="Close dashboard menu">
             <X size={18} />

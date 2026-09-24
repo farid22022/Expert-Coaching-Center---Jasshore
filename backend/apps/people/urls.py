@@ -2,6 +2,7 @@ from rest_framework.routers import DefaultRouter
 from . import views
 
 router = DefaultRouter()
+router.register("teacher-accounts", views.TeacherAccountViewSet, basename="teacher-account")
 router.register("guardians", views.GuardianViewSet)
 router.register("student-profiles", views.StudentProfileViewSet)
 router.register("students", views.StudentViewSet)

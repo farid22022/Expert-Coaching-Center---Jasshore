@@ -1,4 +1,4 @@
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import gsap from "gsap";
@@ -11,8 +11,11 @@ import {
   LogIn,
   UserPlus,
   ShieldCheck,
+  LayoutDashboard,
+  LogOut,
 } from "lucide-react";
 import { institution, navGroups } from "../../data/site.js";
+import { getDashboardPathForUser, getStoredUser, logout } from "../../services/authApi.js";
 
 const navLinkClass = ({ isActive }) =>
   `inline-flex min-h-9 sm:min-h-10 items-center rounded-md px-2.5 sm:px-3 text-xs sm:text-sm font-bold whitespace-nowrap [overflow-wrap:normal] transition-colors hover:bg-emerald-50 hover:text-emerald-700 ${
@@ -34,6 +37,8 @@ export default function Header() {
   const [open, setOpen] = useState("");
   const [authOpen, setAuthOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [user, setUser] = useState(() => getStoredUser());
+  const navigate = useNavigate();
 
   const headerRef = useRef(null);
   const logoRef = useRef(null);
@@ -43,6 +48,25 @@ export default function Header() {
     setMobile(false);
     setAuthOpen(false);
   };
+
+  const handleLogout = async () => {
+    await logout();
+    setUser(null);
+    closeMenus();
+    navigate("/");
+  };
+
+  useEffect(() => {
+    const refreshUser = () => setUser(getStoredUser());
+    window.addEventListener("focus", refreshUser);
+    window.addEventListener("storage", refreshUser);
+    window.addEventListener("authchange", refreshUser);
+    return () => {
+      window.removeEventListener("focus", refreshUser);
+      window.removeEventListener("storage", refreshUser);
+      window.removeEventListener("authchange", refreshUser);
+    };
+  }, []);
 
   // ✦ GSAP: logo entrance on mount
   useEffect(() => {
@@ -186,7 +210,7 @@ export default function Header() {
               aria-haspopup="menu"
             >
               <UserRound size={16} />
-              <span className="hidden xl:inline whitespace-nowrap [overflow-wrap:normal]">Account</span>
+              <span className="hidden max-w-28 truncate xl:inline whitespace-nowrap [overflow-wrap:normal]">{user?.first_name || user?.username || "Account"}</span>
               <ChevronDown
                 size={15}
                 className={`transition-transform ${authOpen ? "rotate-180" : ""}`}
@@ -199,24 +223,16 @@ export default function Header() {
                   {...dropdownMotion}
                   className="absolute right-0 top-full z-40 mt-2 grid min-w-48 gap-1 rounded-lg border border-slate-200 bg-white p-2 shadow-xl origin-top-right"
                 >
-                  <Link to="/login" onClick={closeMenus} className={menuItemClass}>
-                    <LogIn size={16} />
-                    <span>Login</span>
-                  </Link>
-
-                  <Link to="/register" onClick={closeMenus} className={menuItemClass}>
-                    <UserPlus size={16} />
-                    <span>Register</span>
-                  </Link>
-
-                  <Link
-                    to="/Admin/login"
-                    onClick={closeMenus}
-                    className="flex min-h-9 items-center gap-2 rounded-md px-3 text-sm font-bold text-emerald-700 transition-colors hover:bg-emerald-50"
-                  >
-                    <ShieldCheck size={16} />
-                    <span>Admin Login</span>
-                  </Link>
+                  {user ? <>
+                    <div className="rounded-md bg-emerald-50 px-3 py-2"><p className="truncate text-sm font-black text-emerald-950">{user.first_name || user.username || user.email}</p><p className="truncate text-xs font-semibold text-slate-500">{user.email}</p></div>
+                    <Link to={getDashboardPathForUser(user)} onClick={closeMenus} className={menuItemClass}><LayoutDashboard size={16} /><span>Dashboard</span></Link>
+                    <Link to="/profile" onClick={closeMenus} className={menuItemClass}><UserRound size={16} /><span>My Profile</span></Link>
+                    <button type="button" onClick={handleLogout} className="flex min-h-9 items-center gap-2 rounded-md px-3 text-sm font-bold text-red-700 transition-colors hover:bg-red-50"><LogOut size={16} /><span>Logout</span></button>
+                  </> : <>
+                    <Link to="/login" onClick={closeMenus} className={menuItemClass}><LogIn size={16} /><span>Login</span></Link>
+                    <Link to="/register" onClick={closeMenus} className={menuItemClass}><UserPlus size={16} /><span>Register</span></Link>
+                    <Link to="/Admin/login" onClick={closeMenus} className="flex min-h-9 items-center gap-2 rounded-md px-3 text-sm font-bold text-emerald-700 transition-colors hover:bg-emerald-50"><ShieldCheck size={16} /><span>Admin Login</span></Link>
+                  </>}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -274,7 +290,7 @@ export default function Header() {
                 >
                   <span className="inline-flex items-center gap-2">
                     <UserRound size={17} />
-                    <span>Account</span>
+                    <span>{user?.first_name || user?.username || "Account"}</span>
                   </span>
                   <ChevronDown
                     size={16}
@@ -291,24 +307,16 @@ export default function Header() {
                       transition={{ duration: 0.2 }}
                       className="grid gap-1 overflow-hidden pl-2"
                     >
-                      <Link className={menuItemClass} to="/login" onClick={closeMenus}>
-                        <LogIn size={17} />
-                        <span>Login</span>
-                      </Link>
-
-                      <Link className={menuItemClass} to="/register" onClick={closeMenus}>
-                        <UserPlus size={17} />
-                        <span>Register</span>
-                      </Link>
-
-                      <Link
-                        className="flex min-h-9 items-center gap-2 rounded-md px-3 text-sm font-bold text-emerald-700 transition-colors hover:bg-emerald-50"
-                        to="/Admin/login"
-                        onClick={closeMenus}
-                      >
-                        <ShieldCheck size={17} />
-                        <span>Admin Login</span>
-                      </Link>
+                      {user ? <>
+                        <div className="rounded-md bg-emerald-50 px-3 py-2"><p className="truncate font-black text-emerald-950">{user.first_name || user.username || user.email}</p><p className="truncate text-xs font-semibold text-slate-500">{user.email}</p></div>
+                        <Link className={menuItemClass} to={getDashboardPathForUser(user)} onClick={closeMenus}><LayoutDashboard size={17} /><span>Dashboard</span></Link>
+                        <Link className={menuItemClass} to="/profile" onClick={closeMenus}><UserRound size={17} /><span>My Profile</span></Link>
+                        <button type="button" onClick={handleLogout} className="flex min-h-9 items-center gap-2 rounded-md px-3 text-sm font-bold text-red-700 transition-colors hover:bg-red-50"><LogOut size={17} /><span>Logout</span></button>
+                      </> : <>
+                        <Link className={menuItemClass} to="/login" onClick={closeMenus}><LogIn size={17} /><span>Login</span></Link>
+                        <Link className={menuItemClass} to="/register" onClick={closeMenus}><UserPlus size={17} /><span>Register</span></Link>
+                        <Link className="flex min-h-9 items-center gap-2 rounded-md px-3 text-sm font-bold text-emerald-700 transition-colors hover:bg-emerald-50" to="/Admin/login" onClick={closeMenus}><ShieldCheck size={17} /><span>Admin Login</span></Link>
+                      </>}
                     </motion.div>
                   )}
                 </AnimatePresence>

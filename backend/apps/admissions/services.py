@@ -1,24 +1,30 @@
 from django.db import transaction
 from django.utils import timezone
 from apps.people.models import Guardian, Student
-from .models import AdmissionApplication, AdmissionResult
+from apps.courses.models import Enrollment, EnrollmentStatus
+from apps.messaging.models import Notification
+from .models import AdmissionApplication, AdmissionResult, ApplicationStatus
 
 
 class AdmissionService:
     @staticmethod
-    def generate_application_no(organization_id):
-        prefix = timezone.now().strftime("APP%Y%m")
+    def generate_application_no(organization_id, admission_program=False):
+        prefix = timezone.now().strftime("ADM-%Y-") if admission_program else timezone.now().strftime("APP%Y%m")
         count = AdmissionApplication.objects.filter(
             organization_id=organization_id,
             application_no__startswith=prefix,
         ).count()
-        return f"{prefix}{count + 1:05d}"
+        return f"{prefix}{count + 1:06d}" if admission_program else f"{prefix}{count + 1:05d}"
 
     @staticmethod
     @transaction.atomic
     def approve_application(application, approved_by):
-        if application.status == "approved":
-            return application.approved_student
+        application = AdmissionApplication.objects.select_for_update().select_related("course", "organization").get(pk=application.pk)
+        if application.status == ApplicationStatus.APPROVED:
+            enrollment = Enrollment.objects.filter(application=application, status=EnrollmentStatus.ACTIVE).first()
+            return application.approved_student, enrollment
+        if application.status not in {ApplicationStatus.PENDING, ApplicationStatus.UNDER_REVIEW}:
+            raise ValueError("Only pending or under-review applications can be approved.")
 
         guardian = None
         if application.guardian_name or application.guardian_phone:
@@ -31,27 +37,66 @@ class AdmissionService:
                 updated_by=approved_by,
             )
 
-        student = Student.objects.create(
-            organization=application.organization,
-            student_id=f"STU-{application.application_no}",
-            admission_no=application.application_no,
-            full_name=application.applicant_name,
-            phone=application.applicant_phone,
-            email=application.applicant_email,
-            session=application.session,
-            academic_class=application.academic_class,
-            group=application.group,
-            shift=application.shift,
-            created_by=approved_by,
-            updated_by=approved_by,
-        )
+        student = Student.objects.filter(organization=application.organization, email__iexact=application.applicant_email).first()
+        if not student:
+            student = Student.objects.create(
+                organization=application.organization,
+                student_id=f"STU-{application.application_no}",
+                admission_no=application.application_no,
+                full_name=application.applicant_name,
+                full_name_bn=application.applicant_name_bn,
+                gender=application.gender,
+                date_of_birth=application.date_of_birth,
+                phone=application.applicant_phone,
+                email=application.applicant_email,
+                session=application.session,
+                academic_class=application.academic_class,
+                group=application.group,
+                shift=application.shift,
+                created_by=approved_by,
+                updated_by=approved_by,
+            )
         if guardian:
             student.guardians.add(guardian, through_defaults={"is_primary": True})
-        application.status = "approved"
+        enrollment = None
+        if application.course_id:
+            section = application.course.sections.filter(status="active").order_by("order", "id").first()
+            enrollment, _ = Enrollment.objects.get_or_create(
+                organization=application.organization,
+                student=student,
+                course=application.course,
+                defaults={
+                    "course_section": section,
+                    "application": application,
+                    "enrollment_number": f"ENR-{application.application_no}",
+                    "enrolled_at": timezone.now(),
+                    "status": EnrollmentStatus.ACTIVE,
+                    "created_by": approved_by,
+                    "updated_by": approved_by,
+                },
+            )
+            if enrollment.status != EnrollmentStatus.ACTIVE:
+                enrollment.status = EnrollmentStatus.ACTIVE
+                enrollment.application = application
+                enrollment.enrolled_at = enrollment.enrolled_at or timezone.now()
+                enrollment.updated_by = approved_by
+                enrollment.save(update_fields=["status", "application", "enrolled_at", "updated_by", "updated_at"])
+        application.status = ApplicationStatus.APPROVED
         application.approved_student = student
+        application.reviewed_by = approved_by
+        application.reviewed_at = timezone.now()
+        application.approved_at = timezone.now()
         application.updated_by = approved_by
-        application.save(update_fields=["status", "approved_student", "updated_by", "updated_at"])
-        return student
+        application.save(update_fields=["status", "approved_student", "reviewed_by", "reviewed_at", "approved_at", "updated_by", "updated_at"])
+        if application.applicant_id and application.course_id:
+            Notification.objects.get_or_create(
+                organization=application.organization,
+                recipient=application.applicant,
+                notification_type="admission_approved",
+                title="Admission approved",
+                defaults={"body": f"Your admission to {application.course.title} has been approved.", "target_url": "/student/dashboard", "created_by": approved_by, "updated_by": approved_by},
+            )
+        return student, enrollment
 
     @staticmethod
     @transaction.atomic

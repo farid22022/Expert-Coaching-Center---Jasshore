@@ -21,6 +21,7 @@ export default function RoleDashboardShell({
 }) {
   const [open, setOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState({ "Online Tests": true });
   const user = getStoredUser();
   const navigate = useNavigate();
 
@@ -30,7 +31,7 @@ export default function RoleDashboardShell({
   };
 
   const sidebar = (
-    <aside className="flex h-full flex-col bg-emerald-950 p-4 text-white">
+    <aside className="flex h-full min-h-0 flex-col overflow-y-auto overscroll-contain bg-emerald-950 p-3 text-white sm:p-4">
       <div className="mb-5 flex items-center gap-3 border-b border-white/10 pb-4">
         <img src="/jasshoreExpert.png" alt="Expert Coaching Center" className="h-11 w-11 rounded-xl bg-white p-1 object-contain" />
         <div className="min-w-0">
@@ -42,22 +43,16 @@ export default function RoleDashboardShell({
         </button>
       </div>
 
-      <nav className="grid gap-1">
-        {items.map(({ label, icon: Icon, to, end }) => (
-          <NavLink
-            key={label}
-            to={to}
-            end={end}
-            onClick={() => setOpen(false)}
-            className={({ isActive }) =>
-              `flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-bold transition ${
-                isActive ? "bg-white/12 text-white ring-1 ring-white/10" : "text-white/75 hover:bg-white/10 hover:text-white"
-              }`
-            }
-          >
-            <Icon size={18} />
-            {label}
-          </NavLink>
+      <nav className="grid gap-1 pb-4">
+        {items.map(({ label, icon: Icon, to, end, children: itemChildren }) => itemChildren ? (
+          <div key={label}>
+            <button type="button" onClick={() => setExpandedGroups((current) => ({ ...current, [label]: !current[label] }))} className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-bold text-white/75 transition hover:bg-white/10 hover:text-white">
+              <Icon size={18} /><span>{label}</span><ChevronDown size={16} className={`ml-auto transition-transform ${expandedGroups[label] ? "rotate-180" : ""}`} />
+            </button>
+            {expandedGroups[label] && <div className="ml-4 grid gap-1 border-l border-white/15 pl-2">{itemChildren.map(({ label: childLabel, to: childTo }) => <NavLink key={childLabel} to={childTo} onClick={() => setOpen(false)} className={({ isActive }) => `rounded-md px-3 py-2 text-xs font-bold ${isActive ? "bg-white/12 text-white" : "text-white/65 hover:bg-white/10 hover:text-white"}`}>{childLabel}</NavLink>)}</div>}
+          </div>
+        ) : (
+          <NavLink key={label} to={to} end={end} onClick={() => setOpen(false)} className={({ isActive }) => `flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-bold transition ${isActive ? "bg-white/12 text-white ring-1 ring-white/10" : "text-white/75 hover:bg-white/10 hover:text-white"}`}><Icon size={18} />{label}</NavLink>
         ))}
       </nav>
 
@@ -88,13 +83,13 @@ export default function RoleDashboardShell({
       </div>
 
       <main className="min-w-0">
-        <header className="sticky top-0 z-30 flex h-[68px] items-center gap-3 border-b border-emerald-100 bg-white px-4 shadow-sm lg:px-6">
+        <header className="sticky top-0 z-30 flex h-[68px] items-center gap-2 border-b border-emerald-100 bg-white px-3 shadow-sm sm:gap-3 sm:px-4 lg:px-6">
           <button type="button" className="btn btn-ghost btn-square lg:hidden" onClick={() => setOpen(true)} aria-label="Open menu">
             <Menu size={20} />
           </button>
-          <h1 className="text-base font-black text-emerald-950 sm:text-lg">{title}</h1>
+          <h1 className="min-w-0 flex-1 truncate text-base font-black text-emerald-950 sm:text-lg">{title}</h1>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
             <button type="button" className="btn btn-ghost btn-square" aria-label="Notifications">
               <Bell size={19} />
             </button>
@@ -114,7 +109,7 @@ export default function RoleDashboardShell({
           </div>
         </header>
 
-        <section className="p-4 lg:p-6">{children}</section>
+        <section className="p-3 sm:p-4 lg:p-6">{children}</section>
       </main>
     </div>
   );
