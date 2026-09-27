@@ -1,10 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Edit3, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { getApiErrorMessage } from "../../../../services/api.js";
+import { confirmDelete, notifyError, notifySuccess } from "../../../../services/alerts.js";
 import {
+  academicStageApi,
+  assessmentComponentApi,
   courseApi,
+  courseGradeScaleApi,
+  courseGradeScaleItemApi,
   courseSectionApi,
   courseSubjectApi,
   employeeApi,
@@ -13,13 +19,7 @@ import {
   teacherAssignmentApi,
 } from "../../../../services/resourceApi.js";
 
-const navItems = [
-  ["Courses", "/admin/dashboard/courses"],
-  ["Sections", "/admin/dashboard/courses/sections"],
-  ["Subjects", "/admin/dashboard/courses/subjects"],
-  ["Teacher Assignments", "/admin/dashboard/teacher-assignments"],
-  ["Enrollments", "/admin/dashboard/enrollments"],
-];
+const navItems = [];
 
 function asArray(payload) {
   if (Array.isArray(payload)) return payload;
@@ -33,19 +33,10 @@ function labelOf(item) {
   return item?.title || item?.name || item?.full_name || item?.student_id || item?.enrollment_number || `#${item?.id}`;
 }
 
-function defaultAdmissionFormSchema() {
-  return [
-    { id: crypto.randomUUID(), title: "Student Information", fields: ["Full Name", "Mobile", "Email", "Date of Birth"].map((label) => ({ id: crypto.randomUUID(), name: label.toLowerCase().replaceAll(" ", "-"), label, type: label.includes("Date") ? "date" : label === "Email" ? "email" : "text", required: ["Full Name", "Mobile"].includes(label), placeholder: "", optionsText: "" })) },
-    { id: crypto.randomUUID(), title: "Father Information", fields: ["Father Name", "Father Mobile"].map((label) => ({ id: crypto.randomUUID(), name: label.toLowerCase().replaceAll(" ", "-"), label, type: "text", required: false, placeholder: "", optionsText: "" })) },
-    { id: crypto.randomUUID(), title: "Mother Information", fields: ["Mother Name", "Mother Mobile"].map((label) => ({ id: crypto.randomUUID(), name: label.toLowerCase().replaceAll(" ", "-"), label, type: "text", required: false, placeholder: "", optionsText: "" })) },
-    { id: crypto.randomUUID(), title: "Academic Information", fields: ["Class", "Session", "Shift"].map((label) => ({ id: crypto.randomUUID(), name: label.toLowerCase().replaceAll(" ", "-"), label, type: "text", required: label === "Class", placeholder: "", optionsText: "" })) },
-    { id: crypto.randomUUID(), title: "Payment", fields: ["Payment Method", "Amount", "Transaction ID"].map((label) => ({ id: crypto.randomUUID(), name: label.toLowerCase().replaceAll(" ", "-"), label, type: label === "Amount" ? "number" : "text", required: false, placeholder: "", optionsText: "" })) },
-  ];
-}
 
 function Nav() {
   return (
-    <nav className="sticky top-[70px] z-20 flex min-h-11 flex-wrap items-center gap-2 border border-slate-200 bg-white px-3 py-2 shadow-sm">
+    <nav className="sticky top-0 z-20 flex min-h-11 flex-wrap items-center gap-2 border border-slate-200 bg-white px-3 py-2 shadow-sm">
       <strong className="mr-2 text-sm font-black text-emerald-800">Course Foundation</strong>
       {navItems.map(([label, to]) => (
         <Link key={to} to={to} className="rounded-md px-3 py-2 text-sm font-bold text-slate-900 hover:bg-emerald-50 hover:text-emerald-700">
@@ -65,73 +56,6 @@ function Select({ children, ...props }) {
 }
 
 function Field({ field, value, update, form }) {
-  if (field.type === "admissionFormSchema") {
-    const sections = Array.isArray(value) ? value : [];
-    const updateSection = (index, key, nextValue) => {
-      update(field.name, sections.map((section, sectionIndex) => sectionIndex === index ? { ...section, [key]: nextValue } : section));
-    };
-    const updateField = (sectionIndex, fieldIndex, key, nextValue) => {
-      update(field.name, sections.map((section, index) => {
-        if (index !== sectionIndex) return section;
-        return {
-          ...section,
-          fields: (section.fields || []).map((schemaField, schemaFieldIndex) => (
-            schemaFieldIndex === fieldIndex ? { ...schemaField, [key]: nextValue } : schemaField
-          )),
-        };
-      }));
-    };
-    const addField = (sectionIndex) => {
-      update(field.name, sections.map((section, index) => index === sectionIndex ? {
-        ...section,
-        fields: [...(section.fields || []), { id: crypto.randomUUID(), name: "", label: "", type: "text", placeholder: "", required: false, optionsText: "" }],
-      } : section));
-    };
-    const removeField = (sectionIndex, fieldIndex) => {
-      update(field.name, sections.map((section, index) => index === sectionIndex ? {
-        ...section,
-        fields: (section.fields || []).filter((_, currentIndex) => currentIndex !== fieldIndex),
-      } : section));
-    };
-    return (
-      <div className="space-y-4 rounded border border-slate-200 bg-white p-3">
-        {sections.map((section, sectionIndex) => (
-          <div key={`${sectionIndex}-${section.title}`} className="rounded border border-emerald-100 bg-emerald-50/40 p-3">
-            <div className="flex flex-col gap-2 md:flex-row">
-              <Input value={section.title || ""} onChange={(event) => updateSection(sectionIndex, "title", event.target.value)} placeholder="Section title, e.g. Student Information" />
-              <button type="button" className="btn btn-error btn-sm h-9 min-h-9 text-white" onClick={() => update(field.name, sections.filter((_, index) => index !== sectionIndex))}>Remove Section</button>
-            </div>
-            <div className="mt-3 space-y-2">
-              {(section.fields || []).map((schemaField, fieldIndex) => (
-                <div key={schemaField.id || `${fieldIndex}-${schemaField.label}`} className="grid gap-2 rounded bg-white p-2 md:grid-cols-[1fr_140px_1fr_170px_auto_auto_auto]">
-                  <Input value={schemaField.label || ""} onChange={(event) => updateField(sectionIndex, fieldIndex, "label", event.target.value)} placeholder="Field label" />
-                  <Select value={schemaField.type || "text"} onChange={(event) => updateField(sectionIndex, fieldIndex, "type", event.target.value)}>
-                    {["text", "email", "tel", "number", "date", "textarea", "select", "file"].map((type) => <option key={type} value={type}>{type}</option>)}
-                  </Select>
-                  <Input value={schemaField.placeholder || ""} onChange={(event) => updateField(sectionIndex, fieldIndex, "placeholder", event.target.value)} placeholder="Placeholder" />
-                  <Input value={schemaField.optionsText || (schemaField.options || []).join(", ")} onChange={(event) => updateField(sectionIndex, fieldIndex, "optionsText", event.target.value)} placeholder="Options, comma separated" />
-                   <label className="flex h-9 items-center gap-2 text-sm font-bold">
-                    <input type="checkbox" className="checkbox checkbox-sm" checked={Boolean(schemaField.required)} onChange={(event) => updateField(sectionIndex, fieldIndex, "required", event.target.checked)} />
-                    Required
-                   </label>
-                   <div className="flex gap-1"><button type="button" className="btn btn-ghost btn-sm h-9 min-h-9 px-2" disabled={!fieldIndex} onClick={() => update(field.name, sections.map((current, index) => index !== sectionIndex ? current : { ...current, fields: current.fields.map((entry, entryIndex, all) => entryIndex === fieldIndex ? all[fieldIndex - 1] : entryIndex === fieldIndex - 1 ? all[fieldIndex] : entry) }))}>Up</button><button type="button" className="btn btn-ghost btn-sm h-9 min-h-9 px-2" disabled={fieldIndex === section.fields.length - 1} onClick={() => update(field.name, sections.map((current, index) => index !== sectionIndex ? current : { ...current, fields: current.fields.map((entry, entryIndex, all) => entryIndex === fieldIndex ? all[fieldIndex + 1] : entryIndex === fieldIndex + 1 ? all[fieldIndex] : entry) }))}>Down</button></div>
-                   <button type="button" className="btn btn-error btn-sm h-9 min-h-9 text-white" onClick={() => removeField(sectionIndex, fieldIndex)}>Remove</button>
-                </div>
-              ))}
-            </div>
-            <button type="button" className="btn btn-outline btn-success btn-sm mt-3" onClick={() => addField(sectionIndex)}>Add Field</button>
-          </div>
-        ))}
-        <button
-          type="button"
-          className="btn btn-success btn-sm text-white"
-          onClick={() => update(field.name, [...sections, { id: crypto.randomUUID(), title: "New Section", fields: [] }])}
-        >
-          Add Form Section
-        </button>
-      </div>
-    );
-  }
   if (field.type === "customContent") {
     const items = Array.isArray(value) ? value : [];
     const updateItem = (index, key, nextValue) => {
@@ -190,12 +114,14 @@ function Field({ field, value, update, form }) {
   return <Input type={field.type || "text"} value={value ?? ""} onChange={(event) => update(field.name, field.number ? Number(event.target.value) || 0 : event.target.value)} placeholder={field.placeholder || field.label} />;
 }
 
-function CrudPage({ title, api, initialForm, fields, columns, lookups = {}, normalize = (form) => form, validate }) {
+export function CrudPage({ title, api, initialForm, fields, columns, lookups = {}, normalize = (form) => form, validate, showNav = true }) {
+  const { t } = useTranslation("common");
   const [rows, setRows] = useState([]);
   const [form, setForm] = useState(initialForm);
   const [editing, setEditing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const lookupMaps = useMemo(() => Object.fromEntries(
     Object.entries(lookups).map(([key, values]) => [key, new Map((values || []).map((item) => [item.id, labelOf(item)]))])
@@ -225,32 +151,35 @@ function CrudPage({ title, api, initialForm, fields, columns, lookups = {}, norm
 
   const save = async (event) => {
     event.preventDefault();
+    if (saving) return;
     setNotice("");
     const validationMessage = validate?.(form);
     if (validationMessage) {
       setNotice(validationMessage);
       return;
     }
+    setSaving(true);
     try {
       const payload = normalize(form);
       if (editing) await api.update(editing.id, payload);
       else await api.create(payload);
       reset();
       await reload();
-      setNotice(`${title} saved successfully.`);
+      notifySuccess(t("savedSuccessfully", { title }));
     } catch (error) {
       setNotice(getApiErrorMessage(error, `Unable to save ${title.toLowerCase()}.`));
-    }
+      notifyError(getApiErrorMessage(error, `Unable to save ${title.toLowerCase()}.`));
+    } finally { setSaving(false); }
   };
 
   const remove = async (row) => {
-    if (!window.confirm(`Delete this ${title.toLowerCase()} record?`)) return;
+    if (!(await confirmDelete(title.toLowerCase()))) return;
     try {
       await api.remove(row.id);
       await reload();
-      setNotice(`${title} deleted successfully.`);
+      notifySuccess(t("deletedSuccessfully", { title }));
     } catch (error) {
-      setNotice(getApiErrorMessage(error, `Unable to delete ${title.toLowerCase()}.`));
+      notifyError(getApiErrorMessage(error, `Unable to delete ${title.toLowerCase()}.`));
     }
   };
 
@@ -273,14 +202,14 @@ function CrudPage({ title, api, initialForm, fields, columns, lookups = {}, norm
   };
 
   return (
-    <div className="min-h-[calc(100vh-60px)] bg-[#f4f8f6] p-3">
-      <Nav />
-      <section className="mt-5 overflow-hidden rounded-md border border-base-300 bg-white shadow-sm">
-        <header className="bg-emerald-800 px-5 py-3 text-white">
+    <div className="min-h-[calc(100vh-60px)] bg-soft p-3">
+      {showNav && <Nav />}
+      <section className="mt-5 overflow-hidden rounded-md border border-base-300 bg-paper shadow-sm">
+        <header className="bg-deep-green px-5 py-3 text-white">
           <h1 className="text-lg font-black">{title}</h1>
         </header>
         <div className="space-y-5 p-5">
-          <form onSubmit={save} className="grid gap-4 rounded-md border border-slate-200 bg-slate-50 p-4 md:grid-cols-2 xl:grid-cols-3">
+          <form onSubmit={save} className="grid gap-4 rounded-md border border-slate-200 bg-soft p-4 md:grid-cols-2 xl:grid-cols-3">
             {fields.map((field) => (
               <label key={field.name} className={["textarea", "customContent", "admissionFormSchema"].includes(field.type) ? "md:col-span-2 xl:col-span-3" : ""}>
                 <span className="mb-1 block text-sm font-bold text-slate-700">{field.label}</span>
@@ -288,8 +217,8 @@ function CrudPage({ title, api, initialForm, fields, columns, lookups = {}, norm
               </label>
             ))}
             <div className="flex items-end gap-2 md:col-span-2 xl:col-span-3">
-              <button type="submit" className="btn btn-success btn-sm text-white">{editing ? "Update" : "Create"} {title}</button>
-              {editing && <button type="button" onClick={reset} className="btn btn-sm">Cancel</button>}
+              <button disabled={saving} type="submit" className="btn btn-success btn-sm text-white">{editing ? t("update") : t("create")} {title}</button>
+              {editing && <button type="button" onClick={reset} className="btn btn-sm">{t("cancel")}</button>}
             </div>
           </form>
 
@@ -305,7 +234,7 @@ function CrudPage({ title, api, initialForm, fields, columns, lookups = {}, norm
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={columns.length + 1} className="py-8 text-center text-slate-400">Loading...</td></tr>
+                  <tr><td colSpan={columns.length + 1} className="py-8 text-center text-slate-400">{t("loading")}</td></tr>
                 ) : rows.length ? rows.map((row) => (
                   <tr key={row.id}>
                     {columns.map((column) => (
@@ -321,7 +250,7 @@ function CrudPage({ title, api, initialForm, fields, columns, lookups = {}, norm
                     </td>
                   </tr>
                 )) : (
-                  <tr><td colSpan={columns.length + 1} className="py-8 text-center text-slate-400">No records found.</td></tr>
+                  <tr><td colSpan={columns.length + 1} className="py-8 text-center text-slate-400">{t("noRecordsFound")}</td></tr>
                 )}
               </tbody>
             </table>
@@ -332,160 +261,106 @@ function CrudPage({ title, api, initialForm, fields, columns, lookups = {}, norm
   );
 }
 
-function cleanCoursePayload(form) {
-  const payload = {
-    title: form.title?.trim(),
-    code: form.code?.trim() || "",
-    description: form.description?.trim() || "",
-    course_type: form.course_type || "admission",
-    admission_fee: Number(form.admission_fee || 0),
-    course_fee: Number(form.course_fee || 0),
-    capacity: form.capacity ? Number(form.capacity) : null,
-    start_date: form.start_date || null,
-    end_date: form.end_date || null,
-    enrollment_start: form.enrollment_start || null,
-    enrollment_end: form.enrollment_end || null,
-    status: form.status || "admission_open",
-    is_published: Boolean(form.is_published),
-    custom_content: Array.isArray(form.custom_content)
-      ? form.custom_content
-            .map((item) => ({
-            id: item.id || crypto.randomUUID(),
-            type: item.type || "text",
-            label: item.label?.trim() || "",
-            value: item.value?.trim() || "",
-            url: item.url?.trim() || "",
-          }))
-          .filter((item) => item.label || item.value || item.url)
-      : [],
-    admission_form_schema: Array.isArray(form.admission_form_schema)
-      ? form.admission_form_schema
-            .map((section) => ({
-            id: section.id || crypto.randomUUID(),
-            title: section.title?.trim() || "",
-            fields: Array.isArray(section.fields)
-              ? section.fields
-                  .map((field) => ({
-                    id: field.id || crypto.randomUUID(),
-                    label: field.label?.trim() || "",
-                    name: field.name?.trim() || "",
-                    type: field.type || "text",
-                    placeholder: field.placeholder?.trim() || "",
-                    required: Boolean(field.required),
-                    options: typeof field.optionsText === "string"
-                      ? field.optionsText.split(",").map((item) => item.trim()).filter(Boolean)
-                      : Array.isArray(field.options) ? field.options : [],
-                  }))
-                  .filter((field) => field.label)
-              : [],
-          }))
-          .filter((section) => section.title && section.fields.length)
-      : [],
-  };
-
-  if (form.slug?.trim()) payload.slug = form.slug.trim();
-
-  if (form.thumbnail instanceof File) {
-    const data = new FormData();
-    Object.entries(payload).forEach(([key, value]) => {
-      if (value !== null && value !== undefined) {
-        data.append(key, typeof value === "object" ? JSON.stringify(value) : value);
-      }
-    });
-    data.append("thumbnail", form.thumbnail);
-    return data;
-  }
-
-  return payload;
-}
-
 function useLookups() {
-  const [lookups, setLookups] = useState({ courses: [], sections: [], subjects: [], teachers: [], students: [] });
+  const [lookups, setLookups] = useState({ courses: [], sections: [], subjects: [], teachers: [], students: [], stages: [], gradeScales: [] });
   useEffect(() => {
-    Promise.all([
+    Promise.allSettled([
       courseApi.listResults(),
       courseSectionApi.listResults(),
       courseSubjectApi.listResults(),
       employeeApi.listResults({ employee_type: "teacher" }),
       studentApi.listResults(),
-    ]).then(([courses, sections, subjects, teachers, students]) => {
-      setLookups({ courses, sections, subjects, teachers, students });
-    }).catch(() => {});
+      academicStageApi.listResults(),
+      courseGradeScaleApi.listResults(),
+    ]).then((results) => {
+      const keys = ["courses", "sections", "subjects", "teachers", "students", "stages", "gradeScales"];
+      // A role may legitimately lack access to an unrelated lookup endpoint.
+      // Preserve each permitted response instead of discarding the entire form.
+      setLookups(Object.fromEntries(results.map((result, index) => [keys[index], result.status === "fulfilled" ? result.value : []])));
+    });
   }, []);
   return lookups;
 }
 
-export function CoursesPage() {
-  return (
-    <CrudPage
-      title="Admission Cards / Courses"
-      api={courseApi}
-      initialForm={{
-        title: "",
-        slug: "",
-        code: "",
-        description: "",
-        course_type: "admission",
-        thumbnail: null,
-        admission_fee: 0,
-        course_fee: 0,
-        capacity: "",
-        start_date: "",
-        end_date: "",
-        enrollment_start: "",
-        enrollment_end: "",
-        status: "admission_open",
-        is_published: true,
-        custom_content: [],
-        admission_form_schema: defaultAdmissionFormSchema(),
-      }}
-      fields={[
-        { name: "title", label: "Admission Card / Course Name" },
-        { name: "thumbnail", label: "Card Image", type: "file", accept: "image/png,image/jpeg,image/webp" },
-        { name: "code", label: "Course Code" },
-        { name: "course_type", label: "Type", type: "select", options: [{ id: "regular", title: "Regular" }, { id: "admission", title: "Admission" }] },
-        { name: "admission_fee", label: "Admission Fee", type: "number", number: true },
-        { name: "course_fee", label: "Course Fee", type: "number", number: true },
-        { name: "capacity", label: "Capacity", type: "number", number: true },
-        { name: "enrollment_start", label: "Admission Start", type: "date" },
-        { name: "enrollment_end", label: "Admission End", type: "date" },
-        { name: "start_date", label: "Course Start", type: "date" },
-        { name: "end_date", label: "Course End", type: "date" },
-        { name: "status", label: "Status", type: "select", options: ["draft", "published", "admission_open", "admission_closed", "running", "completed", "archived"].map((id) => ({ id, title: id.replaceAll("_", " ") })) },
-        { name: "is_published", label: "Published", type: "checkbox" },
-        { name: "slug", label: "Custom Slug (optional)" },
-        { name: "description", label: "Description", type: "textarea" },
-        { name: "custom_content", label: "Custom Inputs / Details", type: "customContent" },
-        { name: "admission_form_schema", label: "Admission Submission Form Builder", type: "admissionFormSchema" },
-      ]}
-      columns={[{ key: "title", label: "Card / Course" }, { key: "course_type", label: "Type" }, { key: "admission_fee", label: "Admission Fee" }, { key: "course_fee", label: "Course Fee" }, { key: "capacity", label: "Capacity" }, { key: "status", label: "Status" }, { key: "is_published", label: "Published" }]}
-      normalize={cleanCoursePayload}
-      validate={(form) => !form.title.trim() && "Course name is required."}
-    />
-  );
-}
 
-export function CourseSectionsPage() {
+export function CourseSectionsPage({ showNav = true } = {}) {
   const { courses, teachers } = useLookups();
-  return <CrudPage title="Course Sections" api={courseSectionApi} lookups={{ course: courses, head_teacher: teachers }} initialForm={{ course: "", name: "", description: "", head_teacher: "", status: "active", order: 0 }} fields={[{ name: "course", label: "Course", type: "select", number: true, options: courses }, { name: "name", label: "Section/Group Name" }, { name: "head_teacher", label: "Head Teacher", type: "select", number: true, options: teachers }, { name: "status", label: "Status" }, { name: "order", label: "Order", type: "number", number: true }, { name: "description", label: "Description", type: "textarea" }]} columns={[{ key: "course", label: "Course", lookup: "course" }, { key: "name", label: "Section" }, { key: "head_teacher", label: "Head Teacher", lookup: "head_teacher" }, { key: "status", label: "Status" }, { key: "order", label: "Order" }]} normalize={(form) => ({ ...form, head_teacher: form.head_teacher || null })} validate={(form) => (!form.course || !form.name.trim()) && "Course and section name are required."} />;
+  return <CrudPage title="Course Sections" showNav={showNav} api={courseSectionApi} lookups={{ course: courses, head_teacher: teachers }} initialForm={{ course: "", name: "", description: "", head_teacher: "", status: "active", order: 0 }} fields={[{ name: "course", label: "Course", type: "select", number: true, options: courses }, { name: "name", label: "Section/Group Name" }, { name: "head_teacher", label: "Head Teacher", type: "select", number: true, options: teachers }, { name: "status", label: "Status" }, { name: "order", label: "Order", type: "number", number: true }, { name: "description", label: "Description", type: "textarea" }]} columns={[{ key: "course", label: "Course", lookup: "course" }, { key: "name", label: "Section" }, { key: "head_teacher", label: "Head Teacher", lookup: "head_teacher" }, { key: "status", label: "Status" }, { key: "order", label: "Order" }]} normalize={(form) => ({ ...form, head_teacher: form.head_teacher || null })} validate={(form) => (!form.course || !form.name.trim()) && "Course and section name are required."} />;
 }
 
-export function CourseSubjectsPage() {
-  const { sections } = useLookups();
-  return <CrudPage title="Course Subjects" api={courseSubjectApi} lookups={{ course_section: sections }} initialForm={{ course_section: "", name: "", code: "", description: "", status: "active", order: 0 }} fields={[{ name: "course_section", label: "Section", type: "select", number: true, options: sections }, { name: "name", label: "Subject Name" }, { name: "code", label: "Subject Code" }, { name: "status", label: "Status" }, { name: "order", label: "Order", type: "number", number: true }, { name: "description", label: "Description", type: "textarea" }]} columns={[{ key: "course_section", label: "Section", lookup: "course_section" }, { key: "name", label: "Subject" }, { key: "code", label: "Code" }, { key: "status", label: "Status" }, { key: "order", label: "Order" }]} validate={(form) => (!form.course_section || !form.name.trim()) && "Section and subject name are required."} />;
+export function CourseSubjectsPage({ showNav = true } = {}) {
+  const { sections, stages } = useLookups();
+  const stagesForSelection = (form) => {
+    const section = sections.find((item) => String(item.id) === String(form.course_section));
+    return stages.filter((stage) => section && String(stage.course) === String(section.course));
+  };
+  return <CrudPage title="Course Subjects" showNav={showNav} api={courseSubjectApi} lookups={{ course_section: sections, academic_stage: stages }} initialForm={{ course_section: "", academic_stage: "", name: "", code: "", description: "", status: "active", order: 0 }} fields={[{ name: "course_section", label: "Section", type: "select", number: true, options: sections }, { name: "academic_stage", label: "Academic Stage (optional)", type: "select", number: true, options: stagesForSelection }, { name: "name", label: "Subject Name" }, { name: "code", label: "Subject Code" }, { name: "status", label: "Status" }, { name: "order", label: "Order", type: "number", number: true }, { name: "description", label: "Description", type: "textarea" }]} columns={[{ key: "course_section", label: "Section", lookup: "course_section" }, { key: "academic_stage", label: "Stage", lookup: "academic_stage" }, { key: "name", label: "Subject" }, { key: "code", label: "Code" }, { key: "status", label: "Status" }, { key: "order", label: "Order" }]} normalize={(form) => ({ ...form, academic_stage: form.academic_stage || null })} validate={(form) => (!form.course_section || !form.name.trim()) && "Section and subject name are required."} />;
 }
 
-export function TeacherAssignmentsPage() {
+export function AcademicStagesPage({ showNav = true } = {}) {
+  const { courses } = useLookups();
+  return <CrudPage title="Academic Stages" showNav={showNav} api={academicStageApi} lookups={{ course: courses }} initialForm={{ course: "", name: "", display_label: "", stage_type: "phase", order: 0, start_date: "", end_date: "", status: "upcoming" }} fields={[{ name: "course", label: "Admission Program", type: "select", number: true, options: courses }, { name: "name", label: "Stage Name (e.g. Foundation Phase)" }, { name: "display_label", label: "Display Label (e.g. Phase 01)" }, { name: "stage_type", label: "Type", type: "select", options: ["semester", "term", "phase", "module", "track", "custom"].map((id) => ({ id, title: id })) }, { name: "order", label: "Order", type: "number", number: true }, { name: "start_date", label: "Start Date", type: "date" }, { name: "end_date", label: "End Date", type: "date" }, { name: "status", label: "Status", type: "select", options: ["upcoming", "in_progress", "completed", "archived"].map((id) => ({ id, title: id.replaceAll("_", " ") })) }]} columns={[{ key: "course", label: "Admission Program", lookup: "course" }, { key: "display_label", label: "Label" }, { key: "name", label: "Stage" }, { key: "stage_type", label: "Type" }, { key: "order", label: "Order" }, { key: "status", label: "Status" }]} normalize={(form) => ({ ...form, start_date: form.start_date || null, end_date: form.end_date || null })} validate={(form) => (!form.course || !form.name.trim()) && "Admission program and stage name are required."} />;
+}
+
+export function AssessmentComponentsPage({ showNav = true } = {}) {
+  const { subjects } = useLookups();
+  return <CrudPage
+    title="Assessment Components" showNav={showNav}
+    api={assessmentComponentApi}
+    lookups={{ course_subject: subjects }}
+    initialForm={{ course_subject: "", name: "", code: "", component_type: "quiz", total_marks: 100, weight_percentage: 10, order: 0, is_required: true, is_visible_to_student: true, include_in_final_grade: true, source_type: "manual", aggregation_rule: "sum_all", status: "active" }}
+    fields={[
+      { name: "course_subject", label: "Course Subject", type: "select", number: true, options: subjects },
+      { name: "name", label: "Component Name (e.g. Quiz)" },
+      { name: "code", label: "Code (unique per subject)" },
+      { name: "component_type", label: "Type", type: "select", options: ["quiz", "assignment", "attendance", "model_test", "final", "custom"].map((id) => ({ id, title: id.replaceAll("_", " ") })) },
+      { name: "total_marks", label: "Total Marks", type: "number", number: true },
+      { name: "weight_percentage", label: "Weight %", type: "number", number: true },
+      { name: "source_type", label: "Source", type: "select", options: [{ id: "manual", title: "Manual Entry" }, { id: "auto_test", title: "Auto - Online Test" }, { id: "auto_assignment", title: "Auto - Assignment" }] },
+      { name: "aggregation_rule", label: "Aggregation Rule", type: "select", options: ["sum_all", "average", "best_n", "latest"].map((id) => ({ id, title: id.replaceAll("_", " ") })) },
+      { name: "order", label: "Order", type: "number", number: true },
+      { name: "is_required", label: "Required for Publish", type: "checkbox" },
+      { name: "is_visible_to_student", label: "Visible to Student", type: "checkbox" },
+      { name: "include_in_final_grade", label: "Include in Final Grade", type: "checkbox" },
+    ]}
+    columns={[{ key: "course_subject", label: "Subject", lookup: "course_subject" }, { key: "name", label: "Component" }, { key: "component_type", label: "Type" }, { key: "weight_percentage", label: "Weight %" }, { key: "source_type", label: "Source" }, { key: "is_required", label: "Required" }]}
+    validate={(form) => (!form.course_subject || !form.name.trim()) && "Course subject and component name are required."}
+  />;
+}
+
+export function CourseGradeScalesPage({ showNav = true } = {}) {
+  const { courses } = useLookups();
+  return <CrudPage title="Grade Scales" showNav={showNav} api={courseGradeScaleApi} lookups={{ course: courses }} initialForm={{ course: "", name: "Default Grade Scale", is_active: true }} fields={[{ name: "course", label: "Admission Program", type: "select", number: true, options: courses }, { name: "name", label: "Scale Name" }, { name: "is_active", label: "Active", type: "checkbox" }]} columns={[{ key: "course", label: "Admission Program", lookup: "course" }, { key: "name", label: "Scale" }, { key: "is_active", label: "Active" }]} validate={(form) => !form.course && "Admission program is required."} />;
+}
+
+export function CourseGradeScaleItemsPage({ showNav = true } = {}) {
+  const { gradeScales } = useLookups();
+  return <CrudPage
+    title="Grade Scale Items" showNav={showNav}
+    api={courseGradeScaleItemApi}
+    lookups={{ grade_scale: gradeScales }}
+    initialForm={{ grade_scale: "", min_percentage: 0, max_percentage: 100, grade: "", grade_point: 0, is_fail: false, order: 0 }}
+    fields={[
+      { name: "grade_scale", label: "Grade Scale", type: "select", number: true, options: gradeScales },
+      { name: "min_percentage", label: "Min %", type: "number", number: true },
+      { name: "max_percentage", label: "Max %", type: "number", number: true },
+      { name: "grade", label: "Grade (e.g. A+)" },
+      { name: "grade_point", label: "Grade Point", type: "number", number: true },
+      { name: "is_fail", label: "Is Fail", type: "checkbox" },
+      { name: "order", label: "Order", type: "number", number: true },
+    ]}
+    columns={[{ key: "grade_scale", label: "Scale", lookup: "grade_scale" }, { key: "min_percentage", label: "Min %" }, { key: "max_percentage", label: "Max %" }, { key: "grade", label: "Grade" }, { key: "grade_point", label: "GPA" }, { key: "is_fail", label: "Fail" }]}
+    validate={(form) => !form.grade_scale && "Grade scale is required."}
+  />;
+}
+
+export function TeacherAssignmentsPage({ showNav = true } = {}) {
   const { courses, sections, subjects, teachers } = useLookups();
   const sectionsForCourse = (form) => sections.filter((section) => String(section.course) === String(form.course));
   const subjectsForSelection = (form) => subjects.filter((subject) => {
     const section = sections.find((item) => String(item.id) === String(subject.course_section));
     return section && String(section.course) === String(form.course) && (!form.course_section || String(subject.course_section) === String(form.course_section));
   });
-  return <CrudPage title="Teacher Assignments" api={teacherAssignmentApi} lookups={{ teacher: teachers, course: courses, course_section: sections, subject: subjects }} initialForm={{ teacher: "", course: "", course_section: "", subject: "", role: "head_teacher", is_active: true, assignment_status: "accepted" }} fields={[{ name: "teacher", label: "Teacher", type: "select", number: true, options: teachers }, { name: "course", label: "Admission Program", type: "select", number: true, options: courses }, { name: "course_section", label: "Section (optional for program head)", type: "select", number: true, options: sectionsForCourse }, { name: "subject", label: "Subject (optional for program head)", type: "select", number: true, options: subjectsForSelection }, { name: "role", label: "Role", type: "select", options: ["head_teacher", "subject_teacher", "assistant_teacher", "coordinator"].map((id) => ({ id, title: id.replaceAll("_", " ") })) }, { name: "is_active", label: "Active", type: "checkbox" }]} columns={[{ key: "teacher", label: "Teacher", lookup: "teacher" }, { key: "course", label: "Course", lookup: "course" }, { key: "course_section", label: "Section", lookup: "course_section" }, { key: "subject", label: "Subject", lookup: "subject" }, { key: "role", label: "Role" }, { key: "is_active", label: "Active" }]} normalize={(form) => ({ ...form, course_section: form.course_section || null, subject: form.subject || null, assignment_status: "accepted" })} validate={(form) => (!form.teacher || !form.course) && "Teacher and admission program are required."} />;
+  return <CrudPage title="Teacher Assignments" showNav={showNav} api={teacherAssignmentApi} lookups={{ teacher: teachers, course: courses, course_section: sections, subject: subjects }} initialForm={{ teacher: "", course: "", course_section: "", subject: "", role: "subject_teacher", is_active: true, assignment_status: "accepted" }} fields={[{ name: "teacher", label: "Teacher", type: "select", number: true, options: teachers }, { name: "course", label: "Admission Program", type: "select", number: true, options: courses }, { name: "course_section", label: "Section (optional)", type: "select", number: true, options: sectionsForCourse }, { name: "subject", label: "Subject (optional for section-wide)", type: "select", number: true, options: subjectsForSelection }, { name: "role", label: "Role", type: "select", options: ["subject_teacher", "assistant_teacher", "coordinator"].map((id) => ({ id, title: id.replaceAll("_", " ") })) }, { name: "is_active", label: "Active", type: "checkbox" }]} columns={[{ key: "teacher", label: "Teacher", lookup: "teacher" }, { key: "course", label: "Course", lookup: "course" }, { key: "course_section", label: "Section", lookup: "course_section" }, { key: "subject", label: "Subject", lookup: "subject" }, { key: "role", label: "Role" }, { key: "is_active", label: "Active" }]} normalize={(form) => ({ ...form, course_section: form.course_section || null, subject: form.subject || null, assignment_status: "accepted" })} validate={(form) => (!form.teacher || !form.course) && "Teacher and admission program are required."} />;
 }
 
-export function EnrollmentsPage() {
-  const { courses, sections, students } = useLookups();
-  return <CrudPage title="Enrollments" api={enrollmentApi} lookups={{ student: students, course: courses, course_section: sections }} initialForm={{ student: "", course: "", course_section: "", enrollment_number: "", status: "pending" }} fields={[{ name: "student", label: "Student", type: "select", number: true, options: students }, { name: "course", label: "Course", type: "select", number: true, options: courses }, { name: "course_section", label: "Section", type: "select", number: true, options: sections }, { name: "enrollment_number", label: "Enrollment Number" }, { name: "status", label: "Status", type: "select", options: ["pending", "active", "completed", "cancelled", "expired", "suspended"].map((id) => ({ id, title: id })) }]} columns={[{ key: "enrollment_number", label: "Enrollment No" }, { key: "student", label: "Student", lookup: "student" }, { key: "course", label: "Course", lookup: "course" }, { key: "course_section", label: "Section", lookup: "course_section" }, { key: "status", label: "Status" }]} normalize={(form) => ({ ...form, course_section: form.course_section || null })} validate={(form) => (!form.student || !form.course || !form.enrollment_number.trim()) && "Student, course and enrollment number are required."} />;
-}

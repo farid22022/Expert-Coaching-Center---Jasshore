@@ -3,7 +3,7 @@ from django.utils import timezone
 from rest_framework.test import APITestCase
 
 from apps.accounts.models import Permission, Role
-from apps.assessments.models import Assessment, AssessmentQuestion, Question, QuestionOption
+from apps.assessments.models import Assessment, AssessmentQuestion, ContentReviewStatus, Question, QuestionOption
 from apps.courses.models import Course, CourseSection, CourseSubject, Enrollment
 from apps.organizations.models import Organization
 from apps.people.models import Student
@@ -54,6 +54,7 @@ class LiveMcqFlowTests(APITestCase):
             course_section=self.section,
             subject=self.subject,
             status="live",
+            review_status=ContentReviewStatus.APPROVED,
             starts_at=timezone.now() - timezone.timedelta(minutes=5),
             ends_at=timezone.now() + timezone.timedelta(minutes=30),
             duration_minutes=20,
@@ -101,3 +102,31 @@ class LiveMcqFlowTests(APITestCase):
         self.assertEqual(submit.status_code, 200, submit.data)
         self.assertEqual(submit.data["status"], "submitted")
         self.assertEqual(str(submit.data["score"]), "1.00")
+
+    def test_future_mcq_is_not_listed_as_playable_content(self):
+        future = Assessment.objects.create(
+            organization=self.organization,
+            title="Future MCQ",
+            course=self.course,
+            course_section=self.section,
+            subject=self.subject,
+            status="published",
+            review_status=ContentReviewStatus.APPROVED,
+            starts_at=timezone.now() + timezone.timedelta(days=1),
+            duration_minutes=20,
+        )
+        question = Question.objects.create(
+            organization=self.organization,
+            course=self.course,
+            course_section=self.section,
+            subject=self.subject,
+            text="Future question?",
+        )
+        AssessmentQuestion.objects.create(organization=self.organization, assessment=future, question=question, marks=1)
+        self.login()
+
+        enrollment_id = self.student.course_enrollments.first().id
+        content = self.client.get(f"/api/v1/courses/student/dashboard/{enrollment_id}/content/")
+
+        self.assertEqual(content.status_code, 200, content.data)
+        self.assertNotIn("Future MCQ", [item["title"] for item in content.data["assessments"]])

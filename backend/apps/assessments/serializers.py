@@ -94,3 +94,43 @@ class AssignmentSubmissionSerializer(serializers.ModelSerializer):
         model = models.AssignmentSubmission
         fields = "__all__"
         read_only_fields = ("evaluated_by", "evaluated_at")
+
+
+class StudentInterventionSerializer(serializers.ModelSerializer):
+    teacher_name = serializers.CharField(source="created_by_teacher.full_name", read_only=True)
+    subject_name = serializers.CharField(source="subject.name", read_only=True)
+    practice_assessment_title = serializers.CharField(source="linked_practice_assessment.title", read_only=True)
+
+    class Meta:
+        model = models.StudentIntervention
+        fields = "__all__"
+        read_only_fields = ("organization", "created_by_teacher", "created_at", "updated_at")
+
+
+class StudentFeedbackSerializer(serializers.ModelSerializer):
+    teacher_name = serializers.CharField(source="created_by_teacher.full_name", read_only=True)
+    subject_name = serializers.CharField(source="subject.name", read_only=True)
+
+    class Meta:
+        model = models.StudentFeedback
+        fields = "__all__"
+        read_only_fields = ("organization", "created_by_teacher", "created_at")
+
+
+class TeacherPrivateNoteSerializer(serializers.ModelSerializer):
+    teacher_name = serializers.CharField(source="created_by_teacher.full_name", read_only=True)
+
+    class Meta:
+        model = models.TeacherPrivateNote
+        fields = "__all__"
+        read_only_fields = ("organization", "created_by_teacher", "created_at")
+
+
+class StudentBookmarkSerializer(serializers.ModelSerializer):
+    question_text = serializers.CharField(source="question.text", read_only=True)
+    subject_name = serializers.CharField(source="question.subject.name", read_only=True, default=None)
+
+    class Meta:
+        model = models.StudentBookmark
+        fields = "__all__"
+        read_only_fields = ("organization", "student", "created_at")

@@ -162,7 +162,7 @@ export function AttendanceNav() {
 
   return (
     <nav
-      className="sticky top-[70px] z-20 flex min-h-11 flex-wrap items-center gap-x-5 gap-y-2 border border-slate-200 bg-white px-3 py-2 shadow-sm"
+      className="sticky top-0 z-20 flex min-h-11 flex-wrap items-center gap-x-5 gap-y-2 border border-slate-200 bg-white px-3 py-2 shadow-sm"
       aria-label="Attendance menu"
     >
       <Link

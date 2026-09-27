@@ -16,14 +16,18 @@ import {
 } from "lucide-react";
 import { institution, navGroups } from "../../data/site.js";
 import { getDashboardPathForUser, getStoredUser, logout } from "../../services/authApi.js";
+import { useTranslation } from "react-i18next";
+import ThemeToggle from "../common/ThemeToggle.jsx";
+import LanguageSwitcher from "../common/LanguageSwitcher.jsx";
+import { useTheme } from "../../theme/ThemeProvider.jsx";
 
 const navLinkClass = ({ isActive }) =>
   `inline-flex min-h-9 sm:min-h-10 items-center rounded-md px-2.5 sm:px-3 text-xs sm:text-sm font-bold whitespace-nowrap [overflow-wrap:normal] transition-colors hover:bg-emerald-50 hover:text-emerald-700 ${
-    isActive ? "bg-emerald-50 text-emerald-700" : "text-slate-800"
+    isActive ? "bg-emerald-50 text-emerald-700" : "text-ink"
   }`;
 
 const menuItemClass =
-  "flex min-h-9 items-center gap-2 rounded-md px-3 text-sm font-semibold text-slate-700 whitespace-nowrap [overflow-wrap:normal] transition-colors hover:bg-emerald-50 hover:text-emerald-700";
+  "flex min-h-9 items-center gap-2 rounded-md px-3 text-sm font-semibold text-muted whitespace-nowrap [overflow-wrap:normal] transition-colors hover:bg-emerald-50 hover:text-emerald-700";
 
 const dropdownMotion = {
   initial: { opacity: 0, y: -6, scale: 0.98 },
@@ -39,6 +43,16 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [user, setUser] = useState(() => getStoredUser());
   const navigate = useNavigate();
+  const { siteInfo } = useTheme();
+  const { t } = useTranslation("public");
+
+  const navLabelKeys = {
+    Admission: "nav.admission",
+    Others: "nav.others",
+    Stories: "nav.stories",
+    "Contact Us": "nav.contact",
+  };
+  const navLabel = (label) => (navLabelKeys[label] ? t(navLabelKeys[label]) : label);
 
   const headerRef = useRef(null);
   const logoRef = useRef(null);
@@ -107,11 +121,11 @@ export default function Header() {
           <div className="relative" key={group.label}>
             <button
               type="button"
-              className="inline-flex min-h-9 sm:min-h-10 w-full items-center justify-between gap-1 rounded-md px-2.5 sm:px-3 text-xs sm:text-sm font-bold text-slate-800 whitespace-nowrap [overflow-wrap:normal] transition-colors hover:bg-emerald-50 hover:text-emerald-700 lg:w-auto"
+              className="inline-flex min-h-9 sm:min-h-10 w-full items-center justify-between gap-1 rounded-md px-2.5 sm:px-3 text-xs sm:text-sm font-bold text-ink whitespace-nowrap [overflow-wrap:normal] transition-colors hover:bg-emerald-50 hover:text-emerald-700 lg:w-auto"
               onClick={() => setOpen(open === group.label ? "" : group.label)}
               aria-expanded={open === group.label}
             >
-              <span className="whitespace-nowrap [overflow-wrap:normal]">{group.label}</span>
+              <span className="whitespace-nowrap [overflow-wrap:normal]">{navLabel(group.label)}</span>
               <ChevronDown
                 size={15}
                 className={`shrink-0 transition-transform ${
@@ -124,7 +138,7 @@ export default function Header() {
               {open === group.label && (
                 <motion.div
                   {...dropdownMotion}
-                  className="z-40 mt-1 grid w-full min-w-full gap-1 rounded-lg border border-slate-200 bg-white p-2 shadow-xl origin-top lg:absolute lg:left-0 lg:top-full lg:min-w-56 lg:w-max"
+                  className="z-40 mt-1 grid w-full min-w-full gap-1 rounded-lg border border-line bg-paper p-2 shadow-xl origin-top lg:absolute lg:left-0 lg:top-full lg:min-w-56 lg:w-max"
                 >
                   {group.items.map(([label, path]) => (
                     <NavLink
@@ -147,7 +161,7 @@ export default function Header() {
             onClick={closeMenus}
             className={navLinkClass}
           >
-            <span>{group.label}</span>
+            <span>{navLabel(group.label)}</span>
           </NavLink>
         )
       )}
@@ -157,33 +171,33 @@ export default function Header() {
   return (
     <header
       ref={headerRef}
-      className={`sticky top-0 z-50 border-b border-emerald-100 bg-white/95 shadow-sm backdrop-blur transition-shadow ${
+      className={`sticky top-0 z-50 border-b border-emerald-100 bg-paper/95 shadow-sm backdrop-blur transition-shadow ${
         scrolled ? "shadow-md" : "shadow-sm"
       }`}
     >
       <div className="mx-auto flex min-h-14 sm:min-h-16 lg:min-h-20 w-full max-w-7xl items-center gap-2 sm:gap-4 px-3 sm:px-6 lg:px-8">
         <Link
-          className="flex min-w-0 items-center gap-2 sm:gap-3 text-slate-900"
+          className="flex min-w-0 items-center gap-2 sm:gap-3 text-ink"
           to="/"
           onClick={closeMenus}
         >
           <span
             ref={logoRef}
-            className="grid h-10 w-10 sm:h-12 sm:w-12 lg:h-14 lg:w-14 shrink-0 place-items-center rounded-xl border border-emerald-100 bg-white shadow-sm"
+            className="grid h-10 w-10 sm:h-12 sm:w-12 lg:h-14 lg:w-14 shrink-0 place-items-center rounded-xl border border-emerald-100 bg-paper shadow-sm"
           >
             <img
-              src="/jasshoreExpert.png"
+              src={siteInfo?.logo || "/jasshoreExpert.png"}
               alt={`${institution.name} logo`}
               className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 object-contain"
             />
           </span>
 
             <span className="min-w-0">
-            <strong className="block truncate text-sm sm:text-base font-black leading-tight text-emerald-950 whitespace-nowrap [overflow-wrap:normal]">
+            <strong className="block truncate text-sm sm:text-base font-black leading-tight text-ink whitespace-nowrap [overflow-wrap:normal]">
               {institution.name}
             </strong>
 
-            <small className="hidden text-[11px] sm:text-xs font-semibold leading-snug text-slate-500 md:block [overflow-wrap:normal]">
+            <small className="hidden text-[11px] sm:text-xs font-semibold leading-snug text-muted md:block [overflow-wrap:normal]">
               <span className="line-clamp-1">{institution.address}</span>
               <span>ESTD : {institution.established}</span>
             </small>
@@ -194,12 +208,15 @@ export default function Header() {
           {nav}
 
           <Link
-            className="btn btn-ghost btn-sm btn-square text-slate-700"
+            className="btn btn-ghost btn-sm btn-square text-ink"
             to="/search"
             aria-label="Search"
           >
             <Search size={18} />
           </Link>
+
+          <ThemeToggle className="btn-sm text-ink" />
+          <LanguageSwitcher className="text-ink" />
 
           <div className="relative">
             <button
@@ -221,7 +238,7 @@ export default function Header() {
               {authOpen && (
                 <motion.div
                   {...dropdownMotion}
-                  className="absolute right-0 top-full z-40 mt-2 grid min-w-48 gap-1 rounded-lg border border-slate-200 bg-white p-2 shadow-xl origin-top-right"
+                  className="absolute right-0 top-full z-40 mt-2 grid min-w-48 gap-1 rounded-lg border border-line bg-paper p-2 shadow-xl origin-top-right"
                 >
                   {user ? <>
                     <div className="rounded-md bg-emerald-50 px-3 py-2"><p className="truncate text-sm font-black text-emerald-950">{user.first_name || user.username || user.email}</p><p className="truncate text-xs font-semibold text-slate-500">{user.email}</p></div>
@@ -240,12 +257,14 @@ export default function Header() {
         </div>
 
         <Link
-          className="btn btn-ghost btn-sm btn-square ml-auto lg:hidden text-slate-700"
+          className="btn btn-ghost btn-sm btn-square ml-auto lg:hidden text-ink"
           to="/search"
           aria-label="Search"
         >
           <Search size={18} />
         </Link>
+
+        <ThemeToggle className="btn-sm lg:hidden text-ink" />
 
         <button
           type="button"
@@ -276,7 +295,7 @@ export default function Header() {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.25, ease: "easeInOut" }}
-            className="overflow-hidden border-t border-emerald-100 bg-white lg:hidden"
+            className="overflow-hidden border-t border-emerald-100 bg-paper lg:hidden"
           >
             <div className="mx-auto grid max-w-7xl gap-3 px-3 sm:px-6 py-4">
               {nav}

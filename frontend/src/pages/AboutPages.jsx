@@ -96,7 +96,7 @@ export function TeachersPage() {
         description="Complete public teacher directory."
       />
       <section>
-        <div className={`${containerClass} grid gap-5 sm:grid-cols-2 lg:grid-cols-3`}>
+        <div className={ `${containerClass} grid gap-5 sm:grid-cols-2 lg:grid-cols-3`}>
           {teachers.map((t) => (
             <TeacherCard key={t.id} teacher={t} />
           ))}

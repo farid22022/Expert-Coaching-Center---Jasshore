@@ -4,20 +4,24 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 
 const DEFAULT_SLIDES = [
-  { src: "./../../../public/slide1.jpeg", alt: "Students in the classroom" },
+  { src: "/slide1.jpeg", alt: "Students in the classroom" },
   { src: "/slide2.jpeg", alt: "Campus view" },
   { src: "/slide3.jpeg", alt: "Coaching session in progress" },
 ];
 
-export default function HeroSlider({ slides = DEFAULT_SLIDES, interval = 5500, className = "" }) {
+export default function HeroSlider({ slides: suppliedSlides = DEFAULT_SLIDES, interval = 5500, className = "" }) {
+  const slides = Array.isArray(suppliedSlides) ? suppliedSlides.filter((slide) => slide?.src) : [];
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState(1);
   const [paused, setPaused] = useState(false);
   const timerRef = useRef(null);
   const prefersReducedMotion = useReducedMotion();
 
+  const activeIndex = slides.length ? index % slides.length : 0;
+
   const goTo = useCallback(
     (next) => {
+      if (!slides.length) return;
       setDirection(next > index || (index === slides.length - 1 && next === 0) ? 1 : -1);
       setIndex(((next % slides.length) + slides.length) % slides.length);
     },
@@ -28,10 +32,10 @@ export default function HeroSlider({ slides = DEFAULT_SLIDES, interval = 5500, c
   const prev = useCallback(() => goTo(index - 1), [goTo, index]);
 
   useEffect(() => {
-    if (paused || slides.length <= 1) return undefined;
+    if (paused || prefersReducedMotion || slides.length <= 1) return undefined;
     timerRef.current = setTimeout(next, interval);
     return () => clearTimeout(timerRef.current);
-  }, [index, paused, next, interval, slides.length]);
+  }, [index, paused, next, interval, slides.length, prefersReducedMotion]);
 
   if (!slides.length) return null;
 
@@ -44,6 +48,8 @@ export default function HeroSlider({ slides = DEFAULT_SLIDES, interval = 5500, c
   return (
     <div
       className={`group absolute inset-0 overflow-hidden ${className}`}
+      onFocus={() => setPaused(true)}
+      onBlur={() => setPaused(false)}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       role="region"
@@ -52,9 +58,9 @@ export default function HeroSlider({ slides = DEFAULT_SLIDES, interval = 5500, c
     >
       <AnimatePresence initial={false} custom={direction} mode="popLayout">
         <motion.img
-          key={slides[index].src}
-          src={slides[index].src}
-          alt={slides[index].alt || ""}
+          key={slides[activeIndex].src}
+          src={slides[activeIndex].src}
+          alt={slides[activeIndex].alt || ""}
           custom={direction}
           variants={variants}
           initial="enter"
@@ -104,9 +110,9 @@ export default function HeroSlider({ slides = DEFAULT_SLIDES, interval = 5500, c
               type="button"
               onClick={() => goTo(i)}
               aria-label={`Go to slide ${i + 1}`}
-              aria-current={i === index}
+              aria-current={i === activeIndex}
               className={`h-1.5 rounded-full transition-all duration-300 ${
-                i === index ? "w-6 bg-amber-400" : "w-1.5 bg-white/40 hover:bg-white/70"
+                i === activeIndex ? "w-6 bg-amber-400" : "w-1.5 bg-white/40 hover:bg-white/70"
               }`}
             />
           ))}

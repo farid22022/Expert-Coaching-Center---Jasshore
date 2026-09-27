@@ -24,6 +24,8 @@ export async function logout() {
   const refresh = localStorage.getItem("refresh_token");
   try {
     if (refresh) await api.post("/auth/logout/", { refresh });
+  } catch {
+    // Local sign-out must still complete when the server is unavailable.
   } finally {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");

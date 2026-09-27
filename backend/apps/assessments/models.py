@@ -263,3 +263,254 @@ class SubmissionAttachment(OrganizationScopedModel):
     original_name = models.CharField(max_length=255, blank=True)
     content_type = models.CharField(max_length=120, blank=True)
     size = models.PositiveIntegerField(default=0)
+
+
+class MaterialView(OrganizationScopedModel):
+    """Marks that a student has opened a CourseMaterial - the minimal signal needed
+    to count materials (not just assessments) toward real course completion."""
+
+    student = models.ForeignKey("people.Student", on_delete=models.CASCADE, related_name="material_views")
+    material = models.ForeignKey(CourseMaterial, on_delete=models.CASCADE, related_name="views")
+    viewed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("student", "material")
+        indexes = [models.Index(fields=["organization", "student", "material"])]
+
+
+class InterventionType(models.TextChoices):
+    EXTRA_PRACTICE = "extra_practice", "Extra Practice"
+    REVISION = "revision", "Revision Required"
+    MEETING = "meeting", "Teacher Meeting"
+    GUARDIAN_CONTACT = "guardian_contact", "Guardian Contact"
+    RETEST = "retest", "Retest"
+    ASSIGNMENT_RECOVERY = "assignment_recovery", "Assignment Recovery"
+    STUDY_PLAN = "study_plan", "Study Plan"
+
+
+class InterventionStatus(models.TextChoices):
+    OPEN = "open", "Open"
+    IN_PROGRESS = "in_progress", "In Progress"
+    COMPLETED = "completed", "Completed"
+    PARTIALLY_COMPLETED = "partially_completed", "Partially Completed"
+    NOT_COMPLETED = "not_completed", "Not Completed"
+
+
+class StudentIntervention(OrganizationScopedModel):
+    """A teacher-created academic action for one student - the "INTERVENE" step.
+    `before_score`/`after_score` are optional, factual data points (e.g. recovery-test
+    scores) for the teacher to compare - never an automated causal claim (see spec)."""
+
+    student = models.ForeignKey("people.Student", on_delete=models.CASCADE, related_name="interventions")
+    subject = models.ForeignKey("courses.CourseSubject", null=True, blank=True, on_delete=models.SET_NULL, related_name="interventions")
+    created_by_teacher = models.ForeignKey("people.Employee", on_delete=models.CASCADE, related_name="created_interventions")
+    intervention_type = models.CharField(max_length=30, choices=InterventionType.choices)
+    reason = models.TextField()
+    action_note = models.TextField(blank=True)
+    linked_practice_assessment = models.ForeignKey(Assessment, null=True, blank=True, on_delete=models.SET_NULL, related_name="interventions")
+    deadline = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=25, choices=InterventionStatus.choices, default=InterventionStatus.OPEN)
+    before_score = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    after_score = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["organization", "student", "status"]),
+            models.Index(fields=["organization", "created_by_teacher"]),
+        ]
+
+
+class StudentFeedback(OrganizationScopedModel):
+    """Academic feedback a teacher sends to a student - always visible to the student
+    (unlike TeacherPrivateNote). One row per (student, send action)."""
+
+    student = models.ForeignKey("people.Student", on_delete=models.CASCADE, related_name="feedback_received")
+    subject = models.ForeignKey("courses.CourseSubject", null=True, blank=True, on_delete=models.SET_NULL, related_name="feedback")
+    created_by_teacher = models.ForeignKey("people.Employee", on_delete=models.CASCADE, related_name="feedback_sent")
+    body = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["organization", "student", "-created_at"])]
+
+
+class TeacherPrivateNote(OrganizationScopedModel):
+    """Private teacher observations about a student - teacher/head-teacher only.
+    Never included in any student-facing serializer or view."""
+
+    student = models.ForeignKey("people.Student", on_delete=models.CASCADE, related_name="private_notes")
+    created_by_teacher = models.ForeignKey("people.Employee", on_delete=models.CASCADE, related_name="private_notes_written")
+    note = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["organization", "student", "-created_at"])]
+
+
+class StudentBookmark(OrganizationScopedModel):
+    """Self-service - a student bookmarking a question for later review/practice.
+    No teacher-side dependency."""
+
+    student = models.ForeignKey("people.Student", on_delete=models.CASCADE, related_name="bookmarks")
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="bookmarked_by")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("student", "question")
+        ordering = ["-created_at"]
+
+
+class ComponentType(models.TextChoices):
+    QUIZ = "quiz", "Quiz"
+    ASSIGNMENT = "assignment", "Assignment"
+    ATTENDANCE = "attendance", "Attendance"
+    MODEL_TEST = "model_test", "Model Test"
+    FINAL = "final", "Final"
+    CUSTOM = "custom", "Custom"
+
+
+class ComponentSourceType(models.TextChoices):
+    AUTO_TEST = "auto_test", "Auto - Online Test"
+    AUTO_ASSIGNMENT = "auto_assignment", "Auto - Assignment"
+    MANUAL = "manual", "Manual Entry"
+
+
+class AggregationRule(models.TextChoices):
+    SUM_ALL = "sum_all", "Sum All"
+    AVERAGE = "average", "Average"
+    BEST_N = "best_n", "Best N"
+    LATEST = "latest", "Latest"
+
+
+class AssessmentComponent(OrganizationScopedModel):
+    """One weighted grading component of a course-subject's assessment scheme
+    (e.g. "Quiz 10%", "Final 25%") - the scheme itself is just this component list,
+    not a separate wrapper entity. `source_assessments` is an explicit, deterministic
+    pick of which Assessment rows feed this component (spec's own §9/§11: no fuzzy
+    auto-matching by topic/tag)."""
+
+    course_subject = models.ForeignKey("courses.CourseSubject", on_delete=models.CASCADE, related_name="assessment_components")
+    name = models.CharField(max_length=120)
+    code = models.CharField(max_length=40, blank=True)
+    component_type = models.CharField(max_length=20, choices=ComponentType.choices, default=ComponentType.CUSTOM)
+    total_marks = models.DecimalField(max_digits=7, decimal_places=2, default=100)
+    weight_percentage = models.DecimalField(max_digits=5, decimal_places=2)
+    order = models.PositiveIntegerField(default=0)
+    is_required = models.BooleanField(default=True)
+    is_visible_to_student = models.BooleanField(default=True)
+    include_in_final_grade = models.BooleanField(default=True)
+    status = models.CharField(max_length=20, default="active")
+    source_type = models.CharField(max_length=20, choices=ComponentSourceType.choices, default=ComponentSourceType.MANUAL)
+    aggregation_rule = models.CharField(max_length=20, choices=AggregationRule.choices, default=AggregationRule.SUM_ALL)
+    best_n_count = models.PositiveIntegerField(null=True, blank=True)
+    source_assessments = models.ManyToManyField(Assessment, blank=True, related_name="feeds_components")
+
+    class Meta:
+        unique_together = ("course_subject", "code")
+        ordering = ("order", "id")
+
+    def __str__(self):
+        return f"{self.course_subject} - {self.name}"
+
+
+class CourseGradeScale(OrganizationScopedModel):
+    """Course-scoped grade scale - deliberately distinct from apps.exams.GradeScale,
+    which is tied to the unrelated academic_class/session school-exam pipeline."""
+
+    course = models.ForeignKey("courses.Course", on_delete=models.CASCADE, related_name="grade_scales")
+    name = models.CharField(max_length=120, default="Default Grade Scale")
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ("-is_active", "name")
+
+    def __str__(self):
+        return f"{self.course} - {self.name}"
+
+
+class CourseGradeScaleItem(OrganizationScopedModel):
+    grade_scale = models.ForeignKey(CourseGradeScale, on_delete=models.CASCADE, related_name="items")
+    min_percentage = models.DecimalField(max_digits=5, decimal_places=2)
+    max_percentage = models.DecimalField(max_digits=5, decimal_places=2)
+    grade = models.CharField(max_length=10)
+    grade_point = models.DecimalField(max_digits=4, decimal_places=2)
+    is_fail = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ("-min_percentage",)
+
+
+class CourseResultStatus(models.TextChoices):
+    DRAFT = "draft", "Draft"
+    CALCULATED = "calculated", "Calculated"
+    PUBLISHED = "published", "Published"
+    LOCKED = "locked", "Locked"
+
+
+class ComponentDataStatus(models.TextChoices):
+    NOT_ATTEMPTED = "not_attempted", "Not Attempted"
+    MISSING = "missing", "Missing"
+    NOT_GRADED = "not_graded", "Not Graded"
+    EXCUSED = "excused", "Excused"
+    COMPLETE = "complete", "Complete"
+
+
+class StudentCourseResult(OrganizationScopedModel):
+    """The authoritative, calculated result for one student in one course-subject.
+    Never written to directly from React - only via services.calculate_course_result /
+    publish_course_result, so teacher and student always see the identical number."""
+
+    enrollment = models.ForeignKey("courses.Enrollment", on_delete=models.CASCADE, related_name="course_results")
+    course_subject = models.ForeignKey("courses.CourseSubject", on_delete=models.CASCADE, related_name="student_results")
+    status = models.CharField(max_length=20, choices=CourseResultStatus.choices, default=CourseResultStatus.DRAFT)
+    total_percentage = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    grade = models.CharField(max_length=10, blank=True)
+    grade_point = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
+    pass_status = models.CharField(max_length=20, blank=True)
+    teacher_comment = models.TextField(blank=True)
+    calculated_at = models.DateTimeField(null=True, blank=True)
+    published_at = models.DateTimeField(null=True, blank=True)
+    published_by = models.ForeignKey("people.Employee", null=True, blank=True, on_delete=models.SET_NULL, related_name="published_course_results")
+    locked_at = models.DateTimeField(null=True, blank=True)
+    updated_reason = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        unique_together = ("enrollment", "course_subject")
+        indexes = [models.Index(fields=["organization", "course_subject", "status"])]
+
+    def __str__(self):
+        return f"{self.enrollment} - {self.course_subject}"
+
+
+class StudentComponentResult(OrganizationScopedModel):
+    course_result = models.ForeignKey(StudentCourseResult, on_delete=models.CASCADE, related_name="component_results")
+    component = models.ForeignKey(AssessmentComponent, on_delete=models.CASCADE, related_name="student_results")
+    raw_obtained = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)
+    raw_total = models.DecimalField(max_digits=7, decimal_places=2, default=0)
+    weighted_score = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    data_status = models.CharField(max_length=20, choices=ComponentDataStatus.choices, default=ComponentDataStatus.NOT_ATTEMPTED)
+    is_manual = models.BooleanField(default=False)
+    manual_comment = models.TextField(blank=True)
+    updated_by_teacher = models.ForeignKey("people.Employee", null=True, blank=True, on_delete=models.SET_NULL, related_name="manually_graded_components")
+
+    class Meta:
+        unique_together = ("course_result", "component")
+
+
+class CourseRating(OrganizationScopedModel):
+    student = models.ForeignKey("people.Student", on_delete=models.CASCADE, related_name="course_ratings")
+    enrollment = models.ForeignKey("courses.Enrollment", on_delete=models.CASCADE, related_name="course_ratings")
+    course_subject = models.ForeignKey("courses.CourseSubject", on_delete=models.CASCADE, related_name="ratings")
+    rating = models.PositiveSmallIntegerField()
+    feedback_text = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("student", "enrollment", "course_subject")

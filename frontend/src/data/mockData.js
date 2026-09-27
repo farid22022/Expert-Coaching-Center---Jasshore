@@ -1,22 +1,34 @@
 export const teachers = [
-  ["deen-islam", "Deen Islam", "DIRECTOR", "Academic Leadership"],
-  ["naimur-rahman", "MD NAIMUR RAHMAN", "TEACHER", "Mathematics"],
-  ["ashiq", "MD ASHIQ", "TEACHER", "English"],
-  ["uzzal", "UZZAL KUMAR", "TEACHER", "Science"],
-  ["masul", "MASUL BILLAH", "TEACHER", "Bangla"],
-  ["alamin", "MD ALAMIN", "TEACHER", "ICT"],
-  ["rasel", "RASEL AHMED", "TEACHER", "General Studies"],
-  ["abdullah", "K M ABDULLAH", "TEACHER", "Religion"],
-  ["rasel-mahmud", "Rasel mahmud", "TEACHER", "Primary"],
-].map(([id, name, designation, subject], index) => ({
+  ["deen-islam", "Deen Islam", "DIRECTOR", "Academic Leadership", "15+ Yrs Experience"],
+  ["naimur-rahman", "MD NAIMUR RAHMAN", "TEACHER", "Mathematics", "Senior Mentor"],
+  ["ashiq", "MD ASHIQ", "TEACHER", "English", "10+ Yrs Experience"],
+  ["uzzal", "UZZAL KUMAR", "TEACHER", "Science", "Senior Mentor"],
+  ["masul", "MASUL BILLAH", "TEACHER", "Bangla", "8+ Yrs Experience"],
+  ["alamin", "MD ALAMIN", "TEACHER", "ICT", "Subject Expert"],
+  ["rasel", "RASEL AHMED", "TEACHER", "General Studies", "9+ Yrs Experience"],
+  ["abdullah", "K M ABDULLAH", "TEACHER", "Religion", "Subject Expert"],
+  ["rasel-mahmud", "Rasel mahmud", "TEACHER", "Primary", "Early-Years Specialist"],
+].map(([id, name, designation, subject, badge], index) => ({
   id,
   name,
   designation,
   subject,
+  badge,
   image: `https://placehold.co/240x260/e8f2ee/173d33?text=${encodeURIComponent(name.split(" ")[0])}`,
   bio: "Committed to disciplined coaching, regular assessment, and student-friendly academic support.",
   order: index + 1,
 }));
+
+// Placeholder admission outcomes, in the same illustrative spirit as the rest of this
+// mock dataset (see `result` below) - not real student records.
+export const successStories = [
+  { id: "story-1", name: "Ayesha Rahman", outcome: "Admitted to Science Group, Class Nine", quote: "The structured routine and weekly assessments finally gave me a real study system to follow." },
+  { id: "story-2", name: "Fahim Hasan", outcome: "Top Scorer, Half Yearly Examination", quote: "My teachers noticed exactly where I was falling behind and helped me fix it early." },
+  { id: "story-3", name: "Nusrat Jahan", outcome: "Admitted to Class Eight, Merit List", quote: "Regular mock tests made the real admission test feel completely familiar." },
+  { id: "story-4", name: "Samiul Islam", outcome: "GPA 5.00, JSC Examination", quote: "The guardian meetings kept my family involved in my progress every single month." },
+  { id: "story-5", name: "Tasnim Akter", outcome: "Admitted to Class Six, Scholarship Batch", quote: "I went from an average student to a confident one within two semesters." },
+  { id: "story-6", name: "Rakibul Islam", outcome: "Top 10, Science Group", quote: "Disciplined class timing and mentor support made a real difference in my results." },
+];
 
 export const people = {
   founder: { name: "Deen Islam", position: "Founder & Director", message: "Quality coaching, punctual classes, and careful mentoring help students build confidence." },

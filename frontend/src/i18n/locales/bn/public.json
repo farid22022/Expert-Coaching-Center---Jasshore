@@ -1,0 +1,31 @@
+{
+  "nav": {
+    "admission": "ভর্তি",
+    "others": "অন্যান্য",
+    "stories": "সাফল্যের গল্প",
+    "contact": "যোগাযোগ"
+  },
+  "footer": {
+    "institution": "প্রতিষ্ঠান",
+    "quickLinks": "প্রয়োজনীয় লিংক",
+    "admission": "ভর্তি",
+    "important": "গুরুত্বপূর্ণ"
+  },
+  "home": {
+    "onlineAdmission": "অনলাইন ভর্তি",
+    "studentResult": "শিক্ষার্থীর ফলাফল",
+    "noticeBoard": "নোটিশ বোর্ড",
+    "yearsOfExcellence": "বছরের অভিজ্ঞতা",
+    "expertMentors": "অভিজ্ঞ শিক্ষক",
+    "studentsGuided": "শিক্ষার্থীকে পথ দেখানো হয়েছে",
+    "honorableTeachers": "সম্মানিত শিক্ষকবৃন্দ",
+    "viewAllTeachers": "সকল শিক্ষক দেখুন",
+    "admissionSuccessStories": "ভর্তি সাফল্যের গল্প",
+    "realOutcomes": "প্রকৃত ফলাফল"
+  },
+  "stories": {
+    "title": "ভর্তি সাফল্যের গল্প",
+    "subtitle": "যেসব শিক্ষার্থী সুশৃঙ্খল কোচিং, নিয়মিত মূল্যায়ন ও নিবেদিত পরামর্শের মাধ্যমে তাদের পথ খুঁজে পেয়েছে, তাদের কাছ থেকে সরাসরি জানুন।",
+    "empty": "এখনো কোনো সাফল্যের গল্প প্রকাশিত হয়নি।"
+  }
+}

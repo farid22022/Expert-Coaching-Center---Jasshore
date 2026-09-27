@@ -119,7 +119,7 @@ export function UserManagementNav() {
 
   return (
     <nav
-      className="um-dropdown-nav sticky top-[70px] z-20 flex min-h-11 flex-wrap items-center gap-2 border border-slate-200 bg-white px-3 shadow-sm"
+      className="um-dropdown-nav sticky top-0 z-20 flex min-h-11 flex-wrap items-center gap-2 border border-slate-200 bg-white px-3 shadow-sm"
       aria-label="User management menu"
     >
       <strong className="mr-2 whitespace-nowrap text-sm font-black text-blue-700">

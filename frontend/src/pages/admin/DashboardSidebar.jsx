@@ -1,19 +1,28 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { BookOpen, ClipboardCheck, GraduationCap, LayoutDashboard, LogOut, Users, X } from "lucide-react";
+import { Bell, BookOpen, ClipboardCheck, FilePenLine, GraduationCap, Image, LayoutDashboard, LayoutTemplate, LogOut, Palette, Sparkles, UserCheck, Users, X } from "lucide-react";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { logout } from "../../services/authApi.js";
 
 const dashboardPathFor = (path, basePath) => `${basePath}${path}`;
 
 const navItems = [
-  { label: "Dashboard", path: "", icon: LayoutDashboard, end: true },
-  { label: "Teachers", path: "/teachers", icon: GraduationCap },
-  { label: "Admissions", path: "/admissions", icon: BookOpen },
-  { label: "Teacher Assignments", path: "/teacher-assignments", icon: Users },
-  { label: "Admission Applications", path: "/admission-applications", icon: ClipboardCheck },
+  { labelKey: "nav.dashboard", path: "", icon: LayoutDashboard, end: true },
+  { labelKey: "nav.teachers", path: "/teachers", icon: GraduationCap },
+  { labelKey: "nav.admissions", path: "/admissions", icon: BookOpen },
+  { labelKey: "nav.admissionFormBuilder", path: "/admission-form-builder", icon: FilePenLine },
+  { labelKey: "nav.teacherAssignments", path: "/teacher-assignments", icon: Users },
+  { labelKey: "nav.admissionApplications", path: "/admission-applications", icon: ClipboardCheck },
+  { labelKey: "nav.notices", path: "/notices", icon: Bell },
+  { labelKey: "nav.gallery", path: "/gallery", icon: Image },
+  { labelKey: "nav.banners", path: "/website/banners", icon: LayoutTemplate },
+  { labelKey: "nav.successStories", path: "/website/success-stories", icon: Sparkles },
+  { labelKey: "nav.renownedTeachers", path: "/website/renowned-teachers", icon: UserCheck },
+  { labelKey: "nav.websiteSettings", path: "/website/settings", icon: Palette },
 ];
 
 export default function DashboardSidebar({ mobileOpen, setMobileOpen }) {
+  const { t } = useTranslation(["admin", "common"]);
   const close = () => setMobileOpen(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -34,7 +43,7 @@ export default function DashboardSidebar({ mobileOpen, setMobileOpen }) {
       )}
 
       <aside
-        className={`dashboard-sidebar fixed inset-y-0 left-0 z-50 w-[min(300px,86vw)] overflow-auto bg-emerald-950 p-4 text-white shadow-2xl shadow-black/30 transition-transform duration-300 ease-out lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:w-auto lg:translate-x-0 lg:shadow-none ${
+        className={`dashboard-sidebar fixed inset-y-0 left-0 z-50 w-[min(300px,86vw)] overflow-y-auto bg-deep-green p-4 text-white shadow-2xl shadow-black/30 transition-transform duration-300 ease-out lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:w-[248px] lg:translate-x-0 lg:shadow-none ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -46,7 +55,7 @@ export default function DashboardSidebar({ mobileOpen, setMobileOpen }) {
           />
           <div className="min-w-0">
             <strong className="block truncate text-sm font-black tracking-tight">EXPERT COACHING</strong>
-            <span className="block text-xs font-semibold text-white/60">Admin Portal</span>
+            <span className="block text-xs font-semibold text-white/60">{t("portal")}</span>
           </div>
           <button type="button" className="btn btn-ghost btn-square btn-sm ml-auto text-white lg:hidden" onClick={close} aria-label="Close dashboard menu">
             <X size={18} />
@@ -54,14 +63,14 @@ export default function DashboardSidebar({ mobileOpen, setMobileOpen }) {
         </div>
 
         <nav className="dashboard-sidebar-nav grid gap-1">
-          {navItems.map(({ label, path, icon: Icon, end }) => (
+          {navItems.map(({ labelKey, path, icon: Icon, end }) => (
             <NavLink
-              key={label}
+              key={labelKey}
               to={dashboardPathFor(path, basePath)}
               end={end}
               onClick={close}
               className={({ isActive }) =>
-                `relative flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-bold transition-colors duration-200 hover:bg-white/10 hover:text-white ${
+                `relative flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-bold outline-none transition-colors duration-200 hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/60 ${
                   isActive ? "text-white" : "text-white/75"
                 }`
               }
@@ -76,7 +85,7 @@ export default function DashboardSidebar({ mobileOpen, setMobileOpen }) {
                     />
                   )}
                   <Icon size={18} />
-                  <span>{label}</span>
+                  <span>{t(labelKey)}</span>
                 </>
               )}
             </NavLink>
@@ -84,9 +93,9 @@ export default function DashboardSidebar({ mobileOpen, setMobileOpen }) {
         </nav>
 
         <div className="mt-5 border-t border-white/10 pt-4">
-          <button type="button" onClick={handleLogout} className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-sm font-bold text-white/75 hover:bg-white/10 hover:text-white">
+          <button type="button" onClick={handleLogout} className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-sm font-bold text-white/75 outline-none transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/60">
             <LogOut size={18} />
-            Logout
+            {t("logout", { ns: "common" })}
           </button>
         </div>
       </aside>

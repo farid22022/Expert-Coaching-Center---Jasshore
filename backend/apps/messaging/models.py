@@ -85,3 +85,29 @@ class Notification(OrganizationScopedModel):
     class Meta:
         indexes = [models.Index(fields=["organization", "recipient", "is_read"])]
         ordering = ("-created_at",)
+
+
+class Notice(OrganizationScopedModel):
+    title = models.CharField(max_length=180)
+    summary = models.CharField(max_length=300, blank=True)
+    body = models.TextField()
+    category = models.CharField(max_length=80, default="Admission", db_index=True)
+    course = models.ForeignKey("courses.Course", null=True, blank=True, on_delete=models.CASCADE, related_name="notices")
+    course_section = models.ForeignKey("courses.CourseSection", null=True, blank=True, on_delete=models.SET_NULL, related_name="notices")
+    subject = models.ForeignKey("courses.CourseSubject", null=True, blank=True, on_delete=models.SET_NULL, related_name="notices")
+    created_by_teacher = models.ForeignKey("people.Employee", null=True, blank=True, on_delete=models.SET_NULL, related_name="notices")
+    target_url = models.CharField(max_length=255, blank=True)
+    publish_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    expires_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    is_public = models.BooleanField(default=True, db_index=True)
+    is_published = models.BooleanField(default=True, db_index=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["organization", "course", "is_published"]),
+            models.Index(fields=["organization", "is_public", "is_published"]),
+        ]
+        ordering = ("-publish_at", "-created_at")
+
+    def __str__(self):
+        return self.title

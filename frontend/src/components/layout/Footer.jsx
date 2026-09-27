@@ -1,22 +1,25 @@
 import { Link } from "react-router-dom";
 import { institution } from "../../data/site.js";
+import { useTheme } from "../../theme/ThemeProvider.jsx";
+import Reveal from "../common/Reveal.jsx";
 
 const cols = [
-  ["Institution", [["About", "/about/history"], ["History", "/about/history"], ["Teachers", "/about/teachers"], ["Contact", "/contact"]]],
-  ["Academic", [["Student List", "/academic/students"], ["Class Routine", "/academic/class-routine"], ["Exam Routine", "/academic/exam-routine"], ["Results", "/result/individual"]]],
-  ["Admission", [["Online Admission", "/admission/online"], ["Admission Result", "/admission/result"], ["Admit Card", "/admission/admit-card"]]],
-  ["Important", [["Notices", "/notices"], ["News", "/news"], ["Events", "/events"], ["Gallery", "/gallery/photos"]]],
+  ["Institution", [["History", "/about/history"], ["Teachers", "/about/teachers"], ["Contact", "/contact"]]],
+  ["Quick Links", [["Student List", "/academic/students"], ["Class Routine", "/academic/class-routine"], ["Exam Routine", "/academic/exam-routine"]]],
+  ["Admission", [["Online Admission", "/admission/online"], ["Applicant's Form", "/admission/applicant"]]],
+  ["Important", [["Notices", "/notices"], ["News", "/news"], ["Events", "/events"], ["Gallery", "/gallery/photos"], ["Stories", "/stories"]]],
 ];
 
 export default function Footer() {
+  const { siteInfo } = useTheme();
   return (
     <footer className="border-t border-emerald-900 bg-emerald-950 text-emerald-50">
-      <div className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-2 lg:grid-cols-[1.4fr_repeat(4,1fr)] lg:px-8">
+      <Reveal className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-2 lg:grid-cols-[1.4fr_repeat(4,1fr)] lg:px-8">
         <div className="grid gap-4">
           <Link className="flex items-center gap-3" to="/">
             <span className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-white p-1 shadow-sm">
               <img
-                src="/jasshoreExpert.png"
+                src={siteInfo?.logo || "/jasshoreExpert.png"}
                 alt={`${institution.name} logo`}
                 className="h-full w-full object-contain"
               />
@@ -49,10 +52,11 @@ export default function Footer() {
             ))}
           </div>
         ))}
-      </div>
+      </Reveal>
 
       <div className="border-t border-white/10 px-4 py-4 text-center text-xs font-semibold text-emerald-100/65">
-        © {new Date().getFullYear()} {institution.name}. Public website clone.
+        © {new Date().getFullYear()} {institution.name}. All rights reserved.
+        <p className="mt-2">Animated icons designed by Magnific from Flaticon: <a className="underline" href="https://www.flaticon.com/free-animated-icon/book_8722462" target="_blank" rel="noreferrer">Study</a> · <a className="underline" href="https://www.flaticon.com/free-animated-icon/student_10302965" target="_blank" rel="noreferrer">Student</a> · <a className="underline" href="https://www.flaticon.com/free-animated-icon/teach_10302940" target="_blank" rel="noreferrer">Teacher</a>.</p>
       </div>
     </footer>
   );

@@ -354,7 +354,7 @@ export function OnlineApplicationNav() {
 
   return (
     <nav
-      className="sticky top-[70px] z-20 flex min-h-11 flex-wrap items-center gap-2 border border-slate-200 bg-white px-3 shadow-sm"
+      className="sticky top-0 z-20 flex min-h-11 flex-wrap items-center gap-2 border border-slate-200 bg-white px-3 shadow-sm"
       aria-label="Online application menu"
     >
       <strong className="mr-2 whitespace-nowrap text-sm font-black text-emerald-700">

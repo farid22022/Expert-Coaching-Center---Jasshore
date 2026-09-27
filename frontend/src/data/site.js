@@ -12,46 +12,11 @@ export const institution = {
 export const navGroups = [
   // { label: "Home", path: "/" },
   {
-    label: "About",
-    items: [
-      ["History", "/about/history"],
-      ["Founder", "/about/founder"],
-      ["Chairman", "/about/chairman"],
-      ["Principal", "/about/principal"],
-      ["Teachers", "/about/teachers"],
-      ["Committee Members", "/about/committee"],
-      ["Staff List", "/about/staff"],
-      ["Institution Details", "/about/institution-details"],
-    ],
-  },
-  {
-    label: "Academic",
-    items: [
-      ["Student List", "/academic/students"],
-      ["Class Routine", "/academic/class-routine"],
-      ["Exam Routine", "/academic/exam-routine"],
-      ["Rules & Regulations", "/academic/rules"],
-      ["Uniform Details", "/academic/uniform"],
-      ["List of Holidays", "/academic/holidays"],
-    ],
-  },
-  {
-    label: "Result",
-    items: [
-      ["Individual Academic Result", "/result/individual"],
-      ["Assessment Reports", "/result/assessment"],
-      ["Board Result", "/result/board"],
-    ],
-  },
-  {
     label: "Admission",
     items: [
       ["Online Admission", "/admission/online"],
-      ["Admission Test", "/admission-tests"],
-      ["Admission Result", "/admission/result"],
       ["Blank Admission Form", "/admission/form"],
       ["Applicant's Form", "/admission/applicant"],
-      ["Admit Card", "/admission/admit-card"],
     ],
   },
   {
@@ -64,17 +29,8 @@ export const navGroups = [
       ["Video Gallery", "/gallery/videos"],
     ],
   },
+  { label: "Stories", path: "/stories" },
   { label: "Contact Us", path: "/contact" },
-];
-
-export const quickLinks = [
-  ["Attendance", "/attendance"],
-  ["Class Routine", "/academic/class-routine"],
-  ["Exam Result", "/result/individual"],
-  ["Admission Test", "/admission-tests"],
-  ["Assesm. Report", "/result/assessment"],
-  ["Admit Card", "/admission/admit-card"],
-  ["Due Report", "/due-report"],
 ];
 
 export const studentCorner = [

@@ -12,5 +12,6 @@ router.register("logs", views.SmsLogViewSet)
 router.register("email-templates", views.EmailTemplateViewSet)
 router.register("email-logs", views.EmailLogViewSet)
 router.register("notifications", views.NotificationViewSet, basename="notification")
+router.register("notices", views.NoticeViewSet, basename="notice")
 
 urlpatterns = router.urls

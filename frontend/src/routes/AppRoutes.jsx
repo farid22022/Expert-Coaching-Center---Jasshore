@@ -1,4 +1,6 @@
-import { Navigate, Routes, Route } from "react-router-dom";
+import { lazy, Suspense } from "react";
+import { Navigate, Routes, Route, useLocation } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 
 import Home from "../pages/Home.jsx";
 
@@ -26,10 +28,8 @@ import {
 import {
   OnlineAdmissionPage,
   AdmissionCardDetailPage,
-  AdmissionResultPage,
   BlankFormPage,
   ApplicantPage,
-  AdmitCardPage,
 } from "../pages/AdmissionPages.jsx";
 
 import {
@@ -43,6 +43,7 @@ import {
 } from "../pages/GalleryPages.jsx";
 
 import Contact from "../pages/Contact.jsx";
+import StoriesPage from "../pages/StoriesPage.jsx";
 import SearchPage from "../pages/SearchPage.jsx";
 
 import UtilityPage, {
@@ -53,30 +54,64 @@ import Login from "../pages/auth/Login.jsx";
 import Register from "../pages/auth/Register.jsx";
 
 import {
-  AdmissionTestsDashboard,
-  AdmissionTestGroup,
-  AdmissionTestInstructions,
-  AdmissionLiveTest,
-  AdmissionTestResult,
-  AdmissionTestReview,
   MyTestsPage,
 } from "../pages/AdmissionTests.jsx";
 
 import StudentProfile from "../components/common/StudentProfile.jsx";
-import StudentPortalDashboard from "../pages/student/StudentDashboard.jsx";
-import StudentCoursePage from "../pages/student/StudentCoursePage.jsx";
-import { StudentAssessmentsPage, StudentCoursesPage, StudentMaterialsPage, StudentNotificationsPage, StudentProfilePage } from "../pages/student/StudentPortalPages.jsx";
-import { TeacherOverviewPage, TeacherCoursesPage, TeacherAssessmentsPage, TeacherCreateTestPage, TeacherQuestionBankPage, TeacherMaterialsPage, TeacherResultsSubmissionsPage, TeacherStudentsPage, TeacherNotificationsPage, TeacherAssignmentsPage as TeacherAssignmentManagementPage, TeacherReviewPage } from "../pages/teacher/TeacherModulePages.jsx";
+const StudentPortalDashboard = lazy(() => import("../pages/student/StudentDashboard.jsx").then((module) => ({ default: module.default })));
+const StudentDashboardLayout = lazy(() => import("../pages/student/dashboard/StudentDashboardLayout.jsx").then((module) => ({ default: module.default })));
+const StudentCoursePage = lazy(() => import("../pages/student/StudentCoursePage.jsx").then((module) => ({ default: module.default })));
+const StudentMaterialDetailPage = lazy(() => import("../pages/student/StudentCoursePage.jsx").then((module) => ({ default: module.StudentMaterialDetailPage })));
+const StudentCoursesPage = lazy(() => import("../pages/student/StudentCoursesPage.jsx").then((module) => ({ default: module.default })));
+const StudentAssessmentsPage = lazy(() => import("../pages/student/StudentAssessmentsPage.jsx").then((module) => ({ default: module.default })));
+const StudentAssignmentsPage = lazy(() => import("../pages/student/StudentAssignmentsPage.jsx").then((module) => ({ default: module.default })));
+const StudentResultsPage = lazy(() => import("../pages/student/StudentResultsPage.jsx").then((module) => ({ default: module.default })));
+const StudentMaterialsPage = lazy(() => import("../pages/student/StudentMaterialsPage.jsx").then((module) => ({ default: module.default })));
+const StudentNotificationsPage = lazy(() => import("../pages/student/StudentNotificationsPage.jsx").then((module) => ({ default: module.default })));
+const StudentProfilePage = lazy(() => import("../pages/student/StudentProfilePage.jsx").then((module) => ({ default: module.default })));
+const StudentActionsPage = lazy(() => import("../pages/student/StudentActionsPage.jsx").then((module) => ({ default: module.default })));
+const StudentPracticePage = lazy(() => import("../pages/student/StudentPracticePage.jsx").then((module) => ({ default: module.default })));
+const StudentFeedbackPage = lazy(() => import("../pages/student/StudentFeedbackPage.jsx").then((module) => ({ default: module.default })));
+const StudentProgressPage = lazy(() => import("../pages/student/StudentProgressPage.jsx").then((module) => ({ default: module.default })));
+const StudentMistakesPage = lazy(() => import("../pages/student/StudentMistakesPage.jsx").then((module) => ({ default: module.default })));
+const StudentBookmarksPage = lazy(() => import("../pages/student/StudentBookmarksPage.jsx").then((module) => ({ default: module.default })));
+const StudentAcademicOverviewPage = lazy(() => import("../pages/student/StudentAcademicOverviewPage.jsx").then((module) => ({ default: module.default })));
+const StudentCourseResultPage = lazy(() => import("../pages/student/StudentCourseResultPage.jsx").then((module) => ({ default: module.default })));
+const TeacherOverviewPage = lazy(() => import("../pages/teacher/TeacherModulePages.jsx").then((module) => ({ default: module.TeacherOverviewPage })));
+const TeacherCoursesPage = lazy(() => import("../pages/teacher/TeacherModulePages.jsx").then((module) => ({ default: module.TeacherCoursesPage })));
+const TeacherAssessmentsPage = lazy(() => import("../pages/teacher/TeacherModulePages.jsx").then((module) => ({ default: module.TeacherAssessmentsPage })));
+const TeacherCreateTestPage = lazy(() => import("../pages/teacher/TeacherModulePages.jsx").then((module) => ({ default: module.TeacherCreateTestPage })));
+const TeacherQuestionBankPage = lazy(() => import("../pages/teacher/TeacherModulePages.jsx").then((module) => ({ default: module.TeacherQuestionBankPage })));
+const TeacherMaterialsPage = lazy(() => import("../pages/teacher/TeacherModulePages.jsx").then((module) => ({ default: module.TeacherMaterialsPage })));
+const TeacherResultsSubmissionsPage = lazy(() => import("../pages/teacher/TeacherModulePages.jsx").then((module) => ({ default: module.TeacherResultsSubmissionsPage })));
+const TeacherStudentsPage = lazy(() => import("../pages/teacher/TeacherModulePages.jsx").then((module) => ({ default: module.TeacherStudentsPage })));
+const TeacherNotificationsPage = lazy(() => import("../pages/teacher/TeacherModulePages.jsx").then((module) => ({ default: module.TeacherNotificationsPage })));
+const TeacherAssignmentManagementPage = lazy(() => import("../pages/teacher/TeacherModulePages.jsx").then((module) => ({ default: module.TeacherAssignmentsPage })));
+const TeacherReviewPage = lazy(() => import("../pages/teacher/TeacherModulePages.jsx").then((module) => ({ default: module.TeacherReviewPage })));
+const HeadTeacherSectionsPage = lazy(() => import("../pages/teacher/TeacherAcademicStructurePages.jsx").then((module) => ({ default: module.HeadTeacherSectionsPage })));
+const HeadTeacherSubjectsPage = lazy(() => import("../pages/teacher/TeacherAcademicStructurePages.jsx").then((module) => ({ default: module.HeadTeacherSubjectsPage })));
+const HeadTeacherAcademicStagesPage = lazy(() => import("../pages/teacher/TeacherAcademicStructurePages.jsx").then((module) => ({ default: module.HeadTeacherAcademicStagesPage })));
+const HeadTeacherAssessmentComponentsPage = lazy(() => import("../pages/teacher/TeacherAcademicStructurePages.jsx").then((module) => ({ default: module.HeadTeacherAssessmentComponentsPage })));
+const HeadTeacherGradeScalesPage = lazy(() => import("../pages/teacher/TeacherAcademicStructurePages.jsx").then((module) => ({ default: module.HeadTeacherGradeScalesPage })));
+const HeadTeacherGradeScaleItemsPage = lazy(() => import("../pages/teacher/TeacherAcademicStructurePages.jsx").then((module) => ({ default: module.HeadTeacherGradeScaleItemsPage })));
+const HeadTeacherSubjectAssignmentsPage = lazy(() => import("../pages/teacher/TeacherAcademicStructurePages.jsx").then((module) => ({ default: module.HeadTeacherSubjectAssignmentsPage })));
+const TeacherCourseOutlinePage = lazy(() => import("../pages/teacher/TeacherCourseOutlinePage.jsx").then((module) => ({ default: module.default })));
+const TeacherPerformanceCenterPage = lazy(() => import("../pages/teacher/TeacherPerformanceCenterPage.jsx").then((module) => ({ default: module.default })));
+const TeacherStudentProfilePage = lazy(() => import("../pages/teacher/TeacherStudentProfilePage.jsx").then((module) => ({ default: module.default })));
+const TeacherInterventionsPage = lazy(() => import("../pages/teacher/TeacherInterventionsPage.jsx").then((module) => ({ default: module.default })));
+const TeacherGradebookPage = lazy(() => import("../pages/teacher/TeacherGradebookPage.jsx").then((module) => ({ default: module.default })));
+const TeacherDashboardLayout = lazy(() => import("../pages/teacher/dashboard/TeacherDashboardLayout.jsx").then((module) => ({ default: module.default })));
 
 import AdminLogin from "../pages/admin/AdminLogin.jsx";
-import DashboardLayout from "../pages/admin/DashboardLayout.jsx";
-import {
-  AdminAdmissionApplicationsPage,
-  AdminAdmissionsPage,
-  AdminPortalDashboard,
-  AdminTeacherAssignmentsPage,
-  AdminTeachersPage,
-} from "../pages/admin/AdminPortalPages.jsx";
+import DashboardLayout from "../pages/admin/Dashboard/AdminDashboardLayout.jsx";
+const AdminAdmissionApplicationsPage = lazy(() => import("../pages/admin/AdminPortalPages.jsx").then((module) => ({ default: module.AdminAdmissionApplicationsPage })));
+const AdminAdmissionFormBuilderPage = lazy(() => import("../pages/admin/AdminPortalPages.jsx").then((module) => ({ default: module.AdminAdmissionFormBuilderPage })));
+const AdminAdmissionsPage = lazy(() => import("../pages/admin/AdminPortalPages.jsx").then((module) => ({ default: module.AdminAdmissionsPage })));
+const AdminGalleryManagementPage = lazy(() => import("../pages/admin/AdminPortalPages.jsx").then((module) => ({ default: module.AdminGalleryManagementPage })));
+const AdminNoticeManagementPage = lazy(() => import("../pages/admin/AdminPortalPages.jsx").then((module) => ({ default: module.AdminNoticeManagementPage })));
+const AdminPortalDashboard = lazy(() => import("../pages/admin/AdminPortalPages.jsx").then((module) => ({ default: module.AdminPortalDashboard })));
+const AdminTeacherAssignmentsPage = lazy(() => import("../pages/admin/AdminPortalPages.jsx").then((module) => ({ default: module.AdminTeacherAssignmentsPage })));
+const AdminTeachersPage = lazy(() => import("../pages/admin/AdminPortalPages.jsx").then((module) => ({ default: module.AdminTeachersPage })));
 
 import DashboardHome, {
   DashboardPlaceholder,
@@ -347,17 +382,20 @@ import UserManagementDashboard, {
 } from "../pages/admin/Dashboard/user-management/UserManagementDashboard.jsx";
 
 import {
-  CoursesPage,
   CourseSectionsPage,
   CourseSubjectsPage,
-  TeacherAssignmentsPage,
-  EnrollmentsPage,
+  AcademicStagesPage,
+  AssessmentComponentsPage,
+  CourseGradeScalesPage,
+  CourseGradeScaleItemsPage,
+  TeacherAssignmentsPage as HeadTeacherAssignmentsPage,
 } from "../pages/admin/Dashboard/courses/CourseFoundationPages.jsx";
+import { BannersPage, SuccessStoriesPage, RenownedTeachersPage } from "../pages/admin/Dashboard/website/WebsiteContentPages.jsx";
+import WebsiteSettingsPage from "../pages/admin/Dashboard/website/WebsiteSettingsPage.jsx";
 
 import {
   AdminAcademicPage,
   AdminAssessmentsPage,
-  AdminEnrollmentsPage,
   AdminNotificationsPage,
   AdminPaymentsPage,
   AdminSettingsPage,
@@ -1672,6 +1710,10 @@ function courseFoundationRoutes() {
       <Route path="courses" element={<CoursesPage />} />
       <Route path="courses/sections" element={<CourseSectionsPage />} />
       <Route path="courses/subjects" element={<CourseSubjectsPage />} />
+      <Route path="courses/academic-stages" element={<AcademicStagesPage />} />
+      <Route path="courses/assessment-components" element={<AssessmentComponentsPage />} />
+      <Route path="courses/grade-scales" element={<CourseGradeScalesPage />} />
+      <Route path="courses/grade-scale-items" element={<CourseGradeScaleItemsPage />} />
       <Route path="teacher-assignments" element={<TeacherAssignmentsPage />} />
       <Route path="enrollments" element={<EnrollmentsPage />} />
       <Route path="course-foundation" element={<CoursesPage />} />
@@ -1690,8 +1732,15 @@ function adminDashboardChildren() {
       <Route index element={<AdminPortalDashboard />} />
       <Route path="teachers" element={<AdminTeachersPage />} />
       <Route path="admissions" element={<AdminAdmissionsPage />} />
+      <Route path="admission-form-builder" element={<AdminAdmissionFormBuilderPage />} />
       <Route path="teacher-assignments" element={<AdminTeacherAssignmentsPage />} />
       <Route path="admission-applications" element={<AdminAdmissionApplicationsPage />} />
+      <Route path="notices" element={<AdminNoticeManagementPage />} />
+      <Route path="gallery" element={<AdminGalleryManagementPage />} />
+      <Route path="website/banners" element={<BannersPage />} />
+      <Route path="website/success-stories" element={<SuccessStoriesPage />} />
+      <Route path="website/renowned-teachers" element={<RenownedTeachersPage />} />
+      <Route path="website/settings" element={<WebsiteSettingsPage />} />
       <Route path="*" element={<Navigate to="" replace />} />
     </>
   );
@@ -1700,7 +1749,6 @@ function adminDashboardChildren() {
      safety, but are no longer part of the portal route surface. */
   return (
     <>
-      <Route path="enrollments" element={<AdminEnrollmentsPage />} />
       <Route path="academic" element={<AdminAcademicPage />} />
       <Route path="users" element={<AdminUsersPage />} />
       <Route path="assessments" element={<AdminAssessmentsPage />} />
@@ -1798,9 +1846,35 @@ function adminDashboardChildren() {
    APPLICATION ROUTES
 ========================================================= */
 
-export default function AppRoutes() {
+// Crossfades between top-level sections (public site <-> a dashboard portal, or
+// between public pages) without disrupting in-portal navigation: keyed by only the
+// first path segment, so moving between tabs inside /admin, /teacher, or /student
+// never remounts that portal's layout (which would reset its auth check and any
+// open UI state). Transform/opacity only, ~180ms, so it never feels like a delay.
+function RouteTransition({ children }) {
+  const location = useLocation();
+  const transitionKey = location.pathname.split("/").filter(Boolean)[0] || "home";
   return (
-    <Routes>
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={transitionKey}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+      >
+        {children}
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+export default function AppRoutes() {
+  const location = useLocation();
+  return (
+    <RouteTransition>
+    <Suspense fallback={<div role="status" className="p-8 text-center text-ink">Loading page...</div>}>
+    <Routes location={location}>
 
       {/* =====================================================
           PUBLIC WEBSITE
@@ -1939,11 +2013,6 @@ export default function AppRoutes() {
       />
 
       <Route
-        path="/admission/result"
-        element={<AdmissionResultPage />}
-      />
-
-      <Route
         path="/admission/form"
         element={<BlankFormPage />}
       />
@@ -1953,45 +2022,6 @@ export default function AppRoutes() {
         element={<ApplicantPage />}
       />
 
-      <Route
-        path="/admission/admit-card"
-        element={<AdmitCardPage />}
-      />
-
-
-      {/* =====================================================
-          ADMISSION TEST
-      ===================================================== */}
-
-      <Route
-        path="/admission-tests"
-        element={<AdmissionTestsDashboard />}
-      />
-
-      <Route
-        path="/admission-tests/:group"
-        element={<AdmissionTestGroup />}
-      />
-
-      <Route
-        path="/admission-tests/:group/instructions"
-        element={<AdmissionTestInstructions />}
-      />
-
-      <Route
-        path="/admission-tests/:group/start"
-        element={<AdmissionLiveTest />}
-      />
-
-      <Route
-        path="/admission-tests/:group/result"
-        element={<AdmissionTestResult />}
-      />
-
-      <Route
-        path="/admission-tests/:group/review"
-        element={<AdmissionTestReview />}
-      />
 
       <Route
         path="/my-tests"
@@ -2089,6 +2119,11 @@ export default function AppRoutes() {
       />
 
       <Route
+        path="/stories"
+        element={<StoriesPage />}
+      />
+
+      <Route
         path="/search"
         element={<SearchPage />}
       />
@@ -2117,16 +2152,56 @@ export default function AppRoutes() {
         }
       />
 
-      <Route path="/student/dashboard" element={<StudentPortalDashboard />} />
+      <Route path="/student/dashboard" element={<StudentDashboardLayout />}>
+        <Route index element={<StudentPortalDashboard />} />
+        <Route path="courses" element={<StudentCoursesPage />} />
+        <Route path="assessments" element={<StudentAssessmentsPage />} />
+        <Route path="assignments" element={<StudentAssignmentsPage />} />
+        <Route path="materials" element={<StudentMaterialsPage />} />
+        <Route path="results" element={<StudentResultsPage />} />
+        <Route path="notifications" element={<StudentNotificationsPage />} />
+        <Route path="profile" element={<StudentProfilePage />} />
+      </Route>
       <Route path="/student/courses" element={<StudentCoursesPage />} />
       <Route path="/student/courses/:enrollmentId" element={<StudentCoursePage />} />
+      <Route path="/student/courses/:enrollmentId/materials/:materialId" element={<StudentMaterialDetailPage />} />
+      <Route path="/student/courses/:enrollmentId/overview" element={<StudentAcademicOverviewPage />} />
+      <Route path="/student/courses/:enrollmentId/subjects/:subjectId/result" element={<StudentCourseResultPage />} />
       <Route path="/student/assessments" element={<StudentAssessmentsPage />} />
+      <Route path="/student/assignments" element={<StudentAssignmentsPage />} />
       <Route path="/student/materials" element={<StudentMaterialsPage />} />
+      <Route path="/student/results" element={<StudentResultsPage />} />
       <Route path="/student/notifications" element={<StudentNotificationsPage />} />
       <Route path="/student/profile" element={<StudentProfilePage />} />
-      <Route path="/teacher/dashboard" element={<TeacherOverviewPage />} />
-      <Route path="/teacher/dashboard/courses" element={<TeacherCoursesPage />} />
-      <Route path="/teacher/dashboard/assessments" element={<TeacherAssessmentsPage />} />
+      <Route path="/student/actions" element={<StudentActionsPage />} />
+      <Route path="/student/practice" element={<StudentPracticePage />} />
+      <Route path="/student/practice/mistakes" element={<StudentMistakesPage />} />
+      <Route path="/student/feedback" element={<StudentFeedbackPage />} />
+      <Route path="/student/progress" element={<StudentProgressPage />} />
+      <Route path="/student/bookmarks" element={<StudentBookmarksPage />} />
+      <Route path="/teacher/dashboard" element={<TeacherDashboardLayout />}>
+        <Route index element={<TeacherOverviewPage />} />
+        <Route path="courses" element={<TeacherCoursesPage />} />
+        <Route path="assessments" element={<TeacherAssessmentsPage />} />
+        <Route path="question-bank" element={<TeacherQuestionBankPage />} />
+        <Route path="materials" element={<TeacherMaterialsPage />} />
+        <Route path="course-outline" element={<TeacherCourseOutlinePage />} />
+        <Route path="performance" element={<TeacherPerformanceCenterPage />} />
+        <Route path="students/:studentId" element={<TeacherStudentProfilePage />} />
+        <Route path="interventions" element={<TeacherInterventionsPage />} />
+        <Route path="gradebook" element={<TeacherGradebookPage />} />
+        <Route path="assignments" element={<TeacherAssignmentManagementPage />} />
+        <Route path="review" element={<TeacherReviewPage />} />
+        <Route path="students" element={<TeacherStudentsPage />} />
+        <Route path="notifications" element={<TeacherNotificationsPage />} />
+        <Route path="academic/sections" element={<HeadTeacherSectionsPage />} />
+        <Route path="academic/subjects" element={<HeadTeacherSubjectsPage />} />
+        <Route path="academic/stages" element={<HeadTeacherAcademicStagesPage />} />
+        <Route path="academic/assessment-components" element={<HeadTeacherAssessmentComponentsPage />} />
+        <Route path="academic/grade-scales" element={<HeadTeacherGradeScalesPage />} />
+        <Route path="academic/grade-scale-items" element={<HeadTeacherGradeScaleItemsPage />} />
+        <Route path="academic/teacher-assignments" element={<HeadTeacherSubjectAssignmentsPage />} />
+      </Route>
       <Route path="/teacher/online-tests" element={<TeacherAssessmentsPage />} />
       <Route path="/teacher/online-tests/create" element={<TeacherCreateTestPage />} />
       <Route path="/teacher/online-tests/mcq" element={<TeacherAssessmentsPage />} />
@@ -2135,12 +2210,6 @@ export default function AppRoutes() {
       <Route path="/teacher/online-tests/scheduled" element={<TeacherAssessmentsPage />} />
       <Route path="/teacher/online-tests/drafts" element={<TeacherAssessmentsPage />} />
       <Route path="/teacher/online-tests/results" element={<TeacherResultsSubmissionsPage />} />
-      <Route path="/teacher/dashboard/question-bank" element={<TeacherQuestionBankPage />} />
-      <Route path="/teacher/dashboard/materials" element={<TeacherMaterialsPage />} />
-      <Route path="/teacher/dashboard/assignments" element={<TeacherAssignmentManagementPage />} />
-      <Route path="/teacher/dashboard/review" element={<TeacherReviewPage />} />
-      <Route path="/teacher/dashboard/students" element={<TeacherStudentsPage />} />
-      <Route path="/teacher/dashboard/notifications" element={<TeacherNotificationsPage />} />
 
 
       {/* =====================================================
@@ -2191,10 +2260,14 @@ export default function AppRoutes() {
         <Route path="admissions/create" element={<AdminAdmissionsPage />} />
         <Route path="admissions/:id" element={<AdminAdmissionsPage />} />
         <Route path="admissions/:id/edit" element={<AdminAdmissionsPage />} />
+        <Route path="admission-form-builder" element={<AdminAdmissionFormBuilderPage />} />
+        <Route path="admission-form-builder/:id" element={<AdminAdmissionFormBuilderPage />} />
         <Route path="teacher-assignments" element={<AdminTeacherAssignmentsPage />} />
         <Route path="teacher-assignments/create" element={<AdminTeacherAssignmentsPage />} />
         <Route path="admission-applications" element={<AdminAdmissionApplicationsPage />} />
         <Route path="admission-applications/:id" element={<AdminAdmissionApplicationsPage />} />
+        <Route path="notices" element={<AdminNoticeManagementPage />} />
+        <Route path="gallery" element={<AdminGalleryManagementPage />} />
       </Route>
 
 
@@ -2238,5 +2311,7 @@ export default function AppRoutes() {
         element={<NotFound />}
       />
     </Routes>
+    </Suspense>
+    </RouteTransition>
   );
 }

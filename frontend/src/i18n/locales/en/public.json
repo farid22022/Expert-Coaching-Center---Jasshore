@@ -1,0 +1,31 @@
+{
+  "nav": {
+    "admission": "Admission",
+    "others": "Others",
+    "stories": "Stories",
+    "contact": "Contact Us"
+  },
+  "footer": {
+    "institution": "Institution",
+    "quickLinks": "Quick Links",
+    "admission": "Admission",
+    "important": "Important"
+  },
+  "home": {
+    "onlineAdmission": "Online Admission",
+    "studentResult": "Student Result",
+    "noticeBoard": "Notice Board",
+    "yearsOfExcellence": "Years of Excellence",
+    "expertMentors": "Expert Mentors",
+    "studentsGuided": "Students Guided",
+    "honorableTeachers": "Honorable Teachers",
+    "viewAllTeachers": "View all teachers",
+    "admissionSuccessStories": "Admission Success Stories",
+    "realOutcomes": "Real outcomes"
+  },
+  "stories": {
+    "title": "Admission Success Stories",
+    "subtitle": "Hear directly from students who found their path with structured coaching, regular assessment, and dedicated mentorship.",
+    "empty": "No success stories published yet."
+  }
+}

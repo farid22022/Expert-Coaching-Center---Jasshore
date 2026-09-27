@@ -817,144 +817,14 @@ body,
   overflow-x: hidden;
 }
 
-.dashboard-layout {
-  width: 100%;
-  min-height: 100vh;
-  background: #f4f8f6;
-  overflow-x: hidden;
-}
-
-.dashboard-main {
-  width: calc(100% - var(--dashboard-sidebar-width));
-  min-width: 0;
-  min-height: 100vh;
-  margin-left: var(--dashboard-sidebar-width);
-  overflow-x: hidden;
-
-  transition:
-    margin-left 0.35s var(--dashboard-ease),
-    width 0.35s var(--dashboard-ease);
-}
-
-.dashboard-content {
-  width: 100%;
-  max-width: none;
-  min-width: 0;
-  margin: 0;
-  padding: 22px;
-  box-sizing: border-box;
-}
-
-
-/* =========================================================
-   OPTIONAL DASHBOARD HEADER
-========================================================= */
-
-.dashboard-top-header {
-  width: 100%;
-  min-width: 0;
-  min-height: 64px;
-
-  display: flex;
-  align-items: center;
-  gap: 14px;
-
-  padding: 0 22px;
-  box-sizing: border-box;
-
-  background: white;
-
-  border-bottom:
-    1px solid #dbe7e2;
-
-  box-shadow:
-    0 3px 15px
-    rgba(23, 61, 51, 0.04);
-}
-
-.dashboard-top-header h1,
-.dashboard-top-header h2 {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  color: #173d33;
-  font-size: 18px;
-}
-
-.dashboard-top-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-left: auto;
-  flex-shrink: 0;
-}
-
-.dashboard-admin-chip {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  min-height: 38px;
-  padding: 0 11px;
-  border: 1px solid #dbe7e2;
-  border-radius: 8px;
-  background: #f4f8f6;
-  color: #173d33;
-  font-size: 13px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.dashboard-logout-button {
-  min-height: 38px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 0 12px;
-  border: 1px solid rgba(220, 38, 38, 0.18);
-  border-radius: 8px;
-  background: rgba(220, 38, 38, 0.06);
-  color: #dc2626;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  transition:
-    background 0.2s ease,
-    transform 0.2s ease;
-}
-
-.dashboard-logout-button:hover {
-  background: rgba(220, 38, 38, 0.11);
-  transform: translateY(-1px);
-}
-
-.dashboard-logout-button:active {
-  transform: translateY(0) scale(0.98);
-}
-
-.dashboard-menu-button {
-  display: none;
-
-  width: 39px;
-  height: 39px;
-
-  place-items: center;
-
-  padding: 0;
-
-  border:
-    1px solid #dbe7e2;
-
-  border-radius: 8px;
-
-  background: white;
-
-  color: #0f7a55;
-
-  cursor: pointer;
-}
+/* NOTE: .dashboard-layout / .dashboard-main / .dashboard-content / .dashboard-top-header /
+   .dashboard-top-actions / .dashboard-admin-chip / .dashboard-logout-button / .dashboard-menu-button
+   were intentionally removed from this file. They belonged to a retired sidebar/layout
+   implementation, but their class names collide with the current Tailwind-based
+   DashboardLayout.jsx + DashboardSidebar.jsx. Since this stylesheet is only meant to style
+   AdminLogin.jsx and is a plain (unlayered) import, those rules were silently overriding the
+   Tailwind layout utilities on the actual admin dashboard (double-reserved sidebar width,
+   huge middle gap, content pushed off-screen). Do not re-add rules under these class names here. */
 
 
 /* =========================================================
@@ -981,17 +851,6 @@ body,
   .dash-sidebar.mobile-open {
     transform:
       translateX(0);
-  }
-
-
-  .dashboard-main {
-    width: 100%;
-    margin-left: 0;
-  }
-
-
-  .dashboard-menu-button {
-    display: grid;
   }
 
 
@@ -1049,38 +908,6 @@ body,
   :root {
     --dashboard-sidebar-width:
       min(88vw, 305px);
-  }
-
-
-  .dashboard-content {
-    width: 100%;
-    padding: 14px;
-  }
-
-  .dashboard-top-actions {
-    gap: 8px;
-  }
-
-  .dashboard-admin-chip span {
-    display: none;
-  }
-
-  .dashboard-logout-button {
-    width: 38px;
-    padding: 0;
-    font-size: 0;
-  }
-
-  .dashboard-logout-button svg {
-    width: 17px;
-    height: 17px;
-  }
-
-
-  .dashboard-top-header {
-    min-height: 58px;
-
-    padding: 0 14px;
   }
 
 

@@ -18,12 +18,14 @@ import {
   Users,
 } from "lucide-react";
 
+import api from "../../services/api.js";
 import { getStoredUser, isAuthenticated, me } from "../../services/authApi.js";
 import { getDashboardPathForUser, hasRole } from "../../services/authApi.js";
 
 export default function StudentProfile() {
   const navigate = useNavigate();
   const [user, setUser] = useState(getStoredUser);
+  const [studentDetails, setStudentDetails] = useState(null);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -36,6 +38,14 @@ export default function StudentProfile() {
       .catch(() => navigate("/login", { replace: true }));
   }, [navigate]);
 
+  useEffect(() => {
+    if (!hasRole(user, "student")) return;
+    api
+      .get("/courses/student/dashboard/me/")
+      .then((response) => setStudentDetails(response.data?.data || response.data))
+      .catch(() => {});
+  }, [user]);
+
   const profile = {
     id: user?.id ? `USER-${user.id}` : "USER",
     name:
@@ -44,13 +54,13 @@ export default function StudentProfile() {
       user?.email ||
       "Student",
     email: user?.email || "Not set",
-    phone: user?.phone || "Not set",
-    className: "Not assigned",
-    section: "Not assigned",
-    roll: "Not assigned",
-    group: "Not assigned",
-    session: "Not assigned",
-    shift: "Not assigned",
+    phone: studentDetails?.phone || user?.phone || "Not set",
+    className: studentDetails?.academic_class || "Not assigned",
+    section: studentDetails?.section || "Not assigned",
+    roll: studentDetails?.student_id || "Not assigned",
+    group: studentDetails?.group || "Not assigned",
+    session: studentDetails?.session || "Not assigned",
+    shift: studentDetails?.shift || "Not assigned",
     status: user?.is_active ? "Active" : "Inactive",
   };
   const isTeacher = hasRole(user, "teacher");
@@ -187,7 +197,7 @@ export default function StudentProfile() {
                   </Link>
                 </>
               )}
-              <Link to="/profile" className="btn min-h-16 justify-start bg-amber-500 text-white hover:bg-amber-600">
+              <Link to={isStudent ? "/student/dashboard/profile" : "/profile"} className="btn min-h-16 justify-start bg-amber-500 text-white hover:bg-amber-600">
                 <Edit3 size={22} />
                 Edit Profile
               </Link>

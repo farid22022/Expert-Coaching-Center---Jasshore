@@ -1,7 +1,9 @@
+import ErrorBoundary from "./components/common/ErrorBoundary.jsx";
 import Header from "./components/layout/Header.jsx";
 import Footer from "./components/layout/Footer.jsx";
 import AppRoutes from "./routes/AppRoutes.jsx";
 import { useLocation } from "react-router-dom";
+import { ThemeProvider } from "./theme/ThemeProvider.jsx";
 
 export default function App() {
   const { pathname } = useLocation();
@@ -16,12 +18,14 @@ export default function App() {
     pathname.startsWith("/student/");
 
   return (
-    <div className="app-shell">
-      {!isPortalRoute && <Header />}
-      <main>
-        <AppRoutes />
-      </main>
-      {!isPortalRoute && <Footer />}
-    </div>
+    <ThemeProvider>
+      <div className="app-shell">
+        {!isPortalRoute && <Header />}
+        <main>
+          <ErrorBoundary resetKey={pathname}><AppRoutes /></ErrorBoundary>
+        </main>
+        {!isPortalRoute && <Footer />}
+      </div>
+    </ThemeProvider>
   );
 }

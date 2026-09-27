@@ -51,6 +51,7 @@ class Course(OrganizationScopedModel):
     admission_fee = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     course_fee = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     capacity = models.PositiveIntegerField(null=True, blank=True)
+    pass_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=40, help_text="Minimum overall course-result percentage to pass, unless a subject overrides it.")
     session = models.ForeignKey("academic.AcademicSession", null=True, blank=True, on_delete=models.SET_NULL)
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
@@ -60,6 +61,20 @@ class Course(OrganizationScopedModel):
     is_published = models.BooleanField(default=False, db_index=True)
     custom_content = models.JSONField(default=list, blank=True)
     admission_form_schema = models.JSONField(default=list, blank=True)
+
+    # Landing page fields
+    short_description = models.TextField(blank=True)
+    cover_image = models.ImageField(upload_to="courses/covers/", blank=True)
+    hero_image = models.ImageField(upload_to="courses/hero/", blank=True)
+    promo_video_url = models.URLField(blank=True)
+    offer_fee = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    hero_badge = models.CharField(max_length=120, blank=True)
+    hero_title = models.CharField(max_length=220, blank=True)
+    hero_subtitle = models.CharField(max_length=400, blank=True)
+    landing_page_enabled = models.BooleanField(default=True)
+    landing_page = models.JSONField(default=dict, blank=True)
+    meta_title = models.CharField(max_length=220, blank=True)
+    meta_description = models.CharField(max_length=320, blank=True)
 
     class Meta:
         unique_together = ("organization", "slug")
@@ -102,8 +117,49 @@ class CourseSection(OrganizationScopedModel):
         return f"{self.course} - {self.name}"
 
 
+class AcademicStageType(models.TextChoices):
+    SEMESTER = "semester", "Semester"
+    TERM = "term", "Term"
+    PHASE = "phase", "Phase"
+    MODULE = "module", "Module"
+    TRACK = "track", "Track"
+    CUSTOM = "custom", "Custom"
+
+
+class AcademicStageStatus(models.TextChoices):
+    UPCOMING = "upcoming", "Upcoming"
+    IN_PROGRESS = "in_progress", "In Progress"
+    COMPLETED = "completed", "Completed"
+    ARCHIVED = "archived", "Archived"
+
+
+class AcademicStage(OrganizationScopedModel):
+    """A sequential curriculum phase within one Course (e.g. "Phase 01 - Foundation").
+    Deliberately separate from CourseSection, which is already used everywhere as a
+    parallel batch/group concept (Enrollment.course_section, TeacherAssignment.course_section,
+    test-visibility filtering) - repurposing it here would silently break that."""
+
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="academic_stages")
+    name = models.CharField(max_length=160)
+    display_label = models.CharField(max_length=60, blank=True, help_text='e.g. "Phase 01" - shown before the name if set.')
+    stage_type = models.CharField(max_length=20, choices=AcademicStageType.choices, default=AcademicStageType.PHASE)
+    order = models.PositiveIntegerField(default=0)
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=AcademicStageStatus.choices, default=AcademicStageStatus.UPCOMING)
+
+    class Meta:
+        unique_together = ("course", "name")
+        indexes = [models.Index(fields=["organization", "course", "order"])]
+        ordering = ("order", "id")
+
+    def __str__(self):
+        return f"{self.course} - {self.name}"
+
+
 class CourseSubject(OrganizationScopedModel):
     course_section = models.ForeignKey(CourseSection, on_delete=models.CASCADE, related_name="subjects")
+    academic_stage = models.ForeignKey(AcademicStage, null=True, blank=True, on_delete=models.SET_NULL, related_name="subjects")
     name = models.CharField(max_length=160)
     code = models.CharField(max_length=80, blank=True, db_index=True)
     description = models.TextField(blank=True)
@@ -117,6 +173,38 @@ class CourseSubject(OrganizationScopedModel):
 
     def __str__(self):
         return self.name
+
+
+class CourseSyllabusItem(OrganizationScopedModel):
+    class ContentType(models.TextChoices):
+        TEXT = "text", "Text"
+        IMAGE = "image", "Image"
+        VIDEO = "video", "Video"
+        LINK = "link", "Link"
+        FILE = "file", "File"
+
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="syllabus_items")
+    course_section = models.ForeignKey(CourseSection, null=True, blank=True, on_delete=models.CASCADE, related_name="syllabus_items")
+    subject = models.ForeignKey(CourseSubject, null=True, blank=True, on_delete=models.CASCADE, related_name="syllabus_items")
+    title = models.CharField(max_length=180)
+    summary = models.TextField(blank=True)
+    content_type = models.CharField(max_length=20, choices=ContentType.choices, default=ContentType.TEXT)
+    content = models.TextField(blank=True)
+    url = models.URLField(blank=True)
+    file = models.FileField(upload_to="courses/syllabus/", blank=True)
+    custom_fields = models.JSONField(default=list, blank=True)
+    order = models.PositiveIntegerField(default=0)
+    is_public = models.BooleanField(default=True, db_index=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["organization", "course", "is_public"]),
+            models.Index(fields=["organization", "subject", "order"]),
+        ]
+        ordering = ("course_section__order", "subject__order", "order", "id")
+
+    def __str__(self):
+        return self.title
 
 
 class TeacherAssignment(OrganizationScopedModel):
@@ -136,6 +224,8 @@ class TeacherAssignment(OrganizationScopedModel):
     is_active = models.BooleanField(default=True, db_index=True)
     assignment_status = models.CharField(max_length=20, choices=AssignmentStatus.choices, default=AssignmentStatus.ACCEPTED, db_index=True)
     responded_at = models.DateTimeField(null=True, blank=True)
+    featured_on_landing_page = models.BooleanField(default=True)
+    landing_order = models.PositiveIntegerField(default=0)
 
     class Meta:
         constraints = [

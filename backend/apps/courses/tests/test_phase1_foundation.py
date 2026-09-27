@@ -162,7 +162,66 @@ class Phase1FoundationTests(APITestCase):
         self.assertTrue(Course.objects.filter(id=course_id).exists())
         self.assertTrue(CourseSection.objects.filter(id=section_id).exists())
         self.assertTrue(CourseSubject.objects.filter(id=subject_id).exists())
+        self.assertTrue(
+            TeacherAssignment.objects.filter(
+                teacher=teacher,
+                course_id=course_id,
+                course_section_id=section_id,
+                subject__isnull=True,
+                role="head_teacher",
+                assignment_status="accepted",
+                is_active=True,
+            ).exists()
+        )
         self.assertTrue(TeacherAssignment.objects.filter(teacher=teacher, subject_id=subject_id).exists())
+
+    def test_admin_can_assign_program_head_teacher_for_admission_course(self):
+        self.login()
+        department = Department.objects.create(organization=self.organization, name="Admission")
+        designation = Designation.objects.create(organization=self.organization, name="Head Teacher")
+        teacher = Employee.objects.create(
+            organization=self.organization,
+            employee_id="TCH-E2E-HEAD",
+            full_name="E2E Admission Head",
+            employee_type="teacher",
+            department=department,
+            designation=designation,
+        )
+        course = Course.objects.create(
+            organization=self.organization,
+            title="Medical Admission 2027",
+            slug="medical-admission-2027",
+            course_type="admission",
+            status="admission_open",
+            is_published=True,
+        )
+
+        response = self.client.post(
+            "/api/v1/courses/teacher-assignments/",
+            {
+                "teacher": teacher.id,
+                "course": course.id,
+                "course_section": None,
+                "subject": None,
+                "role": "head_teacher",
+                "assignment_status": "accepted",
+                "is_active": True,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertTrue(
+            TeacherAssignment.objects.filter(
+                teacher=teacher,
+                course=course,
+                course_section__isnull=True,
+                subject__isnull=True,
+                role="head_teacher",
+                assignment_status="accepted",
+                is_active=True,
+            ).exists()
+        )
 
     def test_admin_can_create_admission_card_without_manual_slug(self):
         self.login()

@@ -12,10 +12,21 @@ export const API_BASE_URL = resolveApiBaseUrl();
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 30000,
   headers: {
     "Content-Type": "application/json",
   },
 });
+
+// A rotating refresh token must only be exchanged once per browser tab.
+let refreshPromise = null;
+
+function clearSession() {
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("refresh_token");
+  localStorage.removeItem("current_user");
+  window.dispatchEvent(new Event("authchange"));
+}
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("access_token");
@@ -26,24 +37,48 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (response.config?.method !== "get" && /\/sms\/notifications\//.test(response.config?.url || "")) {
+      window.dispatchEvent(new Event("notificationschange"));
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
 
     if (
       error.response?.status === 401 &&
+      originalRequest &&
+      !/\/auth\/(login|register|refresh)\//.test(originalRequest.url || "") &&
       !originalRequest?._retry &&
       localStorage.getItem("refresh_token")
     ) {
       originalRequest._retry = true;
       const refresh = localStorage.getItem("refresh_token");
-      const response = await axios.post(`${API_BASE_URL}/auth/refresh/`, {
-        refresh,
-      });
-      const access = response.data.access;
-      localStorage.setItem("access_token", access);
-      originalRequest.headers.Authorization = `Bearer ${access}`;
-      return api(originalRequest);
+      try {
+        if (!refreshPromise) {
+          refreshPromise = axios.post(`${API_BASE_URL}/auth/refresh/`, { refresh }, { timeout: 30000 })
+            .then(({ data }) => {
+              // Do not restore a session that was logged out or replaced in flight.
+              if (localStorage.getItem("refresh_token") !== refresh) throw new Error("Session changed");
+              localStorage.setItem("access_token", data.access);
+              if (data.refresh) localStorage.setItem("refresh_token", data.refresh);
+              return data.access;
+            })
+            .finally(() => { refreshPromise = null; });
+        }
+        const access = await refreshPromise;
+        originalRequest.headers.Authorization = `Bearer ${access}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        // Both tokens are dead (expired/invalid) - clear them so later requests (including
+        // on fully public pages) go out anonymous instead of permanently attaching a stale
+        // Authorization header that made every request 401 until the user manually logged out.
+        if ([400, 401].includes(refreshError.response?.status) && localStorage.getItem("refresh_token") === refresh) {
+          clearSession();
+        }
+        return Promise.reject(refreshError);
+      }
     }
 
     return Promise.reject(error);
@@ -65,6 +100,8 @@ export function unwrapResults(payload) {
 }
 
 export function getApiErrorMessage(error, fallback = "Request failed. Please try again.") {
+  if (error?.response?.status >= 500) return "The server could not complete this request. Please try again.";
+  if (error?.response?.status === 429) return "Too many requests. Please wait a moment and try again.";
   const data = error?.response?.data;
   if (typeof data?.message === "string") return data.message;
   if (typeof data?.detail === "string") return data.detail;
@@ -135,25 +172,13 @@ export const admissionService = {
   },
 
   async status(params = {}) {
-    try {
-      const { data } = await api.get("/applications/", { params });
-      const result = data.data?.results?.[0] || data.results?.[0] || null;
-      if (result) {
-        return {
-          name: result.applicant_name,
-          applicationId: result.application_no,
-          status: result.status,
-        };
-      }
-    } catch {
-      // Keep the existing public page usable when the backend is not running.
-    }
-
-    return {
-      name: "Demo Applicant",
-      applicationId: "APP-DEMO",
-      status: "Pending",
-    };
+    const { data } = await api.get("/applications/", { params: { search: params.application_no } });
+    const result = unwrapResults(data).find((item) =>
+      item.application_no === params.application_no &&
+      item.applicant_phone === params.applicant_phone &&
+      item.applicant_name?.trim().toLowerCase() === params.applicant_name?.trim().toLowerCase()
+    );
+    return result ? { name: result.applicant_name, applicationId: result.application_no, status: result.status } : null;
   },
 };
 

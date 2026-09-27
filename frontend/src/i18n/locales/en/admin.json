@@ -1,0 +1,27 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "teachers": "Teachers",
+    "admissions": "Admissions",
+    "academicStructure": "Academic Structure & Grading",
+    "admissionFormBuilder": "Admission Form Builder",
+    "teacherAssignments": "Teacher Assignments",
+    "admissionApplications": "Admission Applications",
+    "notices": "Notices",
+    "gallery": "Gallery",
+    "banners": "Banners",
+    "successStories": "Success Stories",
+    "renownedTeachers": "Renowned Teachers",
+    "websiteSettings": "Website Settings"
+  },
+  "portal": "Admin Portal",
+  "websiteSettingsPage": {
+    "title": "Website Settings",
+    "logo": "Website Logo",
+    "primaryColor": "Primary (Brand) Color",
+    "accentColor": "Accent Color",
+    "save": "Save Settings",
+    "saving": "Saving...",
+    "savedSuccessfully": "Website settings saved successfully."
+  }
+}

@@ -3,12 +3,30 @@
 @import url('https://fonts.cdnfonts.com/css/miama');
 @import "tailwindcss";
 @plugin "daisyui" {
-  themes: light --default;
+  themes: light --default, dark;
+}
+
+/* EXPERT design tokens, exposed as Tailwind v4 utilities (bg-brand, text-ink,
+   border-line, ...) alongside the existing CSS custom properties below, which
+   thousands of lines of hand-written CSS already depend on - additive only. */
+@theme {
+  --color-deep-green: #063b2d;
+  --color-dark-green: #075a43;
+  --color-brand: #0f7a55;
+  --color-ink: #173d33;
+  --color-muted: #5f6f69;
+  --color-line: #dbe7e2;
+  --color-soft: #f4f8f6;
+  --color-warm: #fbf7ed;
+  --color-accent: #c99a2e;
+  --color-paper: #fff;
 }
 
 @layer base {
 
 :root {
+  --deep-green: #063b2d;
+  --dark-green: #075a43;
   --ink: #173d33;
   --muted: #5f6f69;
   --line: #dbe7e2;
@@ -23,6 +41,25 @@
   --shadow-lg: 0 18px 50px rgba(23, 61, 51, 0.14);
 
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Dark-mode override for the app's own token set. DaisyUI's second "dark" theme
+   (registered above) handles its own component chrome (btn/card/input) automatically;
+   this block only re-points OUR custom tokens (ink/soft/warm/line/paper) - brand/accent
+   are deliberately left alone here since ThemeRuntime.applyBrandColors() computes a
+   dark-mode-appropriate derivative of the admin's chosen color directly, so the custom
+   brand color still governs both modes instead of being reset to a fixed value. */
+:root[data-theme="dark"] {
+  --color-ink: #f0f0f0;
+  --ink: #f0f0f0;
+  --color-soft: #121212;
+  --soft: #121212;
+  --color-warm: #181818;
+  --warm: #181818;
+  --color-line: #2a2a2a;
+  --line: #2a2a2a;
+  --color-paper: #0a0a0a;
+  --paper: #0a0a0a;
 }
 
 
@@ -40,16 +77,19 @@ html {
 
 body {
   margin: 0;
-  font-family:
+  font-family: var(
+    --site-font-family,
+    Manrope,
     Inter,
     system-ui,
     -apple-system,
     BlinkMacSystemFont,
     "Segoe UI",
-    sans-serif;
+    sans-serif
+  );
 
   color: var(--ink);
-  background: #fff;
+  background: var(--paper);
   line-height: 1.55;
 
   -webkit-font-smoothing: antialiased;
@@ -330,6 +370,29 @@ button {
   45%,
   100% {
     left: 100%;
+  }
+}
+
+/* Auto-scrolling highlight row (success stories) - pure transform, GPU-friendly,
+   duplicated content for a seamless loop. Pauses on hover/focus so it stays readable. */
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marqueeScroll 32s linear infinite;
+}
+
+.marquee-track:hover,
+.marquee-track:focus-within {
+  animation-play-state: paused;
+}
+
+@keyframes marqueeScroll {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
   }
 }
 
@@ -3289,4 +3352,34 @@ textarea {
     grid-template-columns: 1fr;
   }
 }
+
+.rich-text-editor .ql-toolbar.ql-snow {
+  border-color: var(--line);
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+  background: var(--soft);
+}
+.rich-text-editor .ql-container.ql-snow {
+  border-color: var(--line);
+  border-bottom-left-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+.rich-text-editor .ql-editor {
+  min-height: 140px;
+}
+.rich-text-editor .ql-editor.ql-blank::before {
+  font-style: normal;
+  color: var(--muted);
+}
+
+.rich-text-content h1, .rich-text-content h2, .rich-text-content h3 {
+  font-weight: 900;
+  color: var(--ink);
+  margin-top: 0.75em;
+}
+.rich-text-content p { margin: 0.5em 0; }
+.rich-text-content ul, .rich-text-content ol { margin: 0.5em 0 0.5em 1.25em; }
+.rich-text-content a { color: var(--brand); text-decoration: underline; }
 }

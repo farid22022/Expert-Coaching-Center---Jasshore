@@ -1,5 +1,8 @@
+import PageIllustration from "../../components/common/PageIllustration.jsx";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { WarpFieldBackground } from "../../shaders/warp-field/WarpFieldBackground";
+import "../../shaders/threeui.css";
 import {
   ArrowRight,
   CheckCircle2,
@@ -79,19 +82,20 @@ export default function Register() {
   };
 
   return (
-    <main className="relative grid min-h-screen overflow-hidden bg-emerald-50 px-4 py-10">
-      <motion.div
-        className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-emerald-300/30 blur-3xl"
-        animate={{ scale: [1, 1.15, 1], x: [0, -20, 0], opacity: [0.4, 0.7, 0.4] }}
-        transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-      />
-
-      <motion.div
-        className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-amber-300/30 blur-3xl"
-        animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.7, 0.4] }}
-        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-      />
-
+    <main className="relative grid min-h-screen overflow-hidden bg-white px-4 py-10">
+      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden bg-white" aria-hidden="true">
+        <WarpFieldBackground
+          className="h-full w-full opacity-[0.16]"
+          variant="letters"
+          speed={15.0}
+          streakOpacity={0.60}
+          tileOpacity={0.90}
+          fov={75}
+          hue={0}
+          saturation={1.00}
+          brightness={1.00}
+        />
+      </div>
       <motion.div
         initial={{ opacity: 0, y: 35, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -128,6 +132,7 @@ export default function Register() {
 
         <div className="card border border-emerald-100 bg-white/95 shadow-2xl backdrop-blur">
           <div className="card-body gap-5">
+            <PageIllustration kind="join" className="mx-auto !h-20 !w-32" />
             <motion.div
               initial={{ opacity: 0, x: -15 }}
               animate={{ opacity: 1, x: 0 }}

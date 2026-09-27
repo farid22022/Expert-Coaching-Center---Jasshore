@@ -104,7 +104,11 @@ class Command(BaseCommand):
             "student.view",
         }
         teacher_role.permissions.set([permission for permission in permission_objs if permission.code in teacher_permission_codes])
-        student_role.permissions.set([permission for permission in permission_objs if permission.code in {"assessment.view", "course.view"}])
+        # Students use dedicated /student/... endpoints gated by plain IsAuthenticated + their
+        # own Enrollment — they should hold no admin-surface permissions at all. Granting
+        # assessment.view/course.view here previously let students reach the teacher/admin
+        # ViewSets (answer keys, other students' attempts/submissions, unpublished content).
+        student_role.permissions.set([])
 
         session, _ = AcademicSession.objects.get_or_create(
             organization=org,

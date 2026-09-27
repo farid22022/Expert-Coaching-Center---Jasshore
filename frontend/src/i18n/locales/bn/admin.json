@@ -1,0 +1,27 @@
+{
+  "nav": {
+    "dashboard": "ড্যাশবোর্ড",
+    "teachers": "শিক্ষকবৃন্দ",
+    "admissions": "ভর্তি",
+    "academicStructure": "একাডেমিক কাঠামো ও গ্রেডিং",
+    "admissionFormBuilder": "ভর্তি ফর্ম নির্মাতা",
+    "teacherAssignments": "শিক্ষক নিয়োগ",
+    "admissionApplications": "ভর্তির আবেদন",
+    "notices": "নোটিশ",
+    "gallery": "গ্যালারি",
+    "banners": "ব্যানার",
+    "successStories": "সাফল্যের গল্প",
+    "renownedTeachers": "খ্যাতনামা শিক্ষক",
+    "websiteSettings": "ওয়েবসাইট সেটিংস"
+  },
+  "portal": "অ্যাডমিন পোর্টাল",
+  "websiteSettingsPage": {
+    "title": "ওয়েবসাইট সেটিংস",
+    "logo": "ওয়েবসাইট লোগো",
+    "primaryColor": "প্রধান (ব্র্যান্ড) রঙ",
+    "accentColor": "অ্যাকসেন্ট রঙ",
+    "save": "সংরক্ষণ করুন",
+    "saving": "সংরক্ষণ হচ্ছে...",
+    "savedSuccessfully": "ওয়েবসাইট সেটিংস সফলভাবে সংরক্ষিত হয়েছে।"
+  }
+}

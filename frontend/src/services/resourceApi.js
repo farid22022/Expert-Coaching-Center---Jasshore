@@ -53,13 +53,19 @@ export const classRoutineApi = createResourceApi("/academic/routines/");
 export const courseApi = createResourceApi("/courses/courses/");
 export const publicAdmissionCardApi = {
   list: () => api.get("/courses/courses/public-admissions/").then((response) => unwrapResults(response.data)),
-  get: (identifier) => api.get(`/courses/courses/public-admissions/${identifier}/`).then((response) => unwrapApiData(response.data)),
+  get: (identifier, params) => api.get(`/courses/courses/public-admissions/${identifier}/`, { params }).then((response) => unwrapApiData(response.data)),
 };
 export const courseSectionApi = createResourceApi("/courses/sections/");
 export const courseSubjectApi = createResourceApi("/courses/subjects/");
+export const academicStageApi = createResourceApi("/courses/academic-stages/");
+export const courseSyllabusItemApi = createResourceApi("/courses/syllabus-items/");
 export const teacherAssignmentApi = createResourceApi("/courses/teacher-assignments/");
 export const enrollmentApi = createResourceApi("/courses/enrollments/");
 export const studentDashboardApi = createResourceApi("/courses/student/dashboard/");
+export const studentAcademicApi = {
+  overview: (enrollmentId) => api.get(`/courses/student/dashboard/${enrollmentId}/academic-overview/`).then((response) => unwrapApiData(response.data)),
+  courseResult: (enrollmentId, subjectId) => api.get(`/courses/student/dashboard/${enrollmentId}/subjects/${subjectId}/result/`).then((response) => unwrapApiData(response.data)),
+};
 export const teacherDashboardApi = createResourceApi("/courses/teacher/dashboard/");
 export const questionApi = createResourceApi("/assessments/questions/");
 export const questionOptionApi = createResourceApi("/assessments/options/");
@@ -70,8 +76,32 @@ export const assessmentAttemptApi = createResourceApi("/assessments/attempts/");
 export const assignmentSubmissionApi = createResourceApi("/assessments/submissions/");
 export const submissionAttachmentApi = createResourceApi("/assessments/submission-attachments/");
 export const studentAssessmentApi = createResourceApi("/assessments/student/assessments/");
+export const interventionApi = createResourceApi("/assessments/interventions/");
+export const teacherFeedbackApi = createResourceApi("/assessments/feedback/");
+export const teacherPrivateNoteApi = createResourceApi("/assessments/teacher-notes/");
+export const studentBookmarkApi = createResourceApi("/assessments/student/bookmarks/");
+export const assessmentComponentApi = createResourceApi("/assessments/assessment-components/");
+export const courseGradeScaleApi = createResourceApi("/assessments/course-grade-scales/");
+export const courseGradeScaleItemApi = createResourceApi("/assessments/course-grade-scale-items/");
+export const courseRatingApi = createResourceApi("/assessments/student/course-ratings/");
+export const gradebookApi = createResourceApi("/assessments/gradebook/");
+export const studentPortalApi = {
+  actions: () => api.get("/assessments/student/assessments/actions/").then((response) => unwrapApiData(response.data)),
+  feedback: (params) => api.get("/assessments/student/assessments/feedback/", { params }).then((response) => unwrapApiData(response.data)),
+  weakTopics: (params) => api.get("/assessments/student/assessments/weak-topics/", { params }).then((response) => unwrapApiData(response.data)),
+  practice: () => api.get("/assessments/student/assessments/practice/").then((response) => unwrapApiData(response.data)),
+  mistakes: (params) => api.get("/assessments/student/assessments/mistakes/", { params }).then((response) => unwrapApiData(response.data)),
+  practiceMistakes: (answerIds) =>
+    api.post("/assessments/student/assessments/mistakes/practice/", { answer_ids: answerIds }).then((response) => unwrapApiData(response.data)),
+};
 export const notificationApi = createResourceApi("/sms/notifications/");
+export const noticeApi = createResourceApi("/sms/notices/");
+export const publicNoticeApi = {
+  list: () => api.get("/sms/notices/public/").then((response) => unwrapResults(response.data)),
+  student: () => api.get("/sms/notices/student/").then((response) => unwrapResults(response.data)),
+};
 export const applicationApi = createResourceApi("/applications/");
+export const applicantDocumentApi = createResourceApi("/applications/documents/");
 export const admissionPaymentApi = createResourceApi("/applications/payments/");
 export const admissionExamApi = createResourceApi("/applications/exams/");
 export const admissionMarkApi = createResourceApi("/applications/marks/");
@@ -101,3 +131,16 @@ export const reportContentApi = createResourceApi("/website/content/");
 export const galleryApi = createResourceApi("/website/gallery/");
 export const websiteSettingApi = createResourceApi("/website/settings/");
 export const auditLogApi = createResourceApi("/audit/logs/");
+export const bannerApi = createResourceApi("/website/banners/");
+export const successStoryApi = createResourceApi("/website/success-stories/");
+export const renownedTeacherApi = createResourceApi("/website/renowned-teachers/");
+export const publicBannerApi = { list: () => api.get("/website/banners/public/").then((response) => unwrapResults(response.data)) };
+export const publicSuccessStoryApi = { list: () => api.get("/website/success-stories/public/").then((response) => unwrapResults(response.data)) };
+export const publicRenownedTeacherApi = { list: () => api.get("/website/renowned-teachers/public/").then((response) => unwrapResults(response.data)) };
+export const publicSiteInfoApi = {
+  get: () => api.get("/organizations/public/").then((response) => response.data),
+  stats: () => api.get("/courses/courses/public-stats/").then((response) => unwrapApiData(response.data)),
+};
+
+export const subjectWeekApi = createResourceApi("/courses/weeks/");
+export const courseChapterApi = createResourceApi("/courses/chapters/");
