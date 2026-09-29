@@ -17,6 +17,7 @@ class AssessmentType(models.TextChoices):
 
 
 class MaterialType(models.TextChoices):
+    QUESTION_BANK = "question_bank", "Question Bank"
     NOTE = "note", "Note"
     LINK = "link", "Link"
     VIDEO = "video", "Video"
@@ -70,6 +71,7 @@ class Question(OrganizationScopedModel):
     course = models.ForeignKey("courses.Course", on_delete=models.CASCADE, related_name="questions")
     course_section = models.ForeignKey("courses.CourseSection", null=True, blank=True, on_delete=models.SET_NULL, related_name="questions")
     subject = models.ForeignKey("courses.CourseSubject", null=True, blank=True, on_delete=models.SET_NULL, related_name="questions")
+    curriculum_chapter = models.ForeignKey("courses.CourseChapter", null=True, blank=True, on_delete=models.PROTECT, related_name="%(class)s_items")
     chapter = models.CharField(max_length=180, blank=True, db_index=True)
     topic = models.CharField(max_length=180, blank=True, db_index=True)
     created_by_teacher = models.ForeignKey("people.Employee", null=True, blank=True, on_delete=models.SET_NULL, related_name="questions")
@@ -110,6 +112,7 @@ class CourseMaterial(OrganizationScopedModel):
     course = models.ForeignKey("courses.Course", on_delete=models.CASCADE, related_name="study_materials")
     course_section = models.ForeignKey("courses.CourseSection", null=True, blank=True, on_delete=models.SET_NULL, related_name="study_materials")
     subject = models.ForeignKey("courses.CourseSubject", null=True, blank=True, on_delete=models.SET_NULL, related_name="study_materials")
+    curriculum_chapter = models.ForeignKey("courses.CourseChapter", null=True, blank=True, on_delete=models.PROTECT, related_name="%(class)s_items")
     chapter = models.CharField(max_length=180, blank=True, db_index=True)
     topic = models.CharField(max_length=180, blank=True, db_index=True)
     created_by_teacher = models.ForeignKey("people.Employee", null=True, blank=True, on_delete=models.SET_NULL, related_name="study_materials")
@@ -142,6 +145,7 @@ class Assessment(OrganizationScopedModel):
     course = models.ForeignKey("courses.Course", on_delete=models.CASCADE, related_name="assessments")
     course_section = models.ForeignKey("courses.CourseSection", null=True, blank=True, on_delete=models.SET_NULL, related_name="assessments")
     subject = models.ForeignKey("courses.CourseSubject", null=True, blank=True, on_delete=models.SET_NULL, related_name="assessments")
+    curriculum_chapter = models.ForeignKey("courses.CourseChapter", null=True, blank=True, on_delete=models.PROTECT, related_name="%(class)s_items")
     chapter = models.CharField(max_length=180, blank=True, db_index=True)
     topic = models.CharField(max_length=180, blank=True, db_index=True)
     created_by_teacher = models.ForeignKey("people.Employee", null=True, blank=True, on_delete=models.SET_NULL, related_name="assessments")

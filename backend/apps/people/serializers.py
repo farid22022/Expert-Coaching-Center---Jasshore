@@ -42,9 +42,11 @@ class TeacherAccountSerializer(serializers.Serializer):
     @transaction.atomic
     def create(self, validated_data):
         request = self.context["request"]
-        organization = request.user.organization
-        if not organization:
-            raise serializers.ValidationError("Your account is not linked to an organization.")
+        # Same organization-resolution fallback OrganizationScopedModelViewSet already
+        # applies everywhere else (get-or-create the default org for staff/superusers
+        # with no organization FK set) - this serializer previously used the raw FK
+        # directly and rejected any such account outright.
+        organization = self.context["view"].get_request_organization()
         if models.Employee.objects.filter(organization=organization, employee_id=validated_data["employee_id"]).exists():
             raise serializers.ValidationError({"employee_id": "This teacher ID is already in use."})
         names = validated_data["full_name"].strip().split(None, 1)

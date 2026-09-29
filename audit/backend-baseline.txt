@@ -1,0 +1,17 @@
+Creating test database for alias 'default'...
+
+Found 61 test(s).
+System check identified no issues (0 silenced).
+.......E:\projectE\JashoreExpert\backend\venv\Lib\site-packages\rest_framework\pagination.py:207: UnorderedObjectListWarning: Pagination may yield inconsistent results with an unordered object_list: <class 'apps.accounts.models.User'> QuerySet.
+  paginator = self.django_paginator_class(queryset, page_size)
+E:\projectE\JashoreExpert\backend\venv\Lib\site-packages\rest_framework\pagination.py:207: UnorderedObjectListWarning: Pagination may yield inconsistent results with an unordered object_list: <class 'apps.accounts.models.Role'> QuerySet.
+  paginator = self.django_paginator_class(queryset, page_size)
+...............................E:\projectE\JashoreExpert\backend\venv\Lib\site-packages\rest_framework\pagination.py:207: UnorderedObjectListWarning: Pagination may yield inconsistent results with an unordered object_list: <class 'apps.assessments.models.Assessment'> QuerySet.
+  paginator = self.django_paginator_class(queryset, page_size)
+.......................
+----------------------------------------------------------------------
+Ran 61 tests in 292.611s
+
+OK
+Destroying test database for alias 'default'...
+

@@ -106,6 +106,11 @@ export const admissionPaymentApi = createResourceApi("/applications/payments/");
 export const admissionExamApi = createResourceApi("/applications/exams/");
 export const admissionMarkApi = createResourceApi("/applications/marks/");
 export const admissionResultApi = createResourceApi("/applications/results/");
+export const paymentApi = {
+  mine: () => api.get("/payments/me/").then((response) => unwrapApiData(response.data)),
+  initiate: (applicationId) => api.post("/payments/bkash/initiate/", { application_id: applicationId }).then((response) => unwrapApiData(response.data)),
+  get: (publicId) => api.get(`/payments/${publicId}/`).then((response) => unwrapApiData(response.data)),
+};
 export const examApi = createResourceApi("/exams/exams/");
 export const gradeScaleApi = createResourceApi("/exams/grades/");
 export const examSubjectApi = createResourceApi("/exams/exam-subjects/");

@@ -1,0 +1,58 @@
+vite v7.3.6 building client environment for production...
+transforming...
+/*! 🌼 daisyUI 5.7.39 */
+✓ 3126 modules transformed.
+
+(!) outDir E:\projectE\JashoreExpert\audit\build-final is not inside project root and will not be emptied.
+Use --emptyOutDir to override.
+
+rendering chunks...
+computing gzip size...
+../audit/build-final/index.html                                            0.80 kB │ gzip:   0.44 kB
+../audit/build-final/assets/RichTextEditor-Bf4bJ6eu.css                   24.23 kB │ gzip:   3.61 kB
+../audit/build-final/assets/index-Ck4116S0.css                           314.79 kB │ gzip:  48.93 kB
+../audit/build-final/assets/circle-0pzGgoZX.js                             0.13 kB │ gzip:   0.13 kB
+../audit/build-final/assets/bookmark-B2FNzsjw.js                           0.16 kB │ gzip:   0.16 kB
+../audit/build-final/assets/clock-Dp4g-orB.js                              0.17 kB │ gzip:   0.17 kB
+../audit/build-final/assets/rotate-ccw-zpgagitO.js                         0.20 kB │ gzip:   0.19 kB
+../audit/build-final/assets/target-DEvVTIGF.js                             0.22 kB │ gzip:   0.16 kB
+../audit/build-final/assets/message-square-CZQcrEO4.js                     0.23 kB │ gzip:   0.20 kB
+../audit/build-final/assets/triangle-alert-CpNJ7WcA.js                     0.27 kB │ gzip:   0.22 kB
+../audit/build-final/assets/SafeHtml-DfGr-0MN.js                           0.40 kB │ gzip:   0.31 kB
+../audit/build-final/assets/StudentDashboardLayout-POyTIMU4.js             0.70 kB │ gzip:   0.45 kB
+../audit/build-final/assets/TeacherDashboardLayout-DP8sJ1cT.js             0.70 kB │ gzip:   0.45 kB
+../audit/build-final/assets/StudentMaterialsPage-Cs73GQTX.js               1.47 kB │ gzip:   0.76 kB
+../audit/build-final/assets/TeacherAcademicStructurePages-dzu9pz75.js      1.64 kB │ gzip:   0.66 kB
+../audit/build-final/assets/StudentBookmarksPage-Bq1FRb1Z.js               1.84 kB │ gzip:   0.96 kB
+../audit/build-final/assets/StudentFeedbackPage-ZQEKDrnK.js                1.86 kB │ gzip:   0.98 kB
+../audit/build-final/assets/StudentNotificationsPage-ldIlq3Km.js           2.13 kB │ gzip:   1.06 kB
+../audit/build-final/assets/StudentProgressPage-Dw6yzjIz.js                2.21 kB │ gzip:   1.05 kB
+../audit/build-final/assets/studentPortalShared-DeIOSCZM.js                2.37 kB │ gzip:   1.01 kB
+../audit/build-final/assets/StudentCoursesPage-DJQiHwXq.js                 2.40 kB │ gzip:   1.07 kB
+../audit/build-final/assets/StudentPracticePage-WZGJGb5K.js                2.67 kB │ gzip:   1.17 kB
+../audit/build-final/assets/StudentActionsPage-DdNjE3dI.js                 2.77 kB │ gzip:   1.27 kB
+../audit/build-final/assets/StudentAssignmentsPage-D_t9v0xM.js             3.26 kB │ gzip:   1.55 kB
+../audit/build-final/assets/StudentAssessmentsPage-XpNq3Pej.js             3.34 kB │ gzip:   1.55 kB
+../audit/build-final/assets/StudentAcademicOverviewPage-Bo9GlLuL.js        3.42 kB │ gzip:   1.22 kB
+../audit/build-final/assets/StudentMistakesPage-Hz4KCB0W.js                3.66 kB │ gzip:   1.60 kB
+../audit/build-final/assets/TeacherInterventionsPage-CAF53jKA.js           3.88 kB │ gzip:   1.39 kB
+../audit/build-final/assets/StudentProfilePage-DxLH7EOI.js                 4.06 kB │ gzip:   1.45 kB
+../audit/build-final/assets/TeacherPerformanceCenterPage-BbevK5im.js       4.44 kB │ gzip:   1.64 kB
+../audit/build-final/assets/StudentResultsPage-D8TC_jLd.js                 4.77 kB │ gzip:   1.56 kB
+../audit/build-final/assets/TeacherGradebookPage-CVj7T-74.js               5.56 kB │ gzip:   2.28 kB
+../audit/build-final/assets/StudentCourseResultPage-IiDmy14e.js            7.00 kB │ gzip:   2.30 kB
+../audit/build-final/assets/RoleDashboardShell-C1_V1WXW.js                 8.93 kB │ gzip:   3.01 kB
+../audit/build-final/assets/TeacherCourseOutlinePage-Cg6jbQO1.js          10.52 kB │ gzip:   2.99 kB
+../audit/build-final/assets/TeacherStudentProfilePage-x4vBeAdi.js         15.48 kB │ gzip:   4.04 kB
+../audit/build-final/assets/StudentDashboard-D6lYRxYm.js                  20.65 kB │ gzip:   5.02 kB
+../audit/build-final/assets/StudentCoursePage-gP6VJabM.js                 21.95 kB │ gzip:   6.87 kB
+../audit/build-final/assets/TeacherModulePages-DeALQKLx.js                60.35 kB │ gzip:  13.62 kB
+../audit/build-final/assets/AdminPortalPages-_VhcbTYE.js                  73.18 kB │ gzip:  16.90 kB
+../audit/build-final/assets/RichTextEditor-Dm5dx1vl.js                   209.18 kB │ gzip:  62.56 kB
+../audit/build-final/assets/index-DOEV8Jsd.js                          1,023.59 kB │ gzip: 328.09 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 3m 13s

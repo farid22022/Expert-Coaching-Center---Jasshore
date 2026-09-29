@@ -1,5 +1,7 @@
 import PageIllustration, { illustrationForPage } from "../../components/common/PageIllustration.jsx";
-import { Award, BarChart3, Bell, BookOpen, CheckCircle2, ClipboardList, FileText, LayoutDashboard, ListChecks, MessageSquare, TrendingUp, UserRound } from "lucide-react";
+import { Children } from "react";
+import { StudentMotion } from "../../components/common/StudentMotion.jsx";
+import { Award, BarChart3, Bell, BookOpen, CheckCircle2, ClipboardList, CreditCard, FileText, LayoutDashboard, ListChecks, MessageSquare, TrendingUp, UserRound } from "lucide-react";
 
 import RoleDashboardShell from "../../components/layout/RoleDashboardShell.jsx";
 
@@ -10,6 +12,7 @@ export const studentNav = [
   { label: "Assignments", to: "/student/dashboard/assignments", icon: ClipboardList },
   { label: "Study Materials", to: "/student/dashboard/materials", icon: FileText },
   { label: "Results", to: "/student/dashboard/results", icon: Award },
+  { label: "My Payments", to: "/student/payments", icon: CreditCard },
   { label: "Action Required", to: "/student/actions", icon: ListChecks },
   {
     label: "Practice",
@@ -30,14 +33,14 @@ export function PortalPage({ title, eyebrow, children }) {
   return (
     <RoleDashboardShell roleLabel="Student Portal" title={title} items={studentNav}>
       <section className="mx-auto max-w-7xl">
-        <header className="mb-6 flex items-center justify-between gap-4">
+        <StudentMotion as="header" className="mb-6 flex items-center justify-between gap-4">
           <div className="min-w-0">
           <p className="text-sm font-black uppercase text-emerald-700">{eyebrow || "Expert Coaching Center"}</p>
           <h1 className="mt-1 text-2xl font-black text-slate-950 sm:text-3xl">{title}</h1>
           </div>
           <PageIllustration kind={illustrationForPage(title)} className="hidden sm:block" />
-        </header>
-        {children}
+        </StudentMotion>
+        {Children.toArray(children).map((child, index) => <StudentMotion key={child.key ?? index} index={index + 1}>{child}</StudentMotion>)}
       </section>
     </RoleDashboardShell>
   );

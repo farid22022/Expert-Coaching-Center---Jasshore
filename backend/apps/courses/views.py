@@ -1,16 +1,18 @@
+from .curriculum import released_content
 from django.db.models import Count, Q
 from django.utils import timezone
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.response import Response
 
 from apps.core.permissions import HasActionPermission
 from apps.core.responses import success_response
 from apps.core.viewsets import OrganizationScopedModelViewSet
 from apps.messaging.models import Notice
-from apps.people.models import Employee
+from apps.people.models import Employee, Student
 from . import models, serializers
+from .permissions import HeadTeacherCourseScopeMixin
 
 
 def _is_teacher(request):
@@ -62,26 +64,25 @@ class StudentPortalViewSet(viewsets.ViewSet):
         from apps.assessments import models as assessment_models
 
         organization = organization or request.user.organization
-        assessment_totals = dict(
-            assessment_models.Assessment.objects.filter(
-                organization=organization, course_id__in=course_ids, status__in=["published", "scheduled", "live"],
-            ).values("course_id").annotate(total=Count("id")).values_list("course_id", "total")
+        now = timezone.now()
+        section_ids = models.Enrollment.objects.filter(student=student, status="active", course_id__in=course_ids).values_list("course_section_id", flat=True)
+        scope = Q(course_section__isnull=True) | Q(course_section_id__in=section_ids)
+        assessments = assessment_models.Assessment.objects.filter(
+            released_content(now), scope, Q(publish_at__isnull=True) | Q(publish_at__lte=now),
+            organization=organization, course_id__in=course_ids, review_status="approved",
+            status__in=["published", "scheduled", "live"],
         )
-        assessment_done = dict(
-            assessment_models.AssessmentAttempt.objects.filter(
-                student=student, assessment__course_id__in=course_ids,
-            ).exclude(status="in_progress").values("assessment__course_id").annotate(total=Count("id")).values_list("assessment__course_id", "total")
+        materials = assessment_models.CourseMaterial.objects.filter(
+            released_content(now), scope, Q(publish_at__isnull=True) | Q(publish_at__lte=now),
+            organization=organization, course_id__in=course_ids, is_published=True, status="published", review_status="approved",
         )
-        material_totals = dict(
-            assessment_models.CourseMaterial.objects.filter(
-                organization=organization, course_id__in=course_ids, is_published=True, status="published",
-            ).values("course_id").annotate(total=Count("id")).values_list("course_id", "total")
-        )
-        material_done = dict(
-            assessment_models.MaterialView.objects.filter(
-                student=student, material__course_id__in=course_ids,
-            ).values("material__course_id").annotate(total=Count("id", distinct=True)).values_list("material__course_id", "total")
-        )
+        assessment_totals = dict(assessments.values("course_id").annotate(total=Count("id")).values_list("course_id", "total"))
+        completed_ids = assessment_models.AssessmentAttempt.objects.filter(student=student).exclude(status="in_progress").values_list("assessment_id", flat=True)
+        submitted_ids = assessment_models.AssignmentSubmission.objects.filter(student=student).exclude(status="draft").values_list("assessment_id", flat=True)
+        assessment_done = dict(assessments.filter(Q(id__in=completed_ids) | Q(id__in=submitted_ids)).values("course_id").annotate(total=Count("id", distinct=True)).values_list("course_id", "total"))
+        material_totals = dict(materials.values("course_id").annotate(total=Count("id")).values_list("course_id", "total"))
+        viewed_ids = assessment_models.MaterialView.objects.filter(student=student).values_list("material_id", flat=True)
+        material_done = dict(materials.filter(id__in=viewed_ids).values("course_id").annotate(total=Count("id", distinct=True)).values_list("course_id", "total"))
         result = {}
         for course_id in course_ids:
             total = assessment_totals.get(course_id, 0) + material_totals.get(course_id, 0)
@@ -107,7 +108,7 @@ class StudentPortalViewSet(viewsets.ViewSet):
         pending = AdmissionApplication.objects.filter(
             organization=request.user.organization,
             applicant=request.user,
-            status__in=[ApplicationStatus.DRAFT, ApplicationStatus.PENDING, ApplicationStatus.UNDER_REVIEW, ApplicationStatus.REJECTED],
+            status__in=[ApplicationStatus.DRAFT, ApplicationStatus.PENDING, ApplicationStatus.UNDER_REVIEW, ApplicationStatus.APPROVED, ApplicationStatus.REJECTED],
         ).select_related("course").order_by("-submitted_at", "-created_at")
         return Response({
             "student": {"id": student.id, "name": student.full_name} if student else {"id": None, "name": request.user.get_full_name() or request.user.email},
@@ -116,6 +117,8 @@ class StudentPortalViewSet(viewsets.ViewSet):
                 "application_no": application.application_no,
                 "program": application.course.title if application.course else "Admission program",
                 "status": application.status,
+                "payment_status": application.payment_status,
+                "admission_fee": application.course.admission_fee if application.course else 0,
                 "submitted_at": application.submitted_at or application.created_at,
                 "rejection_reason": application.rejection_reason,
             } for application in pending],
@@ -191,6 +194,7 @@ class StudentPortalViewSet(viewsets.ViewSet):
             review_status="approved",
         ).filter(
             Q(course_section__isnull=True) | Q(course_section=enrollment.course_section),
+            released_content(now),
             Q(publish_at__isnull=True) | Q(publish_at__lte=now),
         ).select_related("subject", "created_by_teacher").order_by("-reviewed_at", "-updated_at", "-created_at")
         assessments = assessment_models.Assessment.objects.filter(
@@ -200,11 +204,12 @@ class StudentPortalViewSet(viewsets.ViewSet):
             review_status="approved",
         ).filter(
             Q(course_section__isnull=True) | Q(course_section=enrollment.course_section),
+            released_content(now),
             Q(publish_at__isnull=True) | Q(publish_at__lte=now),
             Q(starts_at__isnull=True) | Q(starts_at__lte=now),
             Q(ends_at__isnull=True) | Q(ends_at__gte=now),
         ).select_related("subject", "created_by_teacher").order_by("-published_at", "-reviewed_at", "-updated_at", "-created_at")
-        sections = list(enrollment.course.sections.prefetch_related("subjects").all())
+        sections = list(enrollment.course.sections.filter(pk=enrollment.course_section_id).prefetch_related("subjects").all()) if enrollment.course_section_id else list(enrollment.course.sections.prefetch_related("subjects").all())
         subjects_in_order = sorted(
             (subject for section in sections for subject in section.subjects.all()),
             key=lambda subject: (subject.order, subject.id),
@@ -334,11 +339,164 @@ class StudentPortalViewSet(viewsets.ViewSet):
                 "course_title": enrollment.course.title,
                 "section_name": enrollment.course_section.name if enrollment.course_section_id else "",
             },
+            "weeks": [
+                {"id": week.id, "subject": week.subject_id, "number": week.number,
+                 "title": week.title, "release_at": week.release_at,
+                 "locked": week.release_at > now,
+                 "chapters": [{"id": chapter.id, "title": chapter.title, "order": chapter.order} for chapter in week.chapters.all()] if week.release_at <= now else []}
+                for week in models.SubjectWeek.objects.filter(subject__in=subjects_in_order, is_published=True).prefetch_related("chapters")
+            ],
             "materials": material_data,
             "assessments": assessment_data,
             "notices": notices[:12],
             "progress": self._progress(student, enrollment.course),
             "outline": [{"section": section.name, "subjects": [{"id": subject.id, "name": subject.name, "order": subject.order, "status": subject_status.get(subject.id, "empty")} for subject in section.subjects.all()]} for section in sections],
+        })
+
+    @action(detail=True, methods=["get"], url_path="academic-overview")
+    def academic_overview(self, request, pk=None):
+        """Spec §23-28: stages -> subjects, with real percentage/grade shown only once
+        a StudentCourseResult is actually published - never fabricated."""
+        student = self._student(request)
+        enrollment = models.Enrollment.objects.filter(
+            organization=request.user.organization, pk=pk, student=student, status=models.EnrollmentStatus.ACTIVE,
+        ).select_related("course").first()
+        if not enrollment:
+            raise PermissionDenied("You do not have an active enrollment for this course.")
+
+        from apps.assessments import models as assessment_models
+
+        course_results = {
+            r.course_subject_id: r
+            for r in assessment_models.StudentCourseResult.objects.filter(enrollment=enrollment)
+        }
+
+        def subject_status(subject, result):
+            if subject.academic_stage_id:
+                return subject.academic_stage.status
+            if result and result.status == assessment_models.CourseResultStatus.PUBLISHED:
+                return "completed"
+            has_activity = (
+                assessment_models.AssessmentAttempt.objects.filter(student=student, assessment__subject=subject).exists()
+                or assessment_models.MaterialView.objects.filter(student=student, material__subject=subject).exists()
+            )
+            return "in_progress" if has_activity else "upcoming"
+
+        def subject_row(subject):
+            result = course_results.get(subject.id)
+            published = bool(result and result.status == assessment_models.CourseResultStatus.PUBLISHED)
+            return {
+                "id": subject.id,
+                "name": subject.name,
+                "status": subject_status(subject, result),
+                "percentage": str(result.total_percentage) if published and result.total_percentage is not None else None,
+                "grade": result.grade if published else None,
+                "result_status": result.status if result else "not_started",
+            }
+
+        stages = list(
+            models.AcademicStage.objects.filter(organization=request.user.organization, course=enrollment.course)
+            .prefetch_related("subjects__academic_stage").order_by("order")
+        )
+        grouped_subject_ids = set()
+        stage_payload = []
+        for stage in stages:
+            subjects = list(stage.subjects.all())
+            grouped_subject_ids.update(s.id for s in subjects)
+            stage_payload.append({
+                "id": stage.id, "name": stage.name, "display_label": stage.display_label,
+                "stage_type": stage.stage_type, "status": stage.status,
+                "subjects": [subject_row(s) for s in subjects],
+            })
+
+        all_subjects = [s for section in enrollment.course.sections.prefetch_related("subjects").all() for s in section.subjects.all()]
+        ungrouped = [s for s in all_subjects if s.id not in grouped_subject_ids]
+        if ungrouped:
+            stage_payload.append({
+                "id": None, "name": "General", "display_label": "", "stage_type": "custom", "status": "in_progress",
+                "subjects": [subject_row(s) for s in ungrouped],
+            })
+
+        published_results = [r for r in course_results.values() if r.status == assessment_models.CourseResultStatus.PUBLISHED]
+        return Response({
+            "enrollment": {"id": enrollment.id, "course_title": enrollment.course.title, "status": enrollment.status},
+            "summary": {
+                "courses_completed": len(published_results),
+                "total_courses": len(all_subjects),
+                "average_percentage": (
+                    round(sum(float(r.total_percentage or 0) for r in published_results) / len(published_results), 2)
+                    if published_results else None
+                ),
+            },
+            "stages": stage_payload,
+        })
+
+    @action(detail=True, methods=["get"], url_path=r"subjects/(?P<subject_id>[^/.]+)/result")
+    def course_result(self, request, pk=None, subject_id=None):
+        """Spec §30-38, §59-60: enrollment ownership and course-membership are both
+        verified server-side - a manipulated subject_id outside this enrollment's
+        course returns 404, never another course's data."""
+        student = self._student(request)
+        enrollment = models.Enrollment.objects.filter(
+            organization=request.user.organization, pk=pk, student=student, status=models.EnrollmentStatus.ACTIVE,
+        ).select_related("course").first()
+        if not enrollment:
+            raise PermissionDenied("You do not have an active enrollment for this course.")
+
+        subject = models.CourseSubject.objects.filter(
+            id=subject_id, course_section__course=enrollment.course,
+        ).select_related("course_section__course", "academic_stage").first()
+        if not subject:
+            raise NotFound("This subject does not belong to your enrollment.")
+
+        from apps.assessments import models as assessment_models
+        from apps.assessments import serializers as assessment_serializers
+
+        course_result = assessment_models.StudentCourseResult.objects.filter(
+            enrollment=enrollment, course_subject=subject,
+        ).prefetch_related("component_results__component").first()
+        published = bool(course_result and course_result.status == assessment_models.CourseResultStatus.PUBLISHED)
+
+        components_payload = []
+        if course_result:
+            for component_result in course_result.component_results.select_related("component").filter(
+                component__is_visible_to_student=True
+            ).order_by("component__order"):
+                components_payload.append({
+                    "id": component_result.component.id,
+                    "name": component_result.component.name,
+                    "component_type": component_result.component.component_type,
+                    "raw_obtained": component_result.raw_obtained,
+                    "raw_total": component_result.raw_total,
+                    "weight_percentage": component_result.component.weight_percentage,
+                    "weighted_score": component_result.weighted_score if published else None,
+                    "data_status": component_result.data_status,
+                })
+
+        teacher_names = list(
+            models.TeacherAssignment.objects.filter(organization=request.user.organization, course=enrollment.course)
+            .filter(Q(subject=subject) | Q(subject__isnull=True, course_section=subject.course_section))
+            .select_related("teacher").values_list("teacher__full_name", flat=True).distinct()
+        )
+        rating = assessment_models.CourseRating.objects.filter(student=student, enrollment=enrollment, course_subject=subject).first()
+
+        return Response({
+            "course_subject": {
+                "id": subject.id,
+                "name": subject.name,
+                "stage_name": subject.academic_stage.name if subject.academic_stage_id else None,
+                "teachers": teacher_names,
+                "admission": enrollment.course.title,
+            },
+            "result_status": course_result.status if course_result else "not_started",
+            "total_percentage": course_result.total_percentage if published else None,
+            "grade": course_result.grade if published else None,
+            "grade_point": course_result.grade_point if published else None,
+            "pass_status": course_result.pass_status if published else None,
+            "teacher_comment": course_result.teacher_comment if course_result else "",
+            "components": components_payload,
+            "rating": assessment_serializers.CourseRatingSerializer(rating).data if rating else None,
+            "rating_eligible": published and not rating,
         })
 
     @action(detail=True, methods=["post"], url_path=r"materials/(?P<material_id>[^/.]+)/view")
@@ -361,7 +519,11 @@ class StudentPortalViewSet(viewsets.ViewSet):
             organization=request.user.organization,
             id=material_id,
             course=enrollment.course,
-            is_published=True,
+            is_published=True, status="published", review_status="approved",
+        ).filter(
+            released_content(),
+            Q(course_section__isnull=True) | Q(course_section=enrollment.course_section),
+            Q(publish_at__isnull=True) | Q(publish_at__lte=timezone.now()),
         ).first()
         if not material:
             return Response({"detail": "Material not found."}, status=404)
@@ -432,14 +594,35 @@ class CourseViewSet(StaffOrTeacherScopedQuerysetMixin, OrganizationScopedModelVi
         serializer = serializers.PublicAdmissionDetailSerializer(course, context={"request": request})
         return success_response(serializer.data, "Admission card loaded.")
 
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="public-stats",
+        permission_classes=[permissions.AllowAny],
+        authentication_classes=[],
+    )
+    def public_stats(self, request):
+        from apps.organizations.models import Organization
 
-class CourseSectionViewSet(StaffOrTeacherScopedQuerysetMixin, OrganizationScopedModelViewSet):
+        org = Organization.objects.filter(is_active=True).first()
+        students_guided = Student.objects.filter(organization=org).count() if org else 0
+        return success_response({"students_guided": students_guided}, "Public stats loaded.")
+
+
+class CourseSectionViewSet(HeadTeacherCourseScopeMixin, OrganizationScopedModelViewSet):
     queryset = models.CourseSection.objects.select_related("course", "head_teacher")
     serializer_class = serializers.CourseSectionSerializer
     permission_classes = [HasActionPermission]
     permission_module = "course"
     search_fields = ("name", "description", "course__title")
     filterset_fields = ("course", "head_teacher", "status")
+
+    def _target_course_id(self, serializer):
+        course = serializer.validated_data.get("course") or serializer.instance.course
+        return course.id
+
+    def _instance_course_id(self, instance):
+        return instance.course_id
 
     def _sync_head_teacher_assignment(self, section, previous_head_teacher_id=None):
         if previous_head_teacher_id and previous_head_teacher_id != section.head_teacher_id:
@@ -490,6 +673,7 @@ class CourseSectionViewSet(StaffOrTeacherScopedQuerysetMixin, OrganizationScoped
             assignment.save(update_fields=changed)
 
     def perform_create(self, serializer):
+        self.ensure_head_teacher_write(serializer)
         section = serializer.save(
             organization=self.get_request_organization(),
             created_by=self.request.user,
@@ -498,25 +682,51 @@ class CourseSectionViewSet(StaffOrTeacherScopedQuerysetMixin, OrganizationScoped
         self._sync_head_teacher_assignment(section)
 
     def perform_update(self, serializer):
+        self.ensure_head_teacher_write(serializer)
         previous_head_teacher_id = None
         if serializer.instance:
             previous_head_teacher_id = serializer.instance.head_teacher_id
         section = serializer.save(updated_by=self.request.user)
         self._sync_head_teacher_assignment(section, previous_head_teacher_id)
 
+    def perform_destroy(self, instance):
+        self.ensure_head_teacher_destroy(instance)
+        super().perform_destroy(instance)
 
-class CourseSubjectViewSet(StaffOrTeacherScopedQuerysetMixin, OrganizationScopedModelViewSet):
+
+class CourseSubjectViewSet(HeadTeacherCourseScopeMixin, OrganizationScopedModelViewSet):
     queryset = models.CourseSubject.objects.select_related("course_section", "course_section__course")
     serializer_class = serializers.CourseSubjectSerializer
     permission_classes = [HasActionPermission]
     permission_module = "course"
     search_fields = ("name", "code", "description", "course_section__name", "course_section__course__title")
     filterset_fields = ("course_section", "status")
+    course_lookup = "course_section__course_id"
+
+    def _target_course_id(self, serializer):
+        section = serializer.validated_data.get("course_section") or serializer.instance.course_section
+        return section.course_id
+
+    def _instance_course_id(self, instance):
+        return instance.course_section.course_id
+
+    def perform_create(self, serializer):
+        self.ensure_head_teacher_write(serializer)
+        super().perform_create(serializer)
+
+    def perform_update(self, serializer):
+        self.ensure_head_teacher_write(serializer)
+        super().perform_update(serializer)
+
+    def perform_destroy(self, instance):
+        self.ensure_head_teacher_destroy(instance)
+        super().perform_destroy(instance)
 
 
-class AcademicStageViewSet(StaffOrTeacherScopedQuerysetMixin, OrganizationScopedModelViewSet):
-    """Admin-managed sequential curriculum phase within a Course - e.g. "Phase 01 -
-    Foundation" - deliberately separate from CourseSection (see models.py docstring)."""
+class AcademicStageViewSet(HeadTeacherCourseScopeMixin, OrganizationScopedModelViewSet):
+    """Head-Teacher-managed sequential curriculum phase within a Course they head -
+    e.g. "Phase 01 - Foundation" - deliberately separate from CourseSection (see
+    models.py docstring)."""
 
     queryset = models.AcademicStage.objects.select_related("course")
     serializer_class = serializers.AcademicStageSerializer
@@ -524,6 +734,25 @@ class AcademicStageViewSet(StaffOrTeacherScopedQuerysetMixin, OrganizationScoped
     permission_module = "course"
     search_fields = ("name", "display_label", "course__title")
     filterset_fields = ("course", "status")
+
+    def _target_course_id(self, serializer):
+        course = serializer.validated_data.get("course") or serializer.instance.course
+        return course.id
+
+    def _instance_course_id(self, instance):
+        return instance.course_id
+
+    def perform_create(self, serializer):
+        self.ensure_head_teacher_write(serializer)
+        super().perform_create(serializer)
+
+    def perform_update(self, serializer):
+        self.ensure_head_teacher_write(serializer)
+        super().perform_update(serializer)
+
+    def perform_destroy(self, instance):
+        self.ensure_head_teacher_destroy(instance)
+        super().perform_destroy(instance)
 
 
 class CourseSyllabusItemViewSet(OrganizationScopedModelViewSet):
@@ -618,7 +847,7 @@ class CourseSyllabusItemViewSet(OrganizationScopedModelViewSet):
         serializer.save(updated_by=self.request.user)
 
 
-class TeacherAssignmentViewSet(StaffOrTeacherScopedQuerysetMixin, OrganizationScopedModelViewSet):
+class TeacherAssignmentViewSet(HeadTeacherCourseScopeMixin, OrganizationScopedModelViewSet):
     queryset = models.TeacherAssignment.objects.select_related("teacher", "course", "course_section", "subject")
     serializer_class = serializers.TeacherAssignmentSerializer
     permission_classes = [HasActionPermission]
@@ -626,7 +855,27 @@ class TeacherAssignmentViewSet(StaffOrTeacherScopedQuerysetMixin, OrganizationSc
     search_fields = ("teacher__full_name", "teacher__employee_id", "course__title", "subject__name")
     filterset_fields = ("teacher", "course", "course_section", "subject", "role", "is_active")
 
+    def _target_course_id(self, serializer):
+        course = serializer.validated_data.get("course") or serializer.instance.course
+        return course.id
+
+    def _instance_course_id(self, instance):
+        return instance.course_id
+
+    def _ensure_role_authority(self, serializer):
+        """Assigning/removing a HEAD teacher is Admin-only - a head teacher may assign
+        subject/assistant/coordinator teachers within their own course, but not appoint
+        another head teacher (or themselves elsewhere), matching "Admin assigns Head
+        Teacher / Head Teacher assigns subject Teachers"."""
+        if self._is_role_based_admin(self.request.user):
+            return
+        role = serializer.validated_data.get("role", getattr(serializer.instance, "role", None))
+        if role == models.AssignmentRole.HEAD_TEACHER:
+            raise PermissionDenied("Only an administrator can assign a Head Teacher.")
+
     def perform_create(self, serializer):
+        self.ensure_head_teacher_write(serializer)
+        self._ensure_role_authority(serializer)
         assignment = serializer.save(
             organization=self.get_request_organization(),
             created_by=self.request.user,
@@ -638,10 +887,18 @@ class TeacherAssignmentViewSet(StaffOrTeacherScopedQuerysetMixin, OrganizationSc
             assignment.course_section.save(update_fields=["head_teacher", "updated_at"])
 
     def perform_update(self, serializer):
+        self.ensure_head_teacher_write(serializer)
+        self._ensure_role_authority(serializer)
         assignment = serializer.save(updated_by=self.request.user)
         if assignment.role == models.AssignmentRole.HEAD_TEACHER and assignment.course_section_id:
             assignment.course_section.head_teacher = assignment.teacher
             assignment.course_section.save(update_fields=["head_teacher", "updated_at"])
+
+    def perform_destroy(self, instance):
+        self.ensure_head_teacher_destroy(instance)
+        if not self._is_role_based_admin(self.request.user) and instance.role == models.AssignmentRole.HEAD_TEACHER:
+            raise PermissionDenied("Only an administrator can remove a Head Teacher assignment.")
+        super().perform_destroy(instance)
 
 
 class EnrollmentViewSet(StaffOrTeacherScopedQuerysetMixin, OrganizationScopedModelViewSet):
@@ -698,14 +955,25 @@ class TeacherDashboardViewSet(viewsets.ViewSet):
         sections = {item.course_section_id: item.course_section for item in assignments if item.course_section_id}
         subjects = {item.subject_id: item.subject for item in assignments if item.subject_id}
         head_course_ids = assignments.filter(role=models.AssignmentRole.HEAD_TEACHER).values_list("course_id", flat=True)
+        section_wide_ids = set()
         if head_course_ids:
             for section in models.CourseSection.objects.filter(
                 organization=request.user.organization, course_id__in=head_course_ids, status="active"
             ):
                 sections[section.id] = section
+                section_wide_ids.add(section.id)
+        # A subject-teacher assignment with subject=None means "every subject in this
+        # section" (the same semantics AssessmentAdminViewSet._ensure_scope already
+        # applies). Only expand sections actually covered by a subject=None assignment or
+        # a head-teacher assignment - a teacher explicitly scoped to one subject in a
+        # shared section must not see sibling subjects in that same section.
+        section_wide_ids |= set(
+            assignments.filter(subject__isnull=True, course_section__isnull=False).values_list("course_section_id", flat=True)
+        )
+        if section_wide_ids:
             for subject in models.CourseSubject.objects.filter(
                 organization=request.user.organization,
-                course_section_id__in=sections.keys(),
+                course_section_id__in=section_wide_ids,
                 status="active",
             ):
                 subjects[subject.id] = subject

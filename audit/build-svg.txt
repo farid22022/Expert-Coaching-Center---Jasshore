@@ -1,0 +1,58 @@
+vite v7.3.6 building client environment for production...
+transforming...
+/*! 🌼 daisyUI 5.7.39 */
+✓ 3127 modules transformed.
+
+(!) outDir E:\projectE\JashoreExpert\audit\build-svg is not inside project root and will not be emptied.
+Use --emptyOutDir to override.
+
+rendering chunks...
+computing gzip size...
+../audit/build-svg/index.html                                            0.80 kB │ gzip:   0.44 kB
+../audit/build-svg/assets/RichTextEditor-Bf4bJ6eu.css                   24.23 kB │ gzip:   3.61 kB
+../audit/build-svg/assets/index-Jul9re6G.css                           314.93 kB │ gzip:  48.96 kB
+../audit/build-svg/assets/circle-fDqCxDFa.js                             0.13 kB │ gzip:   0.13 kB
+../audit/build-svg/assets/bookmark-ChlJobdF.js                           0.16 kB │ gzip:   0.16 kB
+../audit/build-svg/assets/clock-CFXT_fu3.js                              0.17 kB │ gzip:   0.16 kB
+../audit/build-svg/assets/rotate-ccw-CTH4b9rt.js                         0.20 kB │ gzip:   0.18 kB
+../audit/build-svg/assets/target-KUnY5Jw_.js                             0.22 kB │ gzip:   0.16 kB
+../audit/build-svg/assets/message-square-BAs-ukj0.js                     0.23 kB │ gzip:   0.20 kB
+../audit/build-svg/assets/triangle-alert-DtWmk8Mu.js                     0.27 kB │ gzip:   0.21 kB
+../audit/build-svg/assets/SafeHtml-CKhMYqkf.js                           0.40 kB │ gzip:   0.31 kB
+../audit/build-svg/assets/StudentDashboardLayout-BsE92HaR.js             0.70 kB │ gzip:   0.45 kB
+../audit/build-svg/assets/TeacherDashboardLayout-D650y8iE.js             0.70 kB │ gzip:   0.45 kB
+../audit/build-svg/assets/StudentMaterialsPage-e3ncj1KR.js               1.47 kB │ gzip:   0.76 kB
+../audit/build-svg/assets/TeacherAcademicStructurePages-y2ZCsc-8.js      1.64 kB │ gzip:   0.66 kB
+../audit/build-svg/assets/StudentBookmarksPage-BW0S7G0z.js               1.84 kB │ gzip:   0.95 kB
+../audit/build-svg/assets/StudentFeedbackPage-CvYpVm6d.js                1.86 kB │ gzip:   0.97 kB
+../audit/build-svg/assets/StudentNotificationsPage-DvEzEDNp.js           2.13 kB │ gzip:   1.05 kB
+../audit/build-svg/assets/StudentProgressPage-BoEWDPOE.js                2.21 kB │ gzip:   1.04 kB
+../audit/build-svg/assets/StudentCoursesPage-CuUD9cjf.js                 2.40 kB │ gzip:   1.06 kB
+../audit/build-svg/assets/studentPortalShared-DteTUX7f.js                2.52 kB │ gzip:   1.06 kB
+../audit/build-svg/assets/StudentPracticePage-D5gROsLX.js                2.67 kB │ gzip:   1.17 kB
+../audit/build-svg/assets/StudentActionsPage-3gOgCDnv.js                 2.77 kB │ gzip:   1.27 kB
+../audit/build-svg/assets/StudentAssignmentsPage-CU8Zp7Qp.js             3.26 kB │ gzip:   1.54 kB
+../audit/build-svg/assets/StudentAssessmentsPage-CvJRJ85I.js             3.34 kB │ gzip:   1.54 kB
+../audit/build-svg/assets/StudentAcademicOverviewPage-CfaSzJfs.js        3.42 kB │ gzip:   1.22 kB
+../audit/build-svg/assets/StudentMistakesPage-D90PpnE5.js                3.66 kB │ gzip:   1.60 kB
+../audit/build-svg/assets/TeacherInterventionsPage-DiWiUPOI.js           3.88 kB │ gzip:   1.39 kB
+../audit/build-svg/assets/StudentProfilePage-B6y4A3x9.js                 4.06 kB │ gzip:   1.44 kB
+../audit/build-svg/assets/TeacherPerformanceCenterPage-CO-V4iwT.js       4.44 kB │ gzip:   1.64 kB
+../audit/build-svg/assets/StudentResultsPage-Cal3pPE3.js                 4.77 kB │ gzip:   1.55 kB
+../audit/build-svg/assets/TeacherGradebookPage-CLYMZeRP.js               5.56 kB │ gzip:   2.28 kB
+../audit/build-svg/assets/StudentCourseResultPage-DKe0bk1O.js            7.00 kB │ gzip:   2.29 kB
+../audit/build-svg/assets/RoleDashboardShell-DTfLPaaj.js                 8.93 kB │ gzip:   3.01 kB
+../audit/build-svg/assets/TeacherCourseOutlinePage-B0MRYko_.js          10.52 kB │ gzip:   2.98 kB
+../audit/build-svg/assets/TeacherStudentProfilePage-D4OE0Wm-.js         15.48 kB │ gzip:   4.04 kB
+../audit/build-svg/assets/StudentDashboard-Bywvq7jw.js                  20.65 kB │ gzip:   5.02 kB
+../audit/build-svg/assets/StudentCoursePage-CZP4v3kW.js                 21.99 kB │ gzip:   6.90 kB
+../audit/build-svg/assets/TeacherModulePages-BxbLZJJq.js                60.49 kB │ gzip:  13.65 kB
+../audit/build-svg/assets/AdminPortalPages-Cq5X686i.js                  73.18 kB │ gzip:  16.89 kB
+../audit/build-svg/assets/RichTextEditor-3aQae9oy.js                   209.18 kB │ gzip:  62.55 kB
+../audit/build-svg/assets/index-Bni8LM1w.js                          1,024.97 kB │ gzip: 328.55 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 55.91s

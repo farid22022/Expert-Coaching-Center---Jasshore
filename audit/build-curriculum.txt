@@ -1,0 +1,58 @@
+vite v7.3.6 building client environment for production...
+transforming...
+/*! 🌼 daisyUI 5.7.39 */
+✓ 3129 modules transformed.
+
+(!) outDir E:\projectE\JashoreExpert\audit\build-curriculum is not inside project root and will not be emptied.
+Use --emptyOutDir to override.
+
+rendering chunks...
+computing gzip size...
+../audit/build-curriculum/index.html                                            0.80 kB │ gzip:   0.44 kB
+../audit/build-curriculum/assets/RichTextEditor-Bf4bJ6eu.css                   24.23 kB │ gzip:   3.61 kB
+../audit/build-curriculum/assets/index-BvPq4Nj5.css                           315.59 kB │ gzip:  49.08 kB
+../audit/build-curriculum/assets/circle-C1fDW-CT.js                             0.13 kB │ gzip:   0.13 kB
+../audit/build-curriculum/assets/bookmark-CsqOIQ7b.js                           0.16 kB │ gzip:   0.16 kB
+../audit/build-curriculum/assets/clock-DA2zbu1L.js                              0.17 kB │ gzip:   0.16 kB
+../audit/build-curriculum/assets/rotate-ccw-jgT74kPM.js                         0.20 kB │ gzip:   0.18 kB
+../audit/build-curriculum/assets/target-D1rktfEi.js                             0.22 kB │ gzip:   0.16 kB
+../audit/build-curriculum/assets/message-square-lVo7fT4U.js                     0.23 kB │ gzip:   0.20 kB
+../audit/build-curriculum/assets/triangle-alert-CABnshYS.js                     0.27 kB │ gzip:   0.22 kB
+../audit/build-curriculum/assets/SafeHtml-BMtzk9m4.js                           0.40 kB │ gzip:   0.31 kB
+../audit/build-curriculum/assets/StudentDashboardLayout-DJdXRTVY.js             0.70 kB │ gzip:   0.45 kB
+../audit/build-curriculum/assets/TeacherDashboardLayout-C1PkHi-P.js             0.70 kB │ gzip:   0.46 kB
+../audit/build-curriculum/assets/StudentMaterialsPage-BLenqPne.js               1.47 kB │ gzip:   0.76 kB
+../audit/build-curriculum/assets/TeacherAcademicStructurePages-BLA-uzb7.js      1.64 kB │ gzip:   0.66 kB
+../audit/build-curriculum/assets/StudentBookmarksPage-B0VKwjdH.js               1.84 kB │ gzip:   0.96 kB
+../audit/build-curriculum/assets/StudentFeedbackPage-mpnKCO6c.js                1.86 kB │ gzip:   0.97 kB
+../audit/build-curriculum/assets/StudentNotificationsPage-CNUJVZSK.js           2.13 kB │ gzip:   1.06 kB
+../audit/build-curriculum/assets/StudentProgressPage-BfmGYtTj.js                2.21 kB │ gzip:   1.05 kB
+../audit/build-curriculum/assets/StudentCoursesPage-BN2rWZlG.js                 2.40 kB │ gzip:   1.07 kB
+../audit/build-curriculum/assets/studentPortalShared-BtcVBPYj.js                2.52 kB │ gzip:   1.06 kB
+../audit/build-curriculum/assets/StudentPracticePage-boJQsBKN.js                2.67 kB │ gzip:   1.17 kB
+../audit/build-curriculum/assets/StudentActionsPage-C728hU0Q.js                 2.77 kB │ gzip:   1.27 kB
+../audit/build-curriculum/assets/StudentAssignmentsPage-Cdicge5E.js             3.26 kB │ gzip:   1.54 kB
+../audit/build-curriculum/assets/StudentAssessmentsPage-Ci6gSVkc.js             3.34 kB │ gzip:   1.54 kB
+../audit/build-curriculum/assets/StudentAcademicOverviewPage-CIppEtQo.js        3.42 kB │ gzip:   1.22 kB
+../audit/build-curriculum/assets/StudentMistakesPage-8hkGjrqv.js                3.66 kB │ gzip:   1.60 kB
+../audit/build-curriculum/assets/TeacherInterventionsPage-CSmibCbt.js           3.88 kB │ gzip:   1.39 kB
+../audit/build-curriculum/assets/StudentProfilePage-DEVM2vxx.js                 4.05 kB │ gzip:   1.45 kB
+../audit/build-curriculum/assets/TeacherPerformanceCenterPage-Bsnsj5mb.js       4.44 kB │ gzip:   1.64 kB
+../audit/build-curriculum/assets/StudentResultsPage-D1iQbqdu.js                 4.77 kB │ gzip:   1.56 kB
+../audit/build-curriculum/assets/TeacherGradebookPage-CJGD_-4G.js               5.56 kB │ gzip:   2.28 kB
+../audit/build-curriculum/assets/StudentCourseResultPage-Bf38acjy.js            7.00 kB │ gzip:   2.30 kB
+../audit/build-curriculum/assets/RoleDashboardShell-Db6MO5r6.js                 8.93 kB │ gzip:   3.01 kB
+../audit/build-curriculum/assets/TeacherStudentProfilePage-DRPkApYH.js         15.48 kB │ gzip:   4.04 kB
+../audit/build-curriculum/assets/TeacherCourseOutlinePage-BGtBZ5_9.js          16.33 kB │ gzip:   4.35 kB
+../audit/build-curriculum/assets/StudentDashboard-CU1wTz0V.js                  20.65 kB │ gzip:   5.02 kB
+../audit/build-curriculum/assets/StudentCoursePage-DW4kUKf7.js                 24.66 kB │ gzip:   7.74 kB
+../audit/build-curriculum/assets/TeacherModulePages-C7P-Sq2F.js                61.53 kB │ gzip:  13.89 kB
+../audit/build-curriculum/assets/AdminPortalPages-D9_Folc-.js                  73.18 kB │ gzip:  16.89 kB
+../audit/build-curriculum/assets/RichTextEditor-hUrGEoLC.js                   209.18 kB │ gzip:  62.55 kB
+../audit/build-curriculum/assets/index-GrXfvILm.js                          1,025.46 kB │ gzip: 328.74 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 1m 8s

@@ -1,7 +1,6 @@
 import PageIllustration from "../../components/common/PageIllustration.jsx";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { WarpFieldBackground } from "../../shaders/warp-field/WarpFieldBackground";
 import "../../shaders/threeui.css";
 import {
   ArrowRight,
@@ -71,22 +70,12 @@ export default function Login() {
   return (
     <main className="relative grid min-h-screen overflow-hidden bg-white px-4 py-10">
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden bg-white" aria-hidden="true">
-        <WarpFieldBackground
-          className="h-full w-full opacity-[0.16]"
-          variant="letters"
-          speed={15.0}
-          streakOpacity={0.60}
-          tileOpacity={0.90}
-          fov={75}
-          hue={0}
-          saturation={1.00}
-          brightness={1.00}
-        />
+        <div className="h-full w-full bg-gradient-to-br from-emerald-50 via-white to-amber-50" />
       </div>
       <motion.div
         initial={{ opacity: 0, y: 30, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
         className="relative z-10 mx-auto grid w-full max-w-md content-center gap-5"
       >
         <motion.div

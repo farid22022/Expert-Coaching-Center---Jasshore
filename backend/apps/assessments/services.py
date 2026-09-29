@@ -1,12 +1,15 @@
+from apps.courses.curriculum import content_is_released
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
-from django.db.models import Avg, Count, Max, Min, Sum
+from django.db.models import Avg, Count, Max, Min, Q, Sum, F, FloatField, ExpressionWrapper
+from django.db.models.functions import NullIf
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
-from apps.courses.models import AssignmentRole, AssignmentStatus, CourseSubject, Enrollment, EnrollmentStatus, TeacherAssignment
+from apps.courses.models import Enrollment, EnrollmentStatus
+from apps.courses.services import ensure_teacher_subject_scope, teacher_scope  # noqa: F401 - re-exported for existing importers of apps.assessments.services
 from . import models
 from .validators import validate_submission_file
 
@@ -39,6 +42,23 @@ def _notify_student(organization, student, actor, title, body, notification_type
     )
 
 
+def notify_enrolled_students(course, course_section, organization, actor, title, body, notification_type, target_url):
+    """Bulk version of _notify_student for "new content published" events (assessment/
+    assignment/material becomes visible to students) - every actively-enrolled student
+    for the course (optionally narrowed to one section) gets one Notification each."""
+    enrollments = Enrollment.objects.filter(
+        organization=organization, course=course, status=EnrollmentStatus.ACTIVE,
+    ).select_related("student")
+    if course_section_id := (course_section.id if course_section else None):
+        enrollments = enrollments.filter(Q(course_section__isnull=True) | Q(course_section_id=course_section_id))
+    seen_student_ids = set()
+    for enrollment in enrollments:
+        if enrollment.student_id in seen_student_ids:
+            continue
+        seen_student_ids.add(enrollment.student_id)
+        _notify_student(organization, enrollment.student, actor, title, body, notification_type, target_url)
+
+
 def _auto_complete_linked_interventions(assessment, student, user):
     """Spec §10: students never set an intervention's official status - completion is
     derived from the linked activity actually being submitted. Runs inside the same
@@ -51,36 +71,6 @@ def _auto_complete_linked_interventions(assessment, student, user):
         .update(status=models.InterventionStatus.COMPLETED, updated_by=user, updated_at=timezone.now())
     )
 
-
-def teacher_scope(teacher, organization):
-    """Returns the courses/subjects a teacher can see, and which courses they head.
-    A subject-teacher sees only their assigned subject(s); a head-teacher sees every
-    subject in the course(s) they head - the same distinction already enforced (three
-    times, separately) in AssessmentAdminViewSet/CourseSyllabusItemViewSet/
-    TeacherDashboardViewSet. This is a fresh, purpose-built read of the same
-    TeacherAssignment data for analytics, not a refactor of those existing call sites."""
-    assignments = TeacherAssignment.objects.filter(
-        organization=organization, teacher=teacher, is_active=True, assignment_status=AssignmentStatus.ACCEPTED,
-    )
-    course_ids = set(assignments.values_list("course_id", flat=True))
-    head_course_ids = set(assignments.filter(role=AssignmentRole.HEAD_TEACHER).values_list("course_id", flat=True))
-    subject_ids = set(assignments.exclude(subject__isnull=True).values_list("subject_id", flat=True))
-    if head_course_ids:
-        subject_ids |= set(
-            CourseSubject.objects.filter(course_section__course_id__in=head_course_ids).values_list("id", flat=True)
-        )
-    return {"course_ids": course_ids, "subject_ids": subject_ids, "head_course_ids": head_course_ids}
-
-
-def ensure_teacher_subject_scope(teacher, organization, course_subject):
-    """Gradebook access guard, reusing teacher_scope()'s existing subject_ids/head_course_ids
-    computation rather than a fourth reimplementation of the head-teacher-vs-subject-teacher
-    check. Raises PermissionDenied if the teacher isn't assigned to this subject."""
-    if not teacher:
-        raise PermissionDenied("A teacher profile is required for gradebook access.")
-    scope = teacher_scope(teacher, organization)
-    if course_subject.id not in scope["subject_ids"] and course_subject.course_section.course_id not in scope["head_course_ids"]:
-        raise PermissionDenied("You are not assigned to this admission subject.")
 
 
 def students_in_scope(teacher, organization):
@@ -448,7 +438,12 @@ def calculate_course_result(enrollment, course_subject, user=None):
     if total_percentage is not None:
         pass_status = "failed" if (is_fail or total_percentage < pass_percentage) else "passed"
 
-    course_result.status = models.CourseResultStatus.CALCULATED
+    # Recalculating (e.g. a teacher pulls in a freshly-graded assignment for one student)
+    # must not silently un-publish every other already-published student in the same
+    # subject - the `calculate` action loops over the whole course's active enrollments.
+    # Keep the numbers in sync, but only a status of draft/calculated advances to calculated.
+    if course_result.status not in (models.CourseResultStatus.PUBLISHED, models.CourseResultStatus.LOCKED):
+        course_result.status = models.CourseResultStatus.CALCULATED
     course_result.total_percentage = total_percentage
     course_result.grade = grade
     course_result.grade_point = grade_point
@@ -481,9 +476,11 @@ def publish_course_result(course_result, user):
     if missing:
         raise ValidationError(f"Cannot publish - missing required marks: {', '.join(missing)}.")
 
+    from apps.people.models import Employee
+
     course_result.status = models.CourseResultStatus.PUBLISHED
     course_result.published_at = timezone.now()
-    course_result.published_by = user
+    course_result.published_by = Employee.objects.filter(organization=course_result.organization, email__iexact=user.email, employee_type="teacher").first()
     course_result.updated_by = user
     course_result.save()
 
@@ -500,6 +497,8 @@ def publish_course_result(course_result, user):
 class AssessmentService:
     @staticmethod
     def ensure_student_can_access(student, assessment):
+        if not content_is_released(assessment):
+            raise PermissionDenied("This week is not available yet.")
         if assessment.allowed_students.exists() and not assessment.allowed_students.filter(id=student.id).exists():
             raise PermissionDenied("This assessment is not assigned to you.")
         enrollments = Enrollment.objects.filter(
@@ -654,6 +653,20 @@ class AssessmentService:
     def evaluate_submission(submission, teacher, marks, feedback, user):
         if submission.status not in {models.SubmissionStatus.SUBMITTED, models.SubmissionStatus.RETURNED}:
             raise ValidationError("Only submitted assignments can be evaluated.")
+        # Defense-in-depth: the real authorization boundary is already the caller's
+        # scoped queryset (AssessmentAdminViewSet.get_queryset, scope_via="assessment"),
+        # which already correctly lets a head teacher grade any subject-teacher's
+        # submission in a course they head, and 404s a subject teacher outside their own
+        # subject before this function ever runs. This just formalizes the same boundary
+        # here too, for any future caller that reaches this service directly.
+        if teacher is not None and not (user.is_staff or user.is_superuser):
+            assessment = submission.assessment
+            if assessment.subject_id:
+                ensure_teacher_subject_scope(teacher, assessment.organization, assessment.subject)
+            else:
+                scope = teacher_scope(teacher, assessment.organization)
+                if assessment.course_id not in scope["course_ids"] | scope["head_course_ids"]:
+                    raise PermissionDenied("You are not assigned to this admission subject.")
         submission.marks_obtained = marks
         submission.total_marks = submission.total_marks or submission.assessment.assessment_questions.aggregate(total=Sum("marks"))["total"] or 100
         submission.feedback = feedback
@@ -662,17 +675,29 @@ class AssessmentService:
         submission.status = models.SubmissionStatus.EVALUATED
         submission.updated_by = user
         submission.save(update_fields=["marks_obtained", "total_marks", "feedback", "evaluated_by", "evaluated_at", "status", "updated_by", "updated_at"])
+        _notify_student(
+            submission.organization, submission.student, user,
+            title="Assignment graded",
+            body=f"Your submission for \"{submission.assessment.title}\" has been graded: {submission.marks_obtained}/{submission.total_marks}.",
+            notification_type="assignment_graded",
+            target_url="/student/assignments",
+        )
         return submission
 
     @staticmethod
     def student_performance(student):
         attempts = models.AssessmentAttempt.objects.filter(student=student).exclude(status=models.AttemptStatus.IN_PROGRESS)
         submissions = models.AssignmentSubmission.objects.filter(student=student)
+        summary = attempts.aggregate(
+            count=Count("pk"), average=Avg("score"), total=Sum("score"),
+            percentage=Avg(ExpressionWrapper(100.0 * F("score") / NullIf(F("total_marks"), 0), output_field=FloatField())),
+        )
         return {
-            "attempt_count": attempts.count(),
+            "attempt_count": summary["count"],
             "assignment_count": submissions.count(),
-            "average_score": attempts.aggregate(value=Avg("score"))["value"] or 0,
-            "total_score": attempts.aggregate(value=Sum("score"))["value"] or 0,
+            "average_score": summary["average"] or 0,
+            "average_percentage": summary["percentage"] or 0,
+            "total_score": summary["total"] or 0,
             "average_assignment_marks": submissions.aggregate(value=Avg("marks_obtained"))["value"] or 0,
         }
 

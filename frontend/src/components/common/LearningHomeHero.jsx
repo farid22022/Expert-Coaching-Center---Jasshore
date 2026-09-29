@@ -10,7 +10,29 @@ export default function LearningHomeHero() {
   const reduce = useReducedMotion();
   const [courses, setCourses] = useState([]);
   const [status, setStatus] = useState("loading");
-  useEffect(() => {let active=true; publicAdmissionCardApi.list().then((rows) => {if(active){setCourses(rows);setStatus("ready");}}).catch(() => {if(active)setStatus("error");});return () => {active=false;};}, []);
+  useEffect(() => {
+    let active = true;
+    const timeoutId = window.setTimeout(() => {
+      if (active) setStatus("error");
+    }, 10000);
+
+    publicAdmissionCardApi.list()
+      .then((rows) => {
+        if (active) {
+          setCourses(rows);
+          setStatus("ready");
+        }
+      })
+      .catch(() => {
+        if (active) setStatus("error");
+      })
+      .finally(() => window.clearTimeout(timeoutId));
+
+    return () => {
+      active = false;
+      window.clearTimeout(timeoutId);
+    };
+  }, []);
   const reveal = {initial:{opacity:0,y:reduce ? 0 : 20},whileInView:{opacity:1,y:0},viewport:{once:true},transition:{duration:0.5}};
   const media = (value) => /^https?:\/\//.test(value) ? value : `${API_BASE_URL.replace(/\/api\/v1$/, "")}${value}`;
   return <>

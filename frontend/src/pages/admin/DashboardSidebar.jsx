@@ -1,6 +1,6 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Bell, BookOpen, ClipboardCheck, FilePenLine, GraduationCap, Image, LayoutDashboard, LayoutTemplate, LogOut, Palette, Sparkles, UserCheck, Users, X } from "lucide-react";
-import { motion } from "framer-motion";
+import { Bell, BookOpen, ClipboardCheck, CreditCard, FilePenLine, GraduationCap, Image, LayoutDashboard, LayoutTemplate, LogOut, Palette, Sparkles, UserCheck, Users, X } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { logout } from "../../services/authApi.js";
 
@@ -13,6 +13,7 @@ const navItems = [
   { labelKey: "nav.admissionFormBuilder", path: "/admission-form-builder", icon: FilePenLine },
   { labelKey: "nav.teacherAssignments", path: "/teacher-assignments", icon: Users },
   { labelKey: "nav.admissionApplications", path: "/admission-applications", icon: ClipboardCheck },
+  { labelKey: "nav.payments", path: "/payments", icon: CreditCard },
   { labelKey: "nav.notices", path: "/notices", icon: Bell },
   { labelKey: "nav.gallery", path: "/gallery", icon: Image },
   { labelKey: "nav.banners", path: "/website/banners", icon: LayoutTemplate },
@@ -38,9 +39,9 @@ export default function DashboardSidebar({ mobileOpen, setMobileOpen }) {
 
   return (
     <>
-      {mobileOpen && (
-        <div className="dashboard-sidebar-backdrop fixed inset-0 z-40 bg-black/45 lg:hidden" onClick={close} />
-      )}
+      <AnimatePresence>{mobileOpen && (
+        <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:0.2}} className="dashboard-sidebar-backdrop fixed inset-0 z-40 bg-black/45 lg:hidden" onClick={close} />
+      )}</AnimatePresence>
 
       <aside
         className={`dashboard-sidebar fixed inset-y-0 left-0 z-50 w-[min(300px,86vw)] overflow-y-auto bg-deep-green p-4 text-white shadow-2xl shadow-black/30 transition-transform duration-300 ease-out lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:w-[248px] lg:translate-x-0 lg:shadow-none ${
@@ -70,7 +71,7 @@ export default function DashboardSidebar({ mobileOpen, setMobileOpen }) {
               end={end}
               onClick={close}
               className={({ isActive }) =>
-                `relative flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-bold outline-none transition-colors duration-200 hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/60 ${
+                `relative isolate flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-bold outline-none transition-colors duration-200 hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/60 ${
                   isActive ? "text-white" : "text-white/75"
                 }`
               }

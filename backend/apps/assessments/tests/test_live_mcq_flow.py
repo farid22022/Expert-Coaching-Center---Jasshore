@@ -130,3 +130,16 @@ class LiveMcqFlowTests(APITestCase):
 
         self.assertEqual(content.status_code, 200, content.data)
         self.assertNotIn("Future MCQ", [item["title"] for item in content.data["assessments"]])
+
+    def test_resume_restores_only_own_selections_and_preserves_deadline(self):
+        self.login()
+        url = f"/api/v1/assessments/student/assessments/{self.assessment.id}/"
+        start = self.client.post(url + "start/", {}, format="json")
+        question = start.data["questions"][0]["id"]
+        self.client.post(url + "answer/", {"attempt": start.data["id"], "question": question, "selected_options": [self.wrong_option_id]}, format="json")
+        resumed = self.client.post(url + "start/", {}, format="json")
+        self.assertEqual(resumed.status_code, 200)
+        self.assertEqual(resumed.data["id"], start.data["id"])
+        self.assertEqual(resumed.data["deadline"], start.data["deadline"])
+        self.assertEqual(resumed.data["saved_answers"], {str(question): [self.wrong_option_id]})
+        self.assertNotIn("is_correct", str(resumed.data))

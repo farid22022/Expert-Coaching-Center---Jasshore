@@ -175,6 +175,28 @@ class CourseSubject(OrganizationScopedModel):
         return self.name
 
 
+class SubjectWeek(OrganizationScopedModel):
+    subject = models.ForeignKey(CourseSubject, on_delete=models.PROTECT, related_name="weeks")
+    title = models.CharField(max_length=180)
+    number = models.PositiveIntegerField(default=1)
+    release_at = models.DateTimeField()
+    is_published = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ("number", "id")
+        constraints = [models.UniqueConstraint(fields=["subject", "number"], name="unique_subject_week_number")]
+
+
+class CourseChapter(OrganizationScopedModel):
+    week = models.ForeignKey(SubjectWeek, on_delete=models.PROTECT, related_name="chapters")
+    title = models.CharField(max_length=180)
+    description = models.TextField(blank=True)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ("order", "id")
+
+
 class CourseSyllabusItem(OrganizationScopedModel):
     class ContentType(models.TextChoices):
         TEXT = "text", "Text"

@@ -1,9 +1,10 @@
+from apps.courses.curriculum import released_content
 from django.utils import timezone
 from django.db.models import Q
 from rest_framework import status
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 
@@ -11,9 +12,10 @@ from apps.core.responses import success_response
 from apps.core.viewsets import OrganizationScopedModelViewSet
 from apps.people.models import Student
 from apps.courses.models import CourseSubject, Enrollment, EnrollmentStatus, TeacherAssignment
+from apps.courses.permissions import HeadTeacherCourseScopeMixin
 from apps.people.models import Employee
 from . import models, serializers
-from .services import AssessmentService, _notify_student
+from .services import AssessmentService, _notify_student, notify_enrolled_students
 
 
 class AssessmentAdminViewSet(OrganizationScopedModelViewSet):
@@ -120,7 +122,39 @@ class AssessmentAdminViewSet(OrganizationScopedModelViewSet):
                 extra.update({"is_published": is_head, "status": "published" if is_head else "draft"})
             elif model is models.Assessment and not is_head:
                 extra["status"] = "draft"
-        serializer.save(organization=self.get_request_organization(), **extra)
+        instance = serializer.save(organization=self.get_request_organization(), **extra)
+        # Only notify when the content is immediately live to students (head-teacher-
+        # created, or a model with no review gate at all) - a subject teacher's draft/
+        # pending-review content isn't visible to anyone yet, so notifying here would be
+        # a false alarm before it's ever approved.
+        if is_head and model in (models.Assessment, models.CourseMaterial):
+            self._notify_enrolled_students_of_new_content(instance, model)
+        return instance
+
+    def _notify_enrolled_students_of_new_content(self, instance, model):
+        type_label = {
+            models.AssessmentType.MCQ: "MCQ test",
+            models.AssessmentType.EXAM: "exam",
+            models.AssessmentType.ASSIGNMENT: "assignment",
+        }
+        if model is models.Assessment:
+            label = type_label.get(instance.assessment_type, "assessment")
+            target_url = "/student/assignments" if instance.assessment_type == models.AssessmentType.ASSIGNMENT else "/student/dashboard/assessments"
+            notify_enrolled_students(
+                instance.course, instance.course_section, instance.organization, self.request.user,
+                title=f"New {label}: {instance.title}",
+                body=f"A new {label} \"{instance.title}\" has been published for {instance.course.title}.",
+                notification_type="new_assessment",
+                target_url=target_url,
+            )
+        elif model is models.CourseMaterial:
+            notify_enrolled_students(
+                instance.course, instance.course_section, instance.organization, self.request.user,
+                title=f"New study material: {instance.title}",
+                body=f"A new study material \"{instance.title}\" has been added to {instance.course.title}.",
+                notification_type="new_material",
+                target_url="/student/dashboard/materials",
+            )
 
     def perform_update(self, serializer):
         teacher = self._teacher()
@@ -135,6 +169,11 @@ class AssessmentAdminViewSet(OrganizationScopedModelViewSet):
             serializer.save(updated_by=self.request.user)
             return
         is_head = self._ensure_scope(teacher, instance.course_id, instance.course_section_id, instance.subject_id)
+        target = serializer.validated_data
+        self._ensure_scope(teacher,
+            getattr(target.get("course", instance.course), "id", None),
+            getattr(target.get("course_section", instance.course_section), "id", None),
+            getattr(target.get("subject", instance.subject), "id", None))
         if not is_head and instance.created_by_teacher_id != teacher.id:
             raise PermissionDenied("Only the content owner or head teacher can edit this content.")
         extra = {"updated_by": self.request.user}
@@ -370,8 +409,13 @@ class StudentAssessmentViewSet(viewsets.ReadOnlyModelViewSet):
             review_status=models.ContentReviewStatus.APPROVED,
         ).filter(
             Q(course_section__isnull=True) | Q(course_section_id__in=enrolled_section_ids),
+            released_content(now),
             Q(publish_at__isnull=True) | Q(publish_at__lte=now),
-            Q(starts_at__isnull=True) | Q(starts_at__lte=now),
+            # Deliberately NOT filtering starts_at__lte=now here - a published,
+            # future-scheduled assessment must stay visible so the student portal
+            # can show it under "Upcoming" (AssessmentService.ensure_assessment_open
+            # independently re-validates starts_at before a student can actually
+            # start an attempt, so this doesn't weaken the real start-time gate).
             Q(ends_at__isnull=True) | Q(ends_at__gte=now),
             # Individually-targeted assessments (e.g. personalized practice, allowed_students
             # non-empty) were previously visible to every enrolled student even though
@@ -395,6 +439,7 @@ class StudentAssessmentViewSet(viewsets.ReadOnlyModelViewSet):
             review_status=models.ContentReviewStatus.APPROVED,
         ).filter(
             Q(course_section__isnull=True) | Q(course_section_id__in=enrolled_section_ids),
+            released_content(),
             Q(publish_at__isnull=True) | Q(publish_at__lte=timezone.now()),
         ).select_related("course", "course_section", "subject", "created_by_teacher")
         return Response(serializers.CourseMaterialSerializer(materials, many=True).data)
@@ -835,3 +880,309 @@ class StudentBookmarkViewSet(OrganizationScopedModelViewSet):
         if not student:
             raise PermissionDenied("Student record not found.")
         serializer.save(organization=self.get_request_organization(), student=student, created_by=self.request.user, updated_by=self.request.user)
+
+
+class AssessmentComponentViewSet(HeadTeacherCourseScopeMixin, OrganizationScopedModelViewSet):
+    """Head-teacher-managed assessment scheme rows for one course subject. Previously
+    had NO write-scope check at all (any authenticated teacher could edit any course's
+    grading scheme org-wide) - HeadTeacherCourseScopeMixin closes that gap."""
+
+    queryset = models.AssessmentComponent.objects.select_related("course_subject").prefetch_related("source_assessments")
+    serializer_class = serializers.AssessmentComponentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filterset_fields = ("course_subject", "status")
+    course_lookup = "course_subject__course_section__course_id"
+
+    def _target_course_id(self, serializer):
+        course_subject = serializer.validated_data.get("course_subject") or serializer.instance.course_subject
+        return course_subject.course_section.course_id
+
+    def _instance_course_id(self, instance):
+        return instance.course_subject.course_section.course_id
+
+    def perform_create(self, serializer):
+        self.ensure_head_teacher_write(serializer)
+        super().perform_create(serializer)
+
+    def perform_update(self, serializer):
+        self.ensure_head_teacher_write(serializer)
+        super().perform_update(serializer)
+
+    def perform_destroy(self, instance):
+        self.ensure_head_teacher_destroy(instance)
+        super().perform_destroy(instance)
+
+
+class CourseGradeScaleViewSet(HeadTeacherCourseScopeMixin, OrganizationScopedModelViewSet):
+    """Previously had NO write-scope check at all - see AssessmentComponentViewSet."""
+
+    queryset = models.CourseGradeScale.objects.select_related("course").prefetch_related("items")
+    serializer_class = serializers.CourseGradeScaleSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filterset_fields = ("course", "is_active")
+
+    def _target_course_id(self, serializer):
+        course = serializer.validated_data.get("course") or serializer.instance.course
+        return course.id
+
+    def _instance_course_id(self, instance):
+        return instance.course_id
+
+    def perform_create(self, serializer):
+        self.ensure_head_teacher_write(serializer)
+        super().perform_create(serializer)
+
+    def perform_update(self, serializer):
+        self.ensure_head_teacher_write(serializer)
+        super().perform_update(serializer)
+
+    def perform_destroy(self, instance):
+        self.ensure_head_teacher_destroy(instance)
+        super().perform_destroy(instance)
+
+
+class CourseGradeScaleItemViewSet(HeadTeacherCourseScopeMixin, OrganizationScopedModelViewSet):
+    """Previously had NO write-scope check at all - see AssessmentComponentViewSet."""
+
+    queryset = models.CourseGradeScaleItem.objects.select_related("grade_scale")
+    serializer_class = serializers.CourseGradeScaleItemSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filterset_fields = ("grade_scale",)
+    course_lookup = "grade_scale__course_id"
+
+    def _target_course_id(self, serializer):
+        grade_scale = serializer.validated_data.get("grade_scale") or serializer.instance.grade_scale
+        return grade_scale.course_id
+
+    def _instance_course_id(self, instance):
+        return instance.grade_scale.course_id
+
+    def perform_create(self, serializer):
+        self.ensure_head_teacher_write(serializer)
+        super().perform_create(serializer)
+
+    def perform_update(self, serializer):
+        self.ensure_head_teacher_write(serializer)
+        super().perform_update(serializer)
+
+    def perform_destroy(self, instance):
+        self.ensure_head_teacher_destroy(instance)
+        super().perform_destroy(instance)
+
+
+class CourseRatingViewSet(OrganizationScopedModelViewSet):
+    """Self-service only - a student rating a course subject after real completion.
+    Always scoped to the requesting student's own records."""
+
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = serializers.CourseRatingSerializer
+    http_method_names = ["get", "post", "patch", "head", "options"]
+
+    def _student(self):
+        return Student.objects.filter(organization=self.get_request_organization(), email=self.request.user.email).first()
+
+    def get_queryset(self):
+        student = self._student()
+        if not student:
+            return models.CourseRating.objects.none()
+        return models.CourseRating.objects.filter(organization=self.get_request_organization(), student=student)
+
+    def perform_create(self, serializer):
+        student = self._student()
+        if not student:
+            raise PermissionDenied("Student record not found.")
+        enrollment = serializer.validated_data.get("enrollment")
+        if not enrollment or enrollment.student_id != student.id:
+            raise PermissionDenied("You can only rate your own enrollment.")
+        course_result = models.StudentCourseResult.objects.filter(
+            enrollment=enrollment, course_subject=serializer.validated_data.get("course_subject"),
+            status=models.CourseResultStatus.PUBLISHED,
+        ).first()
+        if not course_result:
+            raise ValidationError("Course rating is only available after your result is published.")
+        serializer.save(organization=self.get_request_organization(), student=student, created_by=self.request.user, updated_by=self.request.user)
+
+
+class GradebookViewSet(viewsets.ViewSet):
+    """Teacher/head-teacher gradebook for one course subject - the single place raw
+    marks, weighted marks, and final results are viewed/edited/calculated/published.
+    Registered at the course-subject level (pk = CourseSubject id)."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def _teacher(self, request):
+        return Employee.objects.filter(organization=request.user.organization, email=request.user.email, employee_type="teacher").first()
+
+    def _subject(self, request, pk):
+        subject = CourseSubject.objects.filter(
+            organization=request.user.organization, id=pk,
+        ).select_related("course_section__course").first()
+        if not subject:
+            raise NotFound("Course subject not found.")
+        if not (request.user.is_staff or request.user.is_superuser):
+            from .services import ensure_teacher_subject_scope
+            ensure_teacher_subject_scope(self._teacher(request), request.user.organization, subject)
+        return subject
+
+    def retrieve(self, request, pk=None):
+        subject = self._subject(request, pk)
+        components = list(subject.assessment_components.filter(status="active").order_by("order"))
+        enrollments = Enrollment.objects.filter(
+            organization=request.user.organization, course=subject.course_section.course, status=EnrollmentStatus.ACTIVE,
+        ).select_related("student").order_by("student__full_name")
+
+        results_by_enrollment = {
+            r.enrollment_id: r
+            for r in models.StudentCourseResult.objects.filter(
+                enrollment__in=enrollments, course_subject=subject,
+            ).prefetch_related("component_results")
+        }
+        rows = []
+        for enrollment in enrollments:
+            course_result = results_by_enrollment.get(enrollment.id)
+            component_by_id = {cr.component_id: cr for cr in course_result.component_results.all()} if course_result else {}
+            rows.append({
+                "enrollment_id": enrollment.id,
+                "student_id": enrollment.student_id,
+                "student_name": enrollment.student.full_name,
+                "result_status": course_result.status if course_result else "not_calculated",
+                "total_percentage": course_result.total_percentage if course_result else None,
+                "grade": course_result.grade if course_result else "",
+                "grade_point": course_result.grade_point if course_result else None,
+                "components": [
+                    {
+                        "component_id": component.id,
+                        "raw_obtained": component_by_id[component.id].raw_obtained if component.id in component_by_id else None,
+                        "raw_total": component.total_marks,
+                        "weighted_score": component_by_id[component.id].weighted_score if component.id in component_by_id else None,
+                        "data_status": component_by_id[component.id].data_status if component.id in component_by_id else "not_attempted",
+                        "is_manual": component_by_id[component.id].is_manual if component.id in component_by_id else False,
+                    }
+                    for component in components
+                ],
+            })
+        return Response({
+            "course_subject": {"id": subject.id, "name": subject.name, "course": subject.course_section.course.title},
+            "components": serializers.AssessmentComponentSerializer(components, many=True).data,
+            "students": rows,
+        })
+
+    @action(detail=True, methods=["post"])
+    def calculate(self, request, pk=None):
+        from .services import calculate_course_result
+
+        subject = self._subject(request, pk)
+        enrollments = Enrollment.objects.filter(
+            organization=request.user.organization, course=subject.course_section.course, status=EnrollmentStatus.ACTIVE,
+        )
+        for enrollment in enrollments:
+            calculate_course_result(enrollment, subject, user=request.user)
+        return success_response(None, f"Recalculated results for {enrollments.count()} students.")
+
+    @action(detail=True, methods=["post"])
+    def publish(self, request, pk=None):
+        from .services import publish_course_result
+
+        subject = self._subject(request, pk)
+        enrollment_ids = request.data.get("enrollment_ids")
+        results = models.StudentCourseResult.objects.filter(
+            organization=request.user.organization, course_subject=subject,
+            status__in=[models.CourseResultStatus.CALCULATED, models.CourseResultStatus.PUBLISHED],
+        )
+        if enrollment_ids:
+            results = results.filter(enrollment_id__in=enrollment_ids)
+
+        published, failed = 0, []
+        for course_result in results:
+            was_already_published = course_result.status == models.CourseResultStatus.PUBLISHED
+            try:
+                publish_course_result(course_result, request.user)
+                if not was_already_published:
+                    published += 1
+            except ValidationError as error:
+                detail = error.detail[0] if isinstance(error.detail, list) else error.detail
+                failed.append({"enrollment_id": course_result.enrollment_id, "reason": str(detail)})
+        return Response({"published": published, "failed": failed})
+
+    @action(detail=True, methods=["post"], url_path="manual-mark")
+    def manual_mark(self, request, pk=None):
+        subject = self._subject(request, pk)
+        enrollment_id = request.data.get("enrollment_id")
+        component_id = request.data.get("component_id")
+        obtained = request.data.get("obtained")
+        comment = request.data.get("comment", "")
+
+        component = models.AssessmentComponent.objects.filter(id=component_id, course_subject=subject).first()
+        if not component:
+            return Response({"detail": "Component not found for this subject."}, status=404)
+        enrollment = Enrollment.objects.filter(id=enrollment_id, organization=request.user.organization, course=subject.course_section.course).first()
+        if not enrollment:
+            return Response({"detail": "Enrollment not found for this subject's course."}, status=404)
+        try:
+            obtained_decimal = None if obtained in (None, "") else round(float(obtained), 2)
+        except (TypeError, ValueError):
+            return Response({"detail": "Obtained marks must be a number."}, status=400)
+        if obtained_decimal is not None and not (0 <= obtained_decimal <= float(component.total_marks)):
+            return Response({"detail": f"Obtained marks must be between 0 and {component.total_marks}."}, status=400)
+
+        course_result, _ = models.StudentCourseResult.objects.get_or_create(
+            enrollment=enrollment, course_subject=subject,
+            defaults={"organization": request.user.organization, "created_by": request.user, "updated_by": request.user},
+        )
+        if course_result.status == models.CourseResultStatus.LOCKED:
+            return Response({"detail": "This result is locked."}, status=409)
+        models.StudentComponentResult.objects.update_or_create(
+            course_result=course_result, component=component,
+            defaults={
+                "organization": request.user.organization, "raw_obtained": obtained_decimal, "raw_total": component.total_marks,
+                "data_status": models.ComponentDataStatus.COMPLETE if obtained_decimal is not None else models.ComponentDataStatus.MISSING,
+                "is_manual": True, "manual_comment": comment,
+                "updated_by_teacher": self._teacher(request), "created_by": request.user, "updated_by": request.user,
+            },
+        )
+        from .services import calculate_course_result
+        calculate_course_result(enrollment, subject, user=request.user)
+        return success_response(None, "Manual mark saved.")
+
+    @action(detail=True, methods=["post"], url_path="bulk-manual-marks")
+    def bulk_manual_marks(self, request, pk=None):
+        subject = self._subject(request, pk)
+        component_id = request.data.get("component_id")
+        marks = request.data.get("marks") or []
+        component = models.AssessmentComponent.objects.filter(id=component_id, course_subject=subject).first()
+        if not component:
+            return Response({"detail": "Component not found for this subject."}, status=404)
+
+        from .services import calculate_course_result
+        saved, errors = 0, []
+        for row in marks:
+            enrollment = Enrollment.objects.filter(id=row.get("enrollment_id"), organization=request.user.organization, course=subject.course_section.course).first()
+            if not enrollment:
+                errors.append({"enrollment_id": row.get("enrollment_id"), "reason": "Enrollment not found."})
+                continue
+            try:
+                obtained_decimal = round(float(row.get("obtained")), 2)
+            except (TypeError, ValueError):
+                errors.append({"enrollment_id": row.get("enrollment_id"), "reason": "Invalid mark."})
+                continue
+            if not (0 <= obtained_decimal <= float(component.total_marks)):
+                errors.append({"enrollment_id": row.get("enrollment_id"), "reason": f"Must be between 0 and {component.total_marks}."})
+                continue
+            course_result, _ = models.StudentCourseResult.objects.get_or_create(
+                enrollment=enrollment, course_subject=subject,
+                defaults={"organization": request.user.organization, "created_by": request.user, "updated_by": request.user},
+            )
+            if course_result.status == models.CourseResultStatus.LOCKED:
+                errors.append({"enrollment_id": row.get("enrollment_id"), "reason": "Result is locked."})
+                continue
+            models.StudentComponentResult.objects.update_or_create(
+                course_result=course_result, component=component,
+                defaults={
+                    "organization": request.user.organization, "raw_obtained": obtained_decimal, "raw_total": component.total_marks,
+                    "data_status": models.ComponentDataStatus.COMPLETE, "is_manual": True,
+                    "updated_by_teacher": self._teacher(request), "created_by": request.user, "updated_by": request.user,
+                },
+            )
+            calculate_course_result(enrollment, subject, user=request.user)
+            saved += 1
+        return Response({"saved": saved, "errors": errors})

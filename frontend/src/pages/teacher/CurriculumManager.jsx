@@ -31,6 +31,7 @@ export default function CurriculumManager({ data }) {
     try {
       const item = kind === "week" ? editing : chapter;
       const api = kind === "week" ? subjectWeekApi : courseChapterApi;
+      if (kind === "week" && !Number.isFinite(new Date(item.release_at).getTime())) { setError("Choose a valid release date and time."); return; }
       const payload = kind === "week" ? {...item, subject, release_at: new Date(item.release_at).toISOString()} : item;
       if (item.id) await api.update(item.id, payload); else await api.create(payload);
       setRevision((v) => v + 1);

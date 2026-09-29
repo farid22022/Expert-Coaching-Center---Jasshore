@@ -35,3 +35,51 @@ class WebsiteSetting(OrganizationScopedModel):
     class Meta:
         unique_together = ("organization", "key")
 
+
+class Banner(OrganizationScopedModel):
+    title = models.CharField(max_length=200, blank=True)
+    subtitle = models.CharField(max_length=255, blank=True)
+    image = models.ImageField(upload_to="website/banners/", blank=True)
+    link_url = models.URLField(blank=True)
+    display_order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ("display_order", "id")
+
+    def __str__(self):
+        return self.title or f"Banner #{self.pk}"
+
+
+class SuccessStory(OrganizationScopedModel):
+    name = models.CharField(max_length=200)
+    outcome = models.CharField(max_length=255, blank=True)
+    quote = models.TextField(blank=True)
+    photo = models.ImageField(upload_to="website/success-stories/", blank=True)
+    display_order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ("display_order", "id")
+
+    def __str__(self):
+        return self.name
+
+
+class RenownedTeacher(OrganizationScopedModel):
+    name = models.CharField(max_length=200)
+    designation = models.CharField(max_length=200, blank=True)
+    subject = models.CharField(max_length=120, blank=True)
+    image = models.ImageField(upload_to="website/teachers/", blank=True)
+    bio = models.TextField(blank=True)
+    years_experience = models.PositiveIntegerField(default=0)
+    badge = models.CharField(max_length=80, blank=True)
+    display_order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ("display_order", "id")
+
+    def __str__(self):
+        return self.name
+

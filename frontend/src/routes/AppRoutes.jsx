@@ -60,6 +60,11 @@ import {
 import StudentProfile from "../components/common/StudentProfile.jsx";
 const StudentPortalDashboard = lazy(() => import("../pages/student/StudentDashboard.jsx").then((module) => ({ default: module.default })));
 const StudentDashboardLayout = lazy(() => import("../pages/student/dashboard/StudentDashboardLayout.jsx").then((module) => ({ default: module.default })));
+const StudentAdmissionPaymentPage = lazy(() => import("../pages/student/StudentPaymentPages.jsx").then((module) => ({ default: module.StudentAdmissionPaymentPage })));
+const StudentMockCheckoutPage = lazy(() => import("../pages/student/StudentPaymentPages.jsx").then((module) => ({ default: module.StudentMockCheckoutPage })));
+const StudentPaymentResultPage = lazy(() => import("../pages/student/StudentPaymentPages.jsx").then((module) => ({ default: module.StudentPaymentResultPage })));
+const StudentPaymentHistoryPage = lazy(() => import("../pages/student/StudentPaymentPages.jsx").then((module) => ({ default: module.StudentPaymentHistoryPage })));
+const StudentPaymentReceiptPage = lazy(() => import("../pages/student/StudentPaymentPages.jsx").then((module) => ({ default: module.StudentPaymentReceiptPage })));
 const StudentCoursePage = lazy(() => import("../pages/student/StudentCoursePage.jsx").then((module) => ({ default: module.default })));
 const StudentMaterialDetailPage = lazy(() => import("../pages/student/StudentCoursePage.jsx").then((module) => ({ default: module.StudentMaterialDetailPage })));
 const StudentCoursesPage = lazy(() => import("../pages/student/StudentCoursesPage.jsx").then((module) => ({ default: module.default })));
@@ -105,6 +110,7 @@ const TeacherDashboardLayout = lazy(() => import("../pages/teacher/dashboard/Tea
 import AdminLogin from "../pages/admin/AdminLogin.jsx";
 import DashboardLayout from "../pages/admin/Dashboard/AdminDashboardLayout.jsx";
 const AdminAdmissionApplicationsPage = lazy(() => import("../pages/admin/AdminPortalPages.jsx").then((module) => ({ default: module.AdminAdmissionApplicationsPage })));
+const AdminBkashPaymentPage = lazy(() => import("../pages/admin/AdminPaymentPage.jsx"));
 const AdminAdmissionFormBuilderPage = lazy(() => import("../pages/admin/AdminPortalPages.jsx").then((module) => ({ default: module.AdminAdmissionFormBuilderPage })));
 const AdminAdmissionsPage = lazy(() => import("../pages/admin/AdminPortalPages.jsx").then((module) => ({ default: module.AdminAdmissionsPage })));
 const AdminGalleryManagementPage = lazy(() => import("../pages/admin/AdminPortalPages.jsx").then((module) => ({ default: module.AdminGalleryManagementPage })));
@@ -1735,6 +1741,7 @@ function adminDashboardChildren() {
       <Route path="admission-form-builder" element={<AdminAdmissionFormBuilderPage />} />
       <Route path="teacher-assignments" element={<AdminTeacherAssignmentsPage />} />
       <Route path="admission-applications" element={<AdminAdmissionApplicationsPage />} />
+      <Route path="payments" element={<AdminBkashPaymentPage />} />
       <Route path="notices" element={<AdminNoticeManagementPage />} />
       <Route path="gallery" element={<AdminGalleryManagementPage />} />
       <Route path="website/banners" element={<BannersPage />} />
@@ -2152,7 +2159,8 @@ export default function AppRoutes() {
         }
       />
 
-      <Route path="/student/dashboard" element={<StudentDashboardLayout />}>
+      <Route element={<StudentDashboardLayout />}>
+      <Route path="/student/dashboard">
         <Route index element={<StudentPortalDashboard />} />
         <Route path="courses" element={<StudentCoursesPage />} />
         <Route path="assessments" element={<StudentAssessmentsPage />} />
@@ -2179,6 +2187,12 @@ export default function AppRoutes() {
       <Route path="/student/feedback" element={<StudentFeedbackPage />} />
       <Route path="/student/progress" element={<StudentProgressPage />} />
       <Route path="/student/bookmarks" element={<StudentBookmarksPage />} />
+      <Route path="/student/admissions/:applicationId/payment" element={<StudentAdmissionPaymentPage />} />
+      <Route path="/student/payments/mock/:transactionId" element={<StudentMockCheckoutPage />} />
+      <Route path="/student/payments/result" element={<StudentPaymentResultPage />} />
+      <Route path="/student/payments" element={<StudentPaymentHistoryPage />} />
+      <Route path="/student/payments/:transactionId/receipt" element={<StudentPaymentReceiptPage />} />
+      </Route>
       <Route path="/teacher/dashboard" element={<TeacherDashboardLayout />}>
         <Route index element={<TeacherOverviewPage />} />
         <Route path="courses" element={<TeacherCoursesPage />} />
@@ -2266,6 +2280,7 @@ export default function AppRoutes() {
         <Route path="teacher-assignments/create" element={<AdminTeacherAssignmentsPage />} />
         <Route path="admission-applications" element={<AdminAdmissionApplicationsPage />} />
         <Route path="admission-applications/:id" element={<AdminAdmissionApplicationsPage />} />
+        <Route path="payments" element={<AdminBkashPaymentPage />} />
         <Route path="notices" element={<AdminNoticeManagementPage />} />
         <Route path="gallery" element={<AdminGalleryManagementPage />} />
       </Route>

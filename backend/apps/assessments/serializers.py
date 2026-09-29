@@ -1,9 +1,30 @@
+from django.db.models import Sum
 from rest_framework import serializers
 
 from . import models
 
 
-class CourseMaterialSerializer(serializers.ModelSerializer):
+class CurriculumContentSerializer(serializers.ModelSerializer):
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        chapter = attrs.get("curriculum_chapter", getattr(self.instance, "curriculum_chapter", None))
+        if not chapter:
+            return attrs
+        subject = chapter.week.subject
+        request = self.context.get("request")
+        if request and chapter.organization_id != request.user.organization_id:
+            raise serializers.ValidationError({"curriculum_chapter": "Choose a chapter in your organization."})
+        expected = {"course": subject.course_section.course, "course_section": subject.course_section, "subject": subject}
+        for field, target in expected.items():
+            value = attrs.get(field, getattr(self.instance, field, None))
+            if value and value.pk != target.pk:
+                raise serializers.ValidationError({"curriculum_chapter": "The chapter must belong to the selected admission, section and subject."})
+            attrs[field] = target
+        attrs["chapter"] = chapter.title
+        return attrs
+
+
+class CourseMaterialSerializer(CurriculumContentSerializer):
     class Meta:
         model = models.CourseMaterial
         fields = "__all__"
@@ -21,7 +42,7 @@ class StudentQuestionOptionSerializer(serializers.ModelSerializer):
         fields = ("id", "text", "image", "order")
 
 
-class QuestionSerializer(serializers.ModelSerializer):
+class QuestionSerializer(CurriculumContentSerializer):
     options = QuestionOptionSerializer(many=True, read_only=True)
 
     class Meta:
@@ -37,7 +58,7 @@ class StudentQuestionSerializer(serializers.ModelSerializer):
         fields = ("id", "text", "question_type", "image", "diagram", "marks", "options")
 
 
-class AssessmentSerializer(serializers.ModelSerializer):
+class AssessmentSerializer(CurriculumContentSerializer):
     is_live_now = serializers.BooleanField(read_only=True)
 
     class Meta:
@@ -64,10 +85,16 @@ class AssessmentAttemptSerializer(serializers.ModelSerializer):
 class StudentAttemptSerializer(serializers.ModelSerializer):
     deadline = serializers.DateTimeField(read_only=True)
     questions = serializers.SerializerMethodField()
+    saved_answers = serializers.SerializerMethodField()
 
     class Meta:
         model = models.AssessmentAttempt
-        fields = ("id", "assessment", "student", "started_at", "deadline", "status", "score", "total_marks", "questions")
+        fields = ("id", "assessment", "student", "started_at", "deadline", "status", "score", "total_marks", "questions", "saved_answers")
+
+    def get_saved_answers(self, obj):
+        # Only the student's own selections; never correctness or marking data.
+        return {str(answer.question_id): [option.id for option in answer.selected_options.all()]
+                for answer in obj.answers.prefetch_related("selected_options")}
 
     def get_questions(self, obj):
         questions = [link.question for link in obj.assessment.assessment_questions.select_related("question").prefetch_related("question__options")]
@@ -134,3 +161,84 @@ class StudentBookmarkSerializer(serializers.ModelSerializer):
         model = models.StudentBookmark
         fields = "__all__"
         read_only_fields = ("organization", "student", "created_at")
+
+
+class AssessmentComponentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.AssessmentComponent
+        fields = "__all__"
+
+    def validate(self, attrs):
+        source_assessments = attrs.get("source_assessments")
+        course_subject = attrs.get("course_subject") or getattr(self.instance, "course_subject", None)
+        if source_assessments and course_subject:
+            bad = [a for a in source_assessments if a.subject_id != course_subject.id]
+            if bad:
+                raise serializers.ValidationError({"source_assessments": "All linked assessments must belong to this course subject."})
+
+        status = attrs.get("status", getattr(self.instance, "status", "active"))
+        include_in_final_grade = attrs.get("include_in_final_grade", getattr(self.instance, "include_in_final_grade", True))
+        weight = attrs.get("weight_percentage", getattr(self.instance, "weight_percentage", None))
+        if course_subject and status == "active" and include_in_final_grade and weight is not None:
+            other_total = models.AssessmentComponent.objects.filter(
+                course_subject=course_subject, status="active", include_in_final_grade=True,
+            ).exclude(pk=getattr(self.instance, "pk", None)).aggregate(total=Sum("weight_percentage"))["total"] or 0
+            if other_total + weight > 100:
+                raise serializers.ValidationError({"weight_percentage": f"Active component weights for this subject would total {other_total + weight}%, which exceeds 100%. Reduce this weight or adjust other components first."})
+        return attrs
+
+
+class CourseGradeScaleItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.CourseGradeScaleItem
+        fields = "__all__"
+
+    def validate(self, attrs):
+        min_pct = attrs.get("min_percentage", getattr(self.instance, "min_percentage", None))
+        max_pct = attrs.get("max_percentage", getattr(self.instance, "max_percentage", None))
+        if min_pct is not None and max_pct is not None and min_pct > max_pct:
+            raise serializers.ValidationError({"min_percentage": "Minimum percentage cannot exceed maximum percentage."})
+        return attrs
+
+
+class CourseGradeScaleSerializer(serializers.ModelSerializer):
+    items = CourseGradeScaleItemSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = models.CourseGradeScale
+        fields = "__all__"
+
+
+class CourseRatingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.CourseRating
+        fields = "__all__"
+        # enrollment/course_subject are client-supplied (which enrollment the student is
+        # rating) - only student/organization are server-derived in perform_create.
+        read_only_fields = ("organization", "student", "created_at", "updated_at")
+
+    def validate_rating(self, value):
+        if not 1 <= value <= 5:
+            raise serializers.ValidationError("Rating must be between 1 and 5.")
+        return value
+
+
+class StudentComponentResultSerializer(serializers.ModelSerializer):
+    component_name = serializers.CharField(source="component.name", read_only=True)
+    component_type = serializers.CharField(source="component.component_type", read_only=True)
+    weight_percentage = serializers.DecimalField(source="component.weight_percentage", read_only=True, max_digits=5, decimal_places=2)
+    is_visible_to_student = serializers.BooleanField(source="component.is_visible_to_student", read_only=True)
+
+    class Meta:
+        model = models.StudentComponentResult
+        fields = "__all__"
+
+
+class StudentCourseResultSerializer(serializers.ModelSerializer):
+    course_subject_name = serializers.CharField(source="course_subject.name", read_only=True)
+    student_name = serializers.CharField(source="enrollment.student.full_name", read_only=True)
+    component_results = StudentComponentResultSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = models.StudentCourseResult
+        fields = "__all__"

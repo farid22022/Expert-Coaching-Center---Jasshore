@@ -80,7 +80,7 @@ class AdmissionApplicationViewSet(OrganizationScopedModelViewSet):
             student, enrollment = AdmissionService.approve_application(self.get_object(), request.user)
         except ValueError as error:
             raise ValidationError(str(error))
-        return success_response({"student_id": student.id, "enrollment_id": enrollment.id if enrollment else None}, "Application approved and enrollment activated.")
+        return success_response({"student_id": student.id if student else None, "enrollment_id": enrollment.id if enrollment else None, "payment_required": enrollment is None}, "Application approved. Complete payment to activate this admission." if enrollment is None else "Application approved and enrollment activated.")
 
     @action(detail=True, methods=["post"])
     def reject(self, request, pk=None):

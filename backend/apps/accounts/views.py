@@ -65,6 +65,7 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.select_related("organization", "branch").prefetch_related("roles")
     serializer_class = UserSerializer
     permission_classes = [HasActionPermission]
+    permission_module = "user"
     search_fields = ("username", "email", "first_name", "last_name", "phone")
     filterset_fields = ("organization", "branch", "is_active", "is_staff")
 
@@ -73,6 +74,7 @@ class RoleViewSet(viewsets.ModelViewSet):
     queryset = Role.objects.prefetch_related("permissions")
     serializer_class = RoleSerializer
     permission_classes = [HasActionPermission]
+    permission_module = "user"
     search_fields = ("name", "code")
     filterset_fields = ("organization", "is_system")
 
@@ -89,4 +91,5 @@ class UserLoginHistoryViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = UserLoginHistory.objects.select_related("user")
     serializer_class = UserLoginHistorySerializer
     permission_classes = [HasActionPermission]
+    permission_module = "user"
     search_fields = ("user__username", "user__email", "ip_address")

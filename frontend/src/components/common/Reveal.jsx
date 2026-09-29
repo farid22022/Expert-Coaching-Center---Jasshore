@@ -1,44 +1,9 @@
-import { useLayoutEffect, useRef } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-
-gsap.registerPlugin(ScrollTrigger);
-
-/**
- * Wraps a section and fades/lifts its direct children into place once as the
- * section enters the viewport. One orchestrated reveal per section — not a
- * per-element scatter — so the page stays calm rather than jittery.
- */
-export default function Reveal({ as: Tag = "div", children, className = "", y = 28, stagger = 0.08 }) {
-  const ref = useRef(null);
-
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return undefined;
-
-    const targets = el.children.length ? Array.from(el.children) : el;
-    const ctx = gsap.context(() => {
-      gsap.set(targets, { opacity: 0, y });
-      gsap.to(targets, {
-        opacity: 1,
-        y: 0,
-        duration: 0.8,
-        ease: "power3.out",
-        stagger,
-        scrollTrigger: {
-          trigger: el,
-          start: "top 82%",
-          once: true,
-        },
-      });
-    }, el);
-
-    return () => ctx.revert();
-  }, [y, stagger]);
-
-  return (
-    <Tag ref={ref} className={className}>
-      {children}
-    </Tag>
-  );
+import { motion, useReducedMotion } from "framer-motion";
+import { fadeIn, fadeUp } from "./motionVariants.js";
+const tags = {div:motion.div,section:motion.section,article:motion.article,header:motion.header,footer:motion.footer};
+// One observer per meaningful section, not per descendant.
+export default function Reveal({as="div",children,className=""}) {
+  const reduce = useReducedMotion();
+  const Tag = tags[as] || motion.div;
+  return <Tag variants={reduce ? fadeIn : fadeUp} initial="hidden" whileInView="show" viewport={{once:true,amount:0.15}} className={className}>{children}</Tag>;
 }

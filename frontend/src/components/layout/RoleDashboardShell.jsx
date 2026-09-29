@@ -1,5 +1,7 @@
+import PageEntrance from "../common/PageEntrance.jsx";
+import "../../styles/student-portal.css";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate, useOutlet } from "react-router-dom";
 import { Bell, CheckCheck, ChevronDown, LogOut, Menu, UserRound, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -152,6 +154,25 @@ export default function RoleDashboardShell({
   const user = getStoredUser();
   const navigate = useNavigate();
   const profileRef = useRef(null);
+  const location = useLocation();
+  const outlet = useOutlet();
+  const studentPortal = roleLabel === "Student Portal";
+  const contentRef = useRef(null);
+  const normalizedPath = location.pathname.replace("/student/dashboard/", "/student/");
+  const currentTitle = studentPortal ? (normalizedPath.startsWith("/student/courses/") ? "Course Learning" : items.find((item) => item.to?.replace("/student/dashboard/", "/student/") === normalizedPath)?.label || title) : title;
+
+  useEffect(() => {
+    setOpen(false);
+    setProfileOpen(false);
+    if (contentRef.current) contentRef.current.scrollTop = 0;
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!open) return;
+    const closeOnEscape = (event) => { if (event.key === "Escape") setOpen(false); };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [open]);
 
   useEffect(() => {
     if (!profileOpen) return undefined;
@@ -193,7 +214,7 @@ export default function RoleDashboardShell({
             <button type="button" onClick={() => setExpandedGroups((current) => ({ ...current, [label]: !current[label] }))} aria-expanded={Boolean(expandedGroups[label])} className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-bold text-white/75 outline-none transition hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/60">
               <Icon size={18} /><span>{label}</span><ChevronDown size={16} className={`ml-auto transition-transform ${expandedGroups[label] ? "rotate-180" : ""}`} />
             </button>
-            {expandedGroups[label] && <div className="ml-4 grid gap-1 border-l border-white/15 pl-2">{itemChildren.map(({ label: childLabel, to: childTo }) => <NavLink key={childLabel} to={childTo} onClick={() => setOpen(false)} className={({ isActive }) => `rounded-md px-3 py-2 text-xs font-bold outline-none focus-visible:ring-2 focus-visible:ring-white/60 ${isActive ? "bg-white/12 text-white" : "text-white/65 hover:bg-white/10 hover:text-white"}`}>{childLabel}</NavLink>)}</div>}
+            <AnimatePresence initial={false}>{expandedGroups[label] && <motion.div initial={{opacity:0, y:-6}} animate={{opacity:1, y:0}} exit={{opacity:0, y:-6}} transition={{duration:0.16}} className="ml-4 grid gap-1 border-l border-white/15 pl-2">{itemChildren.map(({ label: childLabel, to: childTo }) => <NavLink key={childLabel} to={childTo} onClick={() => setOpen(false)} className={({ isActive }) => `rounded-md px-3 py-2 text-xs font-bold outline-none focus-visible:ring-2 focus-visible:ring-white/60 ${isActive ? "bg-white/12 text-white" : "text-white/65 hover:bg-white/10 hover:text-white"}`}>{childLabel}</NavLink>)}</motion.div>}</AnimatePresence>
           </div>
         ) : (
           <NavLink key={label} to={to} end={end} onClick={() => setOpen(false)} className={({ isActive }) => `flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-bold outline-none transition focus-visible:ring-2 focus-visible:ring-white/60 ${isActive ? "bg-white/12 text-white ring-1 ring-white/10" : "text-white/75 hover:bg-white/10 hover:text-white"}`}><Icon size={18} />{label}</NavLink>
@@ -211,7 +232,7 @@ export default function RoleDashboardShell({
   );
 
   return (
-    <div className="min-h-screen bg-soft lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
+    <div className={`${studentPortal ? "student-portal" : "min-h-screen bg-soft"} lg:grid lg:grid-cols-[248px_minmax(0,1fr)]`}>
       <AnimatePresence>
         {open && (
           <motion.div className="fixed inset-0 z-40 bg-black/45 lg:hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setOpen(false)} />
@@ -219,19 +240,19 @@ export default function RoleDashboardShell({
       </AnimatePresence>
 
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-[min(300px,86vw)] transition-transform duration-300 ease-out lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:w-[248px] lg:translate-x-0 ${
+        className={`portal-sidebar fixed inset-y-0 left-0 z-50 w-[min(300px,86vw)] transition-transform duration-300 ease-out lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:w-[248px] lg:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="h-full">{sidebar}</div>
       </div>
 
-      <main className="min-w-0">
-        <header className="sticky top-0 z-30 flex h-[68px] items-center gap-2 border-b border-line bg-paper px-3 shadow-sm sm:gap-3 sm:px-4 lg:px-6">
+      <main className="portal-main min-w-0">
+        <header className="portal-header sticky top-0 z-30 flex h-[68px] items-center gap-2 border-b border-line bg-paper px-3 shadow-sm sm:gap-3 sm:px-4 lg:px-6">
           <button type="button" className="btn btn-ghost btn-square lg:hidden" onClick={() => setOpen(true)} aria-label="Open menu">
             <Menu size={20} />
           </button>
-          <h1 className="min-w-0 flex-1 truncate text-base font-black text-ink sm:text-lg">{title}</h1>
+          <h1 className="min-w-0 flex-1 truncate text-base font-black text-ink sm:text-lg">{currentTitle}</h1>
 
           <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
             <ThemeToggle />
@@ -264,7 +285,9 @@ export default function RoleDashboardShell({
         </header>
 
         <DashboardShellContext.Provider value>
-          <section className="p-3 sm:p-4 lg:p-6">{children || <Outlet />}</section>
+          <section ref={contentRef} className="portal-content p-3 sm:p-5 lg:p-7">
+            {studentPortal ? <AnimatePresence mode="wait" initial={false}><motion.div key={location.pathname} initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:0.12}}>{children || outlet}</motion.div></AnimatePresence> : <PageEntrance>{children || outlet}</PageEntrance>}
+          </section>
         </DashboardShellContext.Provider>
       </main>
     </div>

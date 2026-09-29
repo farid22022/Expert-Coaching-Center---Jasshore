@@ -20,6 +20,7 @@ from apps.people.models import Department, Designation, Employee, Student, Stude
 
 
 PERMISSIONS = [
+    "user.view", "user.create", "user.edit", "user.delete",
     "student.view", "student.create", "student.edit", "student.delete",
     "employee.view", "employee.create", "employee.edit", "employee.delete",
     "academic.view", "academic.create", "academic.edit", "academic.delete",
@@ -31,6 +32,8 @@ PERMISSIONS = [
     "payroll.view", "payroll.create", "payroll.update", "payroll.delete",
     "sms.view", "sms.send", "sms.configure",
     "report.view",
+    "organization.view", "organization.create", "organization.edit", "organization.delete",
+    "website.view", "website.create", "website.edit", "website.delete",
 ]
 
 

@@ -1,21 +1,10 @@
-// Shared Framer Motion variants for staged, cinematic child reveals within a section.
-// Each grid's children enter one after another rather than all at once.
-export const staggerContainer = {
-  hidden: {},
-  show: {
-    transition: {
-      staggerChildren: 0.12,
-      delayChildren: 0.05,
-    },
-  },
-};
-
-export const staggerItem = {
-  hidden: { opacity: 0, y: 28, scale: 0.98 },
-  show: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] },
-  },
-};
+const transition = {duration:0.35, ease:[0.22,1,0.36,1]};
+const entrance = (from) => ({hidden:{opacity:0,...from},show:{opacity:1,x:0,y:0,scale:1,transition},exit:{opacity:0,transition:{duration:0.15}}});
+export const fadeIn = entrance({});
+export const fadeUp = entrance({y:16});
+export const fadeDown = entrance({y:-16});
+export const slideLeft = entrance({x:-20});
+export const slideRight = entrance({x:20});
+export const scaleIn = entrance({scale:0.97});
+export const staggerContainer = {hidden:{},show:{transition:{staggerChildren:0.05,delayChildren:0.03}}};
+export const staggerItem = fadeUp;

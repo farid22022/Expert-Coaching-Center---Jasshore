@@ -1,4 +1,5 @@
 import { useState } from "react";
+import AnimatedDisclosure from "../../components/common/AnimatedDisclosure.jsx";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { CheckCircle2, ChevronDown, Clock, FileText, LockKeyhole, PlayCircle, ClipboardList, Search, X } from "lucide-react";
 
@@ -18,7 +19,7 @@ export default function CurriculumOutline({groups, weeks = [], selected, onSelec
   }
   function chapterRows(units) {
     const chapters = Map.groupBy ? Map.groupBy(units, (i) => i.chapter || "Lessons & practice") : units.reduce((map, item) => { const key = item.chapter || "Lessons & practice"; map.set(key, [...(map.get(key) || []), item]); return map; }, new Map());
-    return [...chapters].map(([title, children]) => <details key={title} open className="border-t border-slate-100"><summary className="cursor-pointer px-3 py-3 text-sm font-bold">{title}<span className="ml-2 text-xs font-normal text-slate-400">{children.length} units</span></summary>{rows(children)}</details>);
+    return [...chapters].map(([title, children]) => <AnimatedDisclosure key={title} defaultOpen forceOpen={Boolean(query)} className="border-t border-slate-100" buttonClassName="px-3 py-3 text-sm font-bold" title={<>{title}<span className="ml-2 text-xs font-normal text-slate-400">{children.length} units</span></>}>{rows(children)}</AnimatedDisclosure>);
   }
   return <aside className="h-full overflow-auto bg-white p-4 lg:rounded-2xl lg:border lg:border-slate-200">
     <div className="flex items-center justify-between"><h2 className="text-lg font-bold">Course content</h2><button aria-label="Close course content" className="btn btn-ghost btn-sm lg:hidden" onClick={onClose}><X size={18}/></button></div>
@@ -33,9 +34,9 @@ export default function CurriculumOutline({groups, weeks = [], selected, onSelec
       return <motion.section key={group.key} initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:reduceMotion ? 0 : 0.2}} className="mt-5"><h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-emerald-700">{group.title}</h3>
         {subjectWeeks.map((week) => {
           const units = visible.filter((i) => week.chapters.some((c) => c.id === i.curriculum_chapter));
-          return <details key={week.id} open={query ? true : undefined} className="mb-3 overflow-hidden rounded-xl border border-slate-200"><summary className="flex cursor-pointer list-none items-center gap-2 bg-slate-50 p-3"><div className="flex-1"><p className="text-sm font-bold">Week {week.number}: {week.title}</p><p className="mt-1 text-xs text-slate-500">{week.locked ? `Opens ${new Date(week.release_at).toLocaleString()}` : `${week.chapters.length} chapters · ${units.length} units`}</p></div>{week.locked ? <LockKeyhole size={16}/> : <ChevronDown size={17}/>}</summary>
-            {week.locked ? <p className="p-4 text-sm text-slate-500">Your teacher has scheduled this week. Content unlocks on the release date.</p> : week.chapters.map((chapter) => {const chapterUnits=units.filter((i) => i.curriculum_chapter===chapter.id);return <details key={chapter.id} open className="border-t border-slate-100"><summary className="cursor-pointer p-3 text-sm font-bold">{chapter.title}<span className="ml-2 text-xs font-normal text-slate-400">{chapterUnits.length} units</span></summary>{chapterUnits.length ? rows(chapterUnits) : <p className="px-4 pb-3 text-xs text-slate-500">Your teacher is preparing this chapter.</p>}</details>;})}
-          </details>;
+          return <AnimatedDisclosure key={week.id} forceOpen={Boolean(query)} className="mb-3 overflow-hidden rounded-xl border border-slate-200" buttonClassName="bg-slate-50 p-3" title={<><span className="block text-sm font-bold">{week.locked && <LockKeyhole className="mr-1 inline" size={14}/>}Week {week.number}: {week.title}</span><span className="mt-1 block text-xs text-slate-500">{week.locked ? `Opens ${new Date(week.release_at).toLocaleString()}` : `${week.chapters.length} chapters · ${units.length} units`}</span></>}>
+            {week.locked ? <p className="p-4 text-sm text-slate-500">Your teacher has scheduled this week. Content unlocks on the release date.</p> : week.chapters.map((chapter) => {const chapterUnits=units.filter((i) => i.curriculum_chapter===chapter.id);return <AnimatedDisclosure key={chapter.id} defaultOpen forceOpen={Boolean(query)} className="border-t border-slate-100" buttonClassName="p-3 text-sm font-bold" title={<>{chapter.title}<span className="ml-2 text-xs font-normal text-slate-400">{chapterUnits.length} units</span></>}>{chapterUnits.length ? rows(chapterUnits) : <p className="px-4 pb-3 text-xs text-slate-500">Your teacher is preparing this chapter.</p>}</AnimatedDisclosure>;})}
+          </AnimatedDisclosure>;
         })}
         {chapterRows(visible.filter((i) => !i.curriculum_chapter))}
         {!visible.length && !subjectWeeks.length && <p className="flex items-center gap-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-500"><Clock size={16}/>Lessons will appear here when published.</p>}

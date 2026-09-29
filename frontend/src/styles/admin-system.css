@@ -1,0 +1,20 @@
+/* Shared admin treatment; public and teaching pages keep their own styling. */
+.admin-portal { --admin-radius: 12px; font-size: 14px; line-height: 1.5; }
+.admin-portal .dashboard-content { scroll-padding-top: 24px; }
+.admin-portal .dashboard-content :is(section, article, form, a).border { border-radius: var(--admin-radius); }
+.admin-portal .dashboard-content .shadow-sm { box-shadow: 0 2px 8px rgb(15 23 42 / 4%); }
+.admin-portal :is(.input,.select,.textarea,.btn) { border-radius: 8px; }
+.admin-portal :is(.input,.select,.textarea) { font-size: 14px; }
+.admin-portal :is(h1,h2,h3) { letter-spacing: -.02em; }
+.admin-portal h1 { font-weight: 750; }
+.admin-portal :is(button,a,input,select,textarea,summary):focus-visible { outline: 2px solid #059669; outline-offset: 3px; }
+.admin-portal button:disabled { cursor: not-allowed; }
+.admin-portal table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.admin-portal th { text-align: start; font-size: 12px; font-weight: 700; color: #475569; background: #f8fafc; }
+.admin-portal :is(th,td) { padding: 12px 16px; border-bottom: 1px solid #e2e8f0; }
+.admin-portal tbody tr:hover { background: rgb(16 185 129 / 4%); }
+.admin-portal .dashboard-sidebar-nav a[aria-current="page"] { background: rgb(255 255 255 / 12%); }
+@media (max-width: 639px) { .admin-portal :is(th,td) { padding: 10px 12px; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

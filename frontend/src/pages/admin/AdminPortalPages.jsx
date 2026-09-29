@@ -1,7 +1,13 @@
+import SharedPageHeader from "../../components/common/PageHeader.jsx";
+import EmptyState from "../../components/common/EmptyState.jsx";
+import { motion } from "framer-motion";
+import { staggerContainer, fadeUp } from "../../components/common/motionVariants.js";
+const MotionLink = motion.create(Link);
 import { useEffect, useMemo, useState } from "react";
+import { cleanSchemaForSave } from "../../services/admissionFormSchema.js";
 import { Link } from "react-router-dom";
 import { Bell, BookOpen, CheckCircle2, ClipboardCheck, FilePenLine, GraduationCap, Image, Plus, Trash2, UserPlus, Users } from "lucide-react";
-import { getApiErrorMessage, API_BASE_URL } from "../../services/api.js";
+import api, { getApiErrorMessage, API_BASE_URL } from "../../services/api.js";
 import { confirmAction, confirmDelete, notifyError, notifySuccess } from "../../services/alerts.js";
 import RichTextEditor from "../../components/common/RichTextEditor.jsx";
 import Modal from "../../components/common/Modal.jsx";
@@ -46,26 +52,6 @@ function normalizeSchemaForEdit(schema) {
   }));
 }
 
-function cleanSchemaForSave(schema) {
-  return schema
-    .map((section) => ({
-      id: section.id || newId(),
-      title: section.title.trim(),
-      fields: (section.fields || [])
-        .map((field) => ({
-          id: field.id || newId(),
-          label: field.label.trim(),
-          name: (field.name || field.label).trim(),
-          type: field.type || "text",
-          placeholder: field.placeholder?.trim() || "",
-          required: Boolean(field.required),
-          options: field.optionsText ? field.optionsText.split(",").map((item) => item.trim()).filter(Boolean) : [],
-        }))
-        .filter((field) => field.label),
-    }))
-    .filter((section) => section.title && section.fields.length);
-}
-
 function normalizeContentForEdit(content) {
   return (Array.isArray(content) ? content : []).map((item) => ({
     id: item.id || newId(),
@@ -88,12 +74,12 @@ function cleanContentForSave(content) {
     .filter((item) => item.label || item.value || item.url);
 }
 
-function PageHeader({ eyebrow, title, description, action }) {
-  return <header className="mb-6 flex flex-col justify-between gap-4 border-b border-emerald-100 pb-5 sm:flex-row sm:items-end"><div><p className="text-xs font-black uppercase text-emerald-700">{eyebrow}</p><h1 className="mt-1 text-2xl font-black text-slate-950 sm:text-3xl">{title}</h1><p className="mt-2 max-w-2xl text-sm font-medium text-slate-600">{description}</p></div>{action}</header>;
+function PageHeader({ action, ...props }) {
+  return <SharedPageHeader {...props} actions={action} className="mb-6" />;
 }
 
 function Empty({ children }) {
-  return <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-5 text-sm font-semibold text-slate-500">{children}</p>;
+  return <EmptyState description={children} />;
 }
 
 function Status({ value }) {
@@ -143,15 +129,15 @@ export function AdminPortalDashboard() {
         description="Manage admissions, teachers, notices, gallery and all content from one place."
         action={<Link className="btn btn-success btn-sm text-white" to="/admin/dashboard/admissions"><Plus size={17} /> New admission</Link>}
       />
-      <div className="grid gap-3 grid-cols-2 xl:grid-cols-4">
+      <motion.div variants={staggerContainer} initial="hidden" animate="show" className="grid gap-3 grid-cols-2 xl:grid-cols-4">
         {statCards.map(([name, value, Icon, to, iconColor]) => (
-          <Link key={name} to={to} className="rounded-lg border border-emerald-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-300">
+          <MotionLink variants={fadeUp} key={name} to={to} className="rounded-lg border border-emerald-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-300">
             <Icon className={iconColor} size={20} />
             <p className="mt-4 text-2xl sm:text-3xl font-black text-slate-950">{loading ? "..." : value}</p>
             <p className="mt-0.5 text-xs sm:text-sm font-bold text-slate-600">{name}</p>
-          </Link>
+          </MotionLink>
         ))}
-      </div>
+      </motion.div>
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
         {quickLinks.map(([name, to, Icon, desc]) => (
           <Link key={name} to={to} className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm hover:border-emerald-300 hover:bg-emerald-50/40 transition">
@@ -364,8 +350,9 @@ export function AdminAdmissionFormBuilderPage() {
   };
 
   const setCard = (key, value) => setForm((current) => ({ ...current, [key]: value }));
-  const updateSection = (index, key, value) => setSchema((current) => current.map((section, currentIndex) => currentIndex === index ? { ...section, [key]: value } : section));
-  const updateField = (sectionIndex, fieldIndex, key, value) => setSchema((current) => current.map((section, currentIndex) => currentIndex !== sectionIndex ? section : { ...section, fields: section.fields.map((field, index) => index === fieldIndex ? { ...field, [key]: value } : field) }));
+  const editSchema = (updater) => { setNotice(""); setSchema(updater); };
+  const updateSection = (index, key, value) => editSchema((current) => current.map((section, currentIndex) => currentIndex === index ? { ...section, [key]: value } : section));
+  const updateField = (sectionIndex, fieldIndex, key, value) => editSchema((current) => current.map((section, currentIndex) => currentIndex !== sectionIndex ? section : { ...section, fields: section.fields.map((field, index) => index === fieldIndex ? { ...field, [key]: value } : field) }));
   const updateContent = (index, key, value) => setContent((current) => current.map((item, currentIndex) => currentIndex === index ? { ...item, [key]: value } : item));
 
   const updateLanding = (key, value) => setLandingPage((current) => ({ ...current, [key]: value }));
@@ -376,6 +363,15 @@ export function AdminAdmissionFormBuilderPage() {
   const save = async (event) => {
     event.preventDefault();
     if (!selected || !form) return;
+    let savedSchema;
+    try {
+      savedSchema = cleanSchemaForSave(schema);
+    } catch (validationError) {
+      setActiveTab("form");
+      setNotice("");
+      setError(validationError.message);
+      return;
+    }
     setSaving(true);
     setError("");
     setNotice("");
@@ -415,7 +411,7 @@ export function AdminAdmissionFormBuilderPage() {
         start_date: form.start_date || null,
         end_date: form.end_date || null,
         custom_content: cleanContentForSave(finalContent),
-        admission_form_schema: cleanSchemaForSave(schema),
+        admission_form_schema: savedSchema,
         landing_page: landingPage,
       };
       let body = payload;
@@ -429,8 +425,10 @@ export function AdminAdmissionFormBuilderPage() {
       const saved = await courseApi.update(selected.id, body);
       await reload();
       loadAdmission(saved);
-      setNotice("Admission card and form updated.");
-      notifySuccess("Admission card and form updated.");
+      const fieldCount = (saved.admission_form_schema || []).reduce((count, section) => count + section.fields.length, 0);
+      const savedMessage = fieldCount ? `Admission saved with ${fieldCount} application fields. ${saved.is_published && saved.status === "admission_open" ? "Applicants can now use this form." : "Publish this admission and open applications to make the form available."}` : "Admission saved without application fields. Add fields in Application Form before applicants can apply.";
+      setNotice(savedMessage);
+      notifySuccess(savedMessage);
     } catch (err) {
       setError(message(err));
       notifyError(message(err));
@@ -514,7 +512,7 @@ export function AdminAdmissionFormBuilderPage() {
                 <TeachersTab teacherRows={teacherRows} teacherLoading={teacherLoading} teachers={teachers} updateTeacherRow={updateTeacherRow} />
               )}
               {activeTab === "form" && (
-                <FormSchemaTab schema={schema} setSchema={setSchema} updateSection={updateSection} updateField={updateField} />
+                <FormSchemaTab schema={schema} setSchema={editSchema} updateSection={updateSection} updateField={updateField} />
               )}
             </form>
           </div>
@@ -813,21 +811,21 @@ function FormSchemaTab({ schema, setSchema, updateSection, updateField }) {
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div><h2 className="font-black">Application form fields</h2><p className="mt-1 text-sm text-slate-500">CRUD any section or field for this admission card only.</p></div>
+        <div><h2 className="font-black">Application form fields</h2><p className="mt-1 text-sm text-slate-500">Sections group your fields. Each field needs its own label, such as Full name or Phone. Save all changes to publish the form configuration.</p></div>
         <button type="button" className="btn btn-outline btn-success btn-sm" onClick={() => setSchema((current) => [...current, blankFormSection()])}>Add section</button>
       </div>
       <div className="mt-4 space-y-4">
         {schema.map((section, sectionIndex) => (
           <article key={section.id} className="rounded-lg border border-emerald-100 bg-white p-4">
             <div className="flex flex-col gap-2 sm:flex-row">
-              <input value={section.title} onChange={(event) => updateSection(sectionIndex, "title", event.target.value)} className="input input-bordered flex-1" placeholder="Section title" />
+              <label className="grid flex-1 gap-1 text-xs font-semibold text-slate-600">Section heading (for example Personal details)<input aria-label={`Section ${sectionIndex + 1} heading`} value={section.title} onChange={(event) => updateSection(sectionIndex, "title", event.target.value)} className="input input-bordered w-full" placeholder="Section heading" /></label>
               <button type="button" className="btn btn-outline btn-success" onClick={() => updateSection(sectionIndex, "fields", [...section.fields, blankFormField()])}>Add field</button>
               <button type="button" className="btn btn-error text-white" onClick={() => setSchema((current) => current.filter((_, currentIndex) => currentIndex !== sectionIndex))}>Remove section</button>
             </div>
             <div className="mt-3 space-y-2">
               {section.fields.map((field, fieldIndex) => (
                 <div key={field.id} className="grid gap-2 rounded border border-slate-200 bg-slate-50 p-3 lg:grid-cols-[1fr_140px_1fr_180px_auto_auto]">
-                  <input value={field.label} onChange={(event) => updateField(sectionIndex, fieldIndex, "label", event.target.value)} className="input input-bordered input-sm" placeholder="Field label" />
+                  <input aria-label={`Section ${sectionIndex + 1}, field ${fieldIndex + 1} label`} aria-required="true" value={field.label} onChange={(event) => updateField(sectionIndex, fieldIndex, "label", event.target.value)} className="input input-bordered input-sm" placeholder="Field label: Full name, Phone…" />
                   <select value={field.type} onChange={(event) => updateField(sectionIndex, fieldIndex, "type", event.target.value)} className="select select-bordered select-sm">
                     {fieldTypes.map((type) => <option key={type} value={type}>{type}</option>)}
                   </select>
@@ -874,7 +872,8 @@ function ApplicationDetailsModal({ application, course, onClose, onAction, busy 
     Promise.all([
       applicantDocumentApi.listResults({ application: application.id }),
       admissionPaymentApi.listResults({ application: application.id }),
-    ]).then(([docs, pays]) => { setDocuments(asArray(docs)); setPayments(asArray(pays)); }).finally(() => setLoadingExtras(false));
+      api.get("/payments/admin/", { params: { application: application.id } }).then(({ data }) => data.data || []).catch(() => []),
+    ]).then(([docs, legacyPays, gatewayPays]) => { setDocuments(asArray(docs)); setPayments([...asArray(gatewayPays), ...asArray(legacyPays)]); }).finally(() => setLoadingExtras(false));
   }, [application?.id]);
 
   if (!application) return null;
@@ -951,7 +950,7 @@ function ApplicationDetailsModal({ application, course, onClose, onAction, busy 
       <Section title="Payment">
         {loadingExtras ? <p className="text-sm text-slate-400">Loading...</p> : payments.length ? (
           <div className="grid gap-2">
-            {payments.map((payment) => <div key={payment.id} className="flex flex-wrap items-center justify-between gap-2 rounded border border-slate-200 p-2 text-sm"><span>{payment.amount} BDT · {payment.method || "N/A"} · Ref: {payment.reference || "—"}</span><Status value={payment.status} /></div>)}
+            {payments.map((payment) => <div key={payment.public_id || payment.id} className="rounded border border-slate-200 p-3 text-sm"><div className="flex flex-wrap items-center justify-between gap-2"><span className="font-bold">{payment.amount} {payment.currency || "BDT"} · {payment.provider || payment.method || "bKash"}</span><Status value={payment.status} /></div><dl className="mt-2 grid gap-1 text-xs text-slate-500 sm:grid-cols-2"><Field label="Environment" value={payment.environment} /><Field label="Agreement" value={payment.agreement?.status} /><Field label="Payment ID" value={payment.provider_payment_id} /><Field label="Transaction ID" value={payment.transaction_id || payment.reference} /><Field label="Merchant Invoice" value={payment.merchant_invoice_number} /><Field label="Verified At" value={payment.verified_at} /><Field label="Enrollment" value={payment.enrollment_status} /></dl></div>)}
           </div>
         ) : <p className="text-sm text-slate-400">No payment records. Payment status: <Status value={application.payment_status} /></p>}
       </Section>
@@ -978,7 +977,7 @@ function ApplicationDetailsModal({ application, course, onClose, onAction, busy 
           ) : (
             <div className="flex flex-wrap gap-2">
               <button disabled={busy} onClick={() => runAction("under_review")} className="btn btn-outline btn-sm">Mark under review</button>
-              <button disabled={busy} onClick={() => runAction("approve")} className="btn btn-success btn-sm text-white"><CheckCircle2 size={16} />Approve & enroll</button>
+              <button disabled={busy} onClick={() => runAction("approve")} className="btn btn-success btn-sm text-white"><CheckCircle2 size={16} />Approve application</button>
               <button disabled={busy} onClick={() => setRejecting(true)} className="btn btn-error btn-sm text-white">Reject application</button>
             </div>
           )}
@@ -991,17 +990,17 @@ function ApplicationDetailsModal({ application, course, onClose, onAction, busy 
 export function AdminAdmissionApplicationsPage() {
   const { applications, courses, reload, loading } = useAdminData(); const [selected, setSelected] = useState(null); const [busy, setBusy] = useState(false); const program = (id) => label(courses.find((course) => String(course.id) === String(id)));
   const action = async (name, payload = {}) => {
-    if (name === "approve" && !(await confirmAction({ title: "Approve & enroll this applicant?", text: "This will create an active enrollment for the student.", confirmText: "Yes, approve" }))) return;
+    if (name === "approve" && !(await confirmAction({ title: "Approve this application?", text: "Paid admissions will require verified payment before enrollment. Free admissions activate immediately.", confirmText: "Yes, approve" }))) return;
     if (name === "reject" && !(await confirmAction({ title: "Reject this application?", text: "The applicant will be notified. This action cannot be undone.", confirmText: "Yes, reject", danger: true }))) return;
     setBusy(true);
     try {
       await applicationApi.action(selected.id, name, payload);
-      notifySuccess(name === "approve" ? "Application approved and student enrolled." : name === "reject" ? "Application rejected." : "Application marked under review.");
+      notifySuccess(name === "approve" ? "Application approved. Payment or free-admission activation will follow the configured fee." : name === "reject" ? "Application rejected." : "Application marked under review.");
       if (name !== "reject") setSelected(null);
       await reload();
     } catch (err) { notifyError(message(err)); throw err; } finally { setBusy(false); }
   };
-  return <div><PageHeader eyebrow="Admissions" title="Admission applications" description="Review student information, submitted documents, and payment state. Approval creates an active enrollment automatically." /><section className="rounded-lg border border-slate-200 bg-white shadow-sm"><div className="overflow-x-auto"><table className="table table-sm"><thead><tr><th>Applicant</th><th className="hidden sm:table-cell">Admission</th><th className="hidden md:table-cell">Payment</th><th>Status</th><th></th></tr></thead><tbody>{applications.map((application) => <tr key={application.id}><td><b className="block">{application.applicant_name}</b><p className="text-xs text-slate-500">{application.application_no}</p><p className="text-xs text-slate-400 sm:hidden">{program(application.course)}</p></td><td className="hidden sm:table-cell">{program(application.course)}</td><td className="hidden md:table-cell"><Status value={application.payment_status}/></td><td><Status value={application.status}/></td><td><button className="btn btn-outline btn-xs" onClick={() => setSelected(application)}>View Details</button></td></tr>)}</tbody></table></div>{!loading && !applications.length && <div className="p-5"><Empty>No admission applications have been submitted.</Empty></div>}</section>
+  return <div><PageHeader eyebrow="Admissions" title="Admission applications" description="Review student information, documents, approval, and gateway-verified payment state. Paid admissions activate only after verified payment." /><section className="rounded-lg border border-slate-200 bg-white shadow-sm"><div className="overflow-x-auto"><table className="table table-sm"><thead><tr><th>Applicant</th><th className="hidden sm:table-cell">Admission</th><th className="hidden md:table-cell">Payment</th><th>Status</th><th></th></tr></thead><tbody>{applications.map((application) => <tr key={application.id}><td><b className="block">{application.applicant_name}</b><p className="text-xs text-slate-500">{application.application_no}</p><p className="text-xs text-slate-400 sm:hidden">{program(application.course)}</p></td><td className="hidden sm:table-cell">{program(application.course)}</td><td className="hidden md:table-cell"><Status value={application.payment_status}/></td><td><Status value={application.status}/></td><td><button className="btn btn-outline btn-xs" onClick={() => setSelected(application)}>View Details</button></td></tr>)}</tbody></table></div>{!loading && !applications.length && <div className="p-5"><Empty>No admission applications have been submitted.</Empty></div>}</section>
     <ApplicationDetailsModal application={selected} course={courses.find((course) => String(course.id) === String(selected?.course))} onClose={() => setSelected(null)} onAction={action} busy={busy} />
   </div>;
 }

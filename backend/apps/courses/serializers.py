@@ -88,16 +88,31 @@ class CourseSerializer(serializers.ModelSerializer):
 
         cleaned_sections = []
         names = set()
-        for section in value:
+        for section_index, section in enumerate(value, start=1):
             if not isinstance(section, dict):
-                continue
+                raise serializers.ValidationError(f"Section {section_index} must be an object.")
+            title = str(section.get("title") or "").strip()
+            if not title:
+                raise serializers.ValidationError(f"Section {section_index}: enter a section heading.")
+            section_fields = section.get("fields")
+            if not isinstance(section_fields, list) or not section_fields:
+                raise serializers.ValidationError(f'Section "{title}": add at least one applicant field, or remove this section.')
             fields = []
-            for field in section.get("fields", []):
+            for field_index, field in enumerate(section_fields, start=1):
                 if not isinstance(field, dict):
-                    continue
+                    raise serializers.ValidationError(f'Section "{title}", field {field_index} must be an object.')
                 label = str(field.get("label") or "").strip()
                 if not label:
-                    continue
+                    raise serializers.ValidationError(f'Section "{title}", field {field_index}: enter a field label. Section headings are not applicant fields.')
+                field_type = str(field.get("type") or "text")
+                if field_type not in {"text", "email", "tel", "number", "date", "textarea", "select", "file"}:
+                    raise serializers.ValidationError(f'Field "{label}": unsupported field type.')
+                options = field.get("options", [])
+                if not isinstance(options, list):
+                    raise serializers.ValidationError(f'Field "{label}": options must be a list.')
+                options = [str(option).strip()[:180] for option in options if str(option).strip()]
+                if field_type == "select" and not options:
+                    raise serializers.ValidationError(f'Field "{label}": enter at least one select option.')
                 base_name = slugify(str(field.get("name") or label))[:180] or f"field-{uuid4().hex[:6]}"
                 name = base_name
                 suffix = 2
@@ -109,10 +124,10 @@ class CourseSerializer(serializers.ModelSerializer):
                     "id": str(field.get("id") or uuid4().hex[:12]),
                     "label": label[:180],
                     "name": name,
-                    "type": str(field.get("type") or "text")[:40],
+                    "type": field_type,
                     "placeholder": str(field.get("placeholder") or "")[:240],
                     "required": bool(field.get("required", False)),
-                    "options": [str(option)[:180] for option in field.get("options", []) if str(option).strip()],
+                    "options": options,
                 })
             title = str(section.get("title") or "").strip()
             if title and fields:
@@ -240,6 +255,13 @@ class AcademicStageSerializer(serializers.ModelSerializer):
         model = models.AcademicStage
         fields = "__all__"
 
+    def validate(self, attrs):
+        start_date = attrs.get("start_date", getattr(self.instance, "start_date", None))
+        end_date = attrs.get("end_date", getattr(self.instance, "end_date", None))
+        if start_date and end_date and start_date > end_date:
+            raise serializers.ValidationError({"end_date": "End date cannot be before the start date."})
+        return attrs
+
 
 class CourseSubjectSerializer(serializers.ModelSerializer):
     class Meta:
@@ -300,10 +322,21 @@ class CourseSyllabusItemSerializer(serializers.ModelSerializer):
 
 
 class TeacherAssignmentSerializer(serializers.ModelSerializer):
+    # DRF's auto-generated UniqueTogetherValidator (from the model's
+    # unique_teacher_course_assignment constraint) unconditionally requires every field in
+    # the constraint to be present in the payload, regardless of each field's own
+    # required=False - so a head-teacher assignment (legitimately subject=None) was
+    # rejected outright. Declaring the nullable fields explicitly and replacing the
+    # validator with an equivalent manual check (below) preserves duplicate-assignment
+    # protection while allowing the real "no subject" / "no section" cases through.
+    subject = serializers.PrimaryKeyRelatedField(queryset=models.CourseSubject.objects.all(), required=False, allow_null=True)
+    course_section = serializers.PrimaryKeyRelatedField(queryset=models.CourseSection.objects.all(), required=False, allow_null=True)
+
     class Meta:
         model = models.TeacherAssignment
         fields = "__all__"
         read_only_fields = ("assigned_by", "assigned_at")
+        validators = []
 
     def validate(self, attrs):
         instance = self.instance
@@ -311,6 +344,7 @@ class TeacherAssignmentSerializer(serializers.ModelSerializer):
         section = attrs.get("course_section", getattr(instance, "course_section", None))
         subject = attrs.get("subject", getattr(instance, "subject", None))
         teacher = attrs.get("teacher") or getattr(instance, "teacher", None)
+        role = attrs.get("role", getattr(instance, "role", None))
 
         if not course or not teacher:
             raise serializers.ValidationError("Teacher and admission program are required.")
@@ -324,6 +358,12 @@ class TeacherAssignmentSerializer(serializers.ModelSerializer):
                 attrs["course_section"] = section
             if subject.course_section_id != section.id or section.course_id != course.id:
                 raise serializers.ValidationError({"subject": "The selected subject does not belong to this admission program."})
+
+        duplicate = models.TeacherAssignment.objects.filter(teacher=teacher, course=course, course_section=section, subject=subject, role=role)
+        if instance:
+            duplicate = duplicate.exclude(pk=instance.pk)
+        if duplicate.exists():
+            raise serializers.ValidationError("This teacher already has an identical assignment for this admission program, section, subject and role.")
         return attrs
 
 
@@ -468,6 +508,7 @@ def _is_enrolled_for(obj, request):
 class PublicAdmissionCardSerializer(serializers.ModelSerializer):
     pricing = serializers.SerializerMethodField()
     subject_names = serializers.SerializerMethodField()
+    teacher_names = serializers.SerializerMethodField()
     is_enrolled = serializers.SerializerMethodField()
 
     class Meta:
@@ -475,7 +516,7 @@ class PublicAdmissionCardSerializer(serializers.ModelSerializer):
         fields = (
             "id", "slug", "title", "hero_title", "hero_badge", "short_description",
             "description", "cover_image", "thumbnail", "pricing", "capacity",
-            "status", "enrollment_start", "enrollment_end", "subject_names", "is_enrolled",
+            "status", "enrollment_start", "enrollment_end", "subject_names", "teacher_names", "is_enrolled",
         )
 
     def get_pricing(self, obj):
@@ -485,6 +526,13 @@ class PublicAdmissionCardSerializer(serializers.ModelSerializer):
         names = []
         for entry in _subjects_for(obj):
             if entry["name"] not in names:
+                names.append(entry["name"])
+        return names
+
+    def get_teacher_names(self, obj):
+        names = []
+        for entry in _teachers_for(obj):
+            if entry["name"] and entry["name"] not in names:
                 names.append(entry["name"])
         return names
 
@@ -517,6 +565,7 @@ class PublicAdmissionDetailSerializer(serializers.ModelSerializer):
             "enrollment_start", "enrollment_end", "meta_title", "meta_description",
             "highlights", "about", "audience", "features", "requirements", "faqs",
             "cta", "nav", "subjects", "curriculum", "teachers", "application",
+            "admission_form_schema", "custom_content",
         )
 
     def get_pricing(self, obj):

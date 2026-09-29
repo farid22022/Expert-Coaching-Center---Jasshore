@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "apps.courses",
     "apps.assessments",
     "apps.admissions",
+    "apps.payments",
     "apps.exams",
     "apps.finance",
     "apps.hr",
@@ -159,6 +160,33 @@ STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").is_dir() else 
 MEDIA_URL = env("MEDIA_URL", "/media/")
 MEDIA_ROOT = BASE_DIR / env("MEDIA_ROOT", "media")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+PAYMENT_PROVIDER = env("PAYMENT_PROVIDER", "bkash").lower()
+BKASH_MODE = env("BKASH_MODE", "mock").lower()
+BKASH_MOCK_ENABLED = env("BKASH_MOCK_ENABLED", "false").lower() == "true"
+BKASH_MOCK_DEFAULT_RESULT = env("BKASH_MOCK_DEFAULT_RESULT", "manual")
+BKASH_MOCK_DELAY_MS = int(env("BKASH_MOCK_DELAY_MS", "700"))
+BKASH_MOCK_ACCOUNT = env("BKASH_MOCK_ACCOUNT", "01700000000")
+BKASH_MOCK_OTP = env("BKASH_MOCK_OTP", "123456")
+BKASH_MOCK_PIN = env("BKASH_MOCK_PIN", "12121")
+BKASH_APP_KEY = env("BKASH_APP_KEY", "")
+BKASH_APP_SECRET = env("BKASH_APP_SECRET", "")
+BKASH_USERNAME = env("BKASH_USERNAME", "")
+BKASH_PASSWORD = env("BKASH_PASSWORD", "")
+BKASH_TOKEN_URL = env("BKASH_TOKEN_URL", "")
+BKASH_CREATE_PAYMENT_URL = env("BKASH_CREATE_PAYMENT_URL", "")
+BKASH_EXECUTE_PAYMENT_URL = env("BKASH_EXECUTE_PAYMENT_URL", "")
+BKASH_QUERY_PAYMENT_URL = env("BKASH_QUERY_PAYMENT_URL", "")
+BKASH_CALLBACK_URL = env("BKASH_CALLBACK_URL", "http://127.0.0.1:8000/api/v1/payments/bkash/callback/")
+BKASH_FRONTEND_RETURN_URL = env("BKASH_FRONTEND_RETURN_URL", "http://127.0.0.1:5173/student/payments/result")
+BKASH_CURRENCY = env("BKASH_CURRENCY", "BDT")
+BKASH_WEBHOOK_SECRET = env("BKASH_WEBHOOK_SECRET", "")
+if PAYMENT_PROVIDER != "bkash":
+    raise ValueError("PAYMENT_PROVIDER must be bkash.")
+if BKASH_MODE not in {"mock", "sandbox", "live"}:
+    raise ValueError("BKASH_MODE must be mock, sandbox, or live.")
+if not DEBUG and BKASH_MODE == "mock":
+    raise ValueError("Mock bKash is forbidden when DEBUG=False.")
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Expert Coaching Center API",

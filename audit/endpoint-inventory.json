@@ -1,0 +1,202 @@
+[
+  {
+    "file": "backend\\config\\urls.py",
+    "definitions": [
+      "path(\"\", api_root, name=\"api-root\"),",
+      "path(\"health/\", api_root, name=\"health-check\"),",
+      "path(\"admin/\", admin.site.urls),",
+      "path(\"api-auth/\", include(\"rest_framework.urls\")),",
+      "path(\"api/v1/\", browsable_api_root, name=\"browsable-api-root\"),",
+      "path(\"api/schema/\", SpectacularAPIView.as_view(), name=\"schema\"),",
+      "path(\"api/docs/\", SpectacularSwaggerView.as_view(url_name=\"schema\"), name=\"swagger-ui\"),",
+      "path(\"api/v1/auth/\", include(\"apps.accounts.urls\")),",
+      "path(\"api/v1/organizations/\", include(\"apps.organizations.urls\")),",
+      "path(\"api/v1/academic/\", include(\"apps.academic.urls\")),",
+      "path(\"api/v1/people/\", include(\"apps.people.urls\")),",
+      "path(\"api/v1/courses/\", include(\"apps.courses.urls\")),",
+      "path(\"api/v1/assessments/\", include(\"apps.assessments.urls\")),",
+      "path(\"api/v1/applications/\", include(\"apps.admissions.urls\")),",
+      "path(\"api/v1/admissions/\", include(\"apps.admissions.urls\")),",
+      "path(\"api/v1/exams/\", include(\"apps.exams.urls\")),",
+      "path(\"api/v1/finance/\", include(\"apps.finance.urls\")),",
+      "path(\"api/v1/hr/\", include(\"apps.hr.urls\")),",
+      "path(\"api/v1/sms/\", include(\"apps.messaging.urls\")),",
+      "path(\"api/v1/website/\", include(\"apps.website.urls\")),",
+      "path(\"api/v1/audit/\", include(\"apps.audit.urls\")),"
+    ]
+  },
+  {
+    "file": "backend\\apps\\academic\\urls.py",
+    "definitions": [
+      "router.register(\"sessions\", views.AcademicSessionViewSet)",
+      "router.register(\"shifts\", views.ShiftViewSet)",
+      "router.register(\"student-groups\", views.StudentGroupViewSet)",
+      "router.register(\"student-categories\", views.StudentCategoryViewSet)",
+      "router.register(\"classes\", views.AcademicClassViewSet)",
+      "router.register(\"sections\", views.SectionViewSet)",
+      "router.register(\"subjects\", views.SubjectViewSet)",
+      "router.register(\"combined-subjects\", views.CombinedSubjectViewSet)",
+      "router.register(\"buildings\", views.BuildingViewSet)",
+      "router.register(\"floors\", views.FloorViewSet)",
+      "router.register(\"classrooms\", views.ClassroomViewSet)",
+      "router.register(\"class-teachers\", views.ClassTeacherAssignmentViewSet)",
+      "router.register(\"syllabus\", views.SyllabusViewSet)",
+      "router.register(\"routines\", views.ClassRoutineViewSet)"
+    ]
+  },
+  {
+    "file": "backend\\apps\\accounts\\urls.py",
+    "definitions": [
+      "router.register(\"users\", UserViewSet)",
+      "router.register(\"roles\", RoleViewSet)",
+      "router.register(\"permissions\", PermissionViewSet)",
+      "router.register(\"login-history\", UserLoginHistoryViewSet)",
+      "path(\"login/\", LoginView.as_view(), name=\"token_obtain_pair\"),",
+      "path(\"register/\", RegisterView.as_view(), name=\"register\"),",
+      "path(\"refresh/\", RefreshView.as_view(), name=\"token_refresh\"),",
+      "path(\"logout/\", logout_view, name=\"logout\"),",
+      "path(\"me/\", me_view, name=\"me\"),"
+    ]
+  },
+  {
+    "file": "backend\\apps\\admissions\\urls.py",
+    "definitions": [
+      "router.register(\"documents\", views.ApplicantDocumentViewSet)",
+      "router.register(\"payments\", views.AdmissionPaymentViewSet)",
+      "router.register(\"exams\", views.AdmissionExamViewSet)",
+      "router.register(\"marks\", views.AdmissionExamMarkViewSet)",
+      "router.register(\"results\", views.AdmissionResultViewSet)",
+      "router.register(\"\", views.AdmissionApplicationViewSet)"
+    ]
+  },
+  {
+    "file": "backend\\apps\\assessments\\urls.py",
+    "definitions": [
+      "router.register(\"questions\", views.QuestionViewSet)",
+      "router.register(\"options\", views.QuestionOptionViewSet)",
+      "router.register(\"materials\", views.CourseMaterialViewSet)",
+      "router.register(\"assessments\", views.AssessmentViewSet)",
+      "router.register(\"assessment-questions\", views.AssessmentQuestionViewSet)",
+      "router.register(\"attempts\", views.AttemptViewSet)",
+      "router.register(\"submissions\", views.AssignmentSubmissionViewSet)",
+      "router.register(\"submission-attachments\", views.SubmissionAttachmentViewSet)",
+      "router.register(\"analytics\", views.AnalyticsViewSet, basename=\"assessment-analytics\")",
+      "router.register(\"interventions\", views.StudentInterventionViewSet, basename=\"student-intervention\")",
+      "router.register(\"feedback\", views.StudentFeedbackViewSet, basename=\"student-feedback\")",
+      "router.register(\"teacher-notes\", views.TeacherPrivateNoteViewSet, basename=\"teacher-private-note\")",
+      "router.register(\"student/assessments\", views.StudentAssessmentViewSet, basename=\"student-assessment\")",
+      "router.register(\"student/bookmarks\", views.StudentBookmarkViewSet, basename=\"student-bookmark\")",
+      "router.register(\"assessment-components\", views.AssessmentComponentViewSet, basename=\"assessment-component\")",
+      "router.register(\"course-grade-scales\", views.CourseGradeScaleViewSet, basename=\"course-grade-scale\")",
+      "router.register(\"course-grade-scale-items\", views.CourseGradeScaleItemViewSet, basename=\"course-grade-scale-item\")",
+      "router.register(\"student/course-ratings\", views.CourseRatingViewSet, basename=\"course-rating\")",
+      "router.register(\"gradebook\", views.GradebookViewSet, basename=\"gradebook\")"
+    ]
+  },
+  {
+    "file": "backend\\apps\\audit\\urls.py",
+    "definitions": [
+      "router.register(\"logs\", AuditLogViewSet)"
+    ]
+  },
+  {
+    "file": "backend\\apps\\courses\\urls.py",
+    "definitions": [
+      "router.register(\"courses\", views.CourseViewSet)",
+      "router.register(\"sections\", views.CourseSectionViewSet)",
+      "router.register(\"subjects\", views.CourseSubjectViewSet)",
+      "router.register(\"academic-stages\", views.AcademicStageViewSet)",
+      "router.register(\"syllabus-items\", views.CourseSyllabusItemViewSet)",
+      "router.register(\"teacher-assignments\", views.TeacherAssignmentViewSet)",
+      "router.register(\"enrollments\", views.EnrollmentViewSet)",
+      "router.register(\"student/dashboard\", views.StudentPortalViewSet, basename=\"student-dashboard\")",
+      "router.register(\"teacher/dashboard\", views.TeacherDashboardViewSet, basename=\"teacher-dashboard\")"
+    ]
+  },
+  {
+    "file": "backend\\apps\\exams\\urls.py",
+    "definitions": [
+      "router.register(\"grades\", views.GradeScaleViewSet)",
+      "router.register(\"exams\", views.ExamViewSet)",
+      "router.register(\"exam-subjects\", views.ExamSubjectViewSet)",
+      "router.register(\"marks\", views.StudentMarkViewSet)",
+      "router.register(\"results\", views.ProcessedResultViewSet)",
+      "router.register(\"grand-configurations\", views.GrandExamConfigurationViewSet)",
+      "router.register(\"grand-results\", views.GrandResultViewSet)"
+    ]
+  },
+  {
+    "file": "backend\\apps\\finance\\urls.py",
+    "definitions": [
+      "router.register(\"fee-categories\", views.FeeCategoryViewSet)",
+      "router.register(\"fee-structures\", views.FeeStructureViewSet)",
+      "router.register(\"student-fees\", views.StudentFeeViewSet)",
+      "router.register(\"transactions\", views.PaymentTransactionViewSet)",
+      "router.register(\"fee-collections\", views.FeeCollectionViewSet)",
+      "router.register(\"expense-categories\", views.ExpenseCategoryViewSet)",
+      "router.register(\"expenses\", views.ExpenseViewSet)",
+      "router.register(\"income-categories\", views.IncomeCategoryViewSet)",
+      "router.register(\"income\", views.IncomeViewSet)"
+    ]
+  },
+  {
+    "file": "backend\\apps\\hr\\urls.py",
+    "definitions": [
+      "router.register(\"payroll-structures\", views.PayrollStructureViewSet)",
+      "router.register(\"employee-payroll\", views.EmployeePayrollViewSet)",
+      "router.register(\"salary-records\", views.SalaryRecordViewSet)",
+      "router.register(\"leave-types\", views.LeaveTypeViewSet)",
+      "router.register(\"leave-applications\", views.LeaveApplicationViewSet)"
+    ]
+  },
+  {
+    "file": "backend\\apps\\messaging\\urls.py",
+    "definitions": [
+      "router.register(\"contact-categories\", views.ContactCategoryViewSet)",
+      "router.register(\"contacts\", views.ContactViewSet)",
+      "router.register(\"providers\", views.SmsProviderViewSet)",
+      "router.register(\"templates\", views.SmsTemplateViewSet)",
+      "router.register(\"campaigns\", views.SmsCampaignViewSet)",
+      "router.register(\"recipients\", views.SmsRecipientViewSet)",
+      "router.register(\"logs\", views.SmsLogViewSet)",
+      "router.register(\"email-templates\", views.EmailTemplateViewSet)",
+      "router.register(\"email-logs\", views.EmailLogViewSet)",
+      "router.register(\"notifications\", views.NotificationViewSet, basename=\"notification\")",
+      "router.register(\"notices\", views.NoticeViewSet, basename=\"notice\")"
+    ]
+  },
+  {
+    "file": "backend\\apps\\organizations\\urls.py",
+    "definitions": [
+      "router.register(\"branches\", BranchViewSet)",
+      "router.register(\"\", OrganizationViewSet)"
+    ]
+  },
+  {
+    "file": "backend\\apps\\people\\urls.py",
+    "definitions": [
+      "router.register(\"teacher-accounts\", views.TeacherAccountViewSet, basename=\"teacher-account\")",
+      "router.register(\"guardians\", views.GuardianViewSet)",
+      "router.register(\"student-profiles\", views.StudentProfileViewSet)",
+      "router.register(\"students\", views.StudentViewSet)",
+      "router.register(\"student-addresses\", views.StudentAddressViewSet)",
+      "router.register(\"student-documents\", views.StudentDocumentViewSet)",
+      "router.register(\"student-status-history\", views.StudentStatusHistoryViewSet)",
+      "router.register(\"departments\", views.DepartmentViewSet)",
+      "router.register(\"designations\", views.DesignationViewSet)",
+      "router.register(\"employees\", views.EmployeeViewSet)"
+    ]
+  },
+  {
+    "file": "backend\\apps\\website\\urls.py",
+    "definitions": [
+      "router.register(\"categories\", views.ContentCategoryViewSet)",
+      "router.register(\"content\", views.ContentItemViewSet)",
+      "router.register(\"gallery\", views.GalleryItemViewSet)",
+      "router.register(\"settings\", views.WebsiteSettingViewSet)",
+      "router.register(\"banners\", views.BannerViewSet)",
+      "router.register(\"success-stories\", views.SuccessStoryViewSet)",
+      "router.register(\"renowned-teachers\", views.RenownedTeacherViewSet)"
+    ]
+  }
+]

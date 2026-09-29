@@ -1,3 +1,4 @@
+import { MotionConfig } from "framer-motion";
 import ErrorBoundary from "./components/common/ErrorBoundary.jsx";
 import Header from "./components/layout/Header.jsx";
 import Footer from "./components/layout/Footer.jsx";
@@ -19,6 +20,7 @@ export default function App() {
 
   return (
     <ThemeProvider>
+      <MotionConfig reducedMotion="user" transition={{duration:0.35}}>
       <div className="app-shell">
         {!isPortalRoute && <Header />}
         <main>
@@ -26,6 +28,7 @@ export default function App() {
         </main>
         {!isPortalRoute && <Footer />}
       </div>
+    </MotionConfig>
     </ThemeProvider>
   );
 }

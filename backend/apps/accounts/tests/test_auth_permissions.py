@@ -102,3 +102,24 @@ class AuthPermissionApiTests(APITestCase):
         self.assertEqual(login.data["user"]["role_codes"], ["e2e-test-admin"])
         response = self.client.get("/api/v1/people/students/")
         self.assertEqual(response.status_code, 200)
+
+    def test_plain_authenticated_user_is_denied_user_directory(self):
+        """UserViewSet/RoleViewSet/UserLoginHistoryViewSet previously had no
+        permission_module, so HasActionPermission let ANY authenticated user (including
+        a plain student) list every org user's email/staff-flag and every Role's exact
+        permission composition."""
+        self.create_user("e2e_test_plain_user_directory@example.com")
+        self.login("e2e_test_plain_user_directory@example.com")
+
+        self.assertEqual(self.client.get("/api/v1/auth/users/").status_code, 403)
+        self.assertEqual(self.client.get("/api/v1/auth/roles/").status_code, 403)
+        self.assertEqual(self.client.get("/api/v1/auth/login-history/").status_code, 403)
+
+    def test_user_view_permission_allows_user_directory(self):
+        user_view, _ = Permission.objects.get_or_create(code="user.view", defaults={"name": "User View", "module": "user"})
+        self.role.permissions.add(user_view)
+        self.create_user("e2e_test_role_user_directory@example.com", with_role=True)
+        self.login("e2e_test_role_user_directory@example.com")
+
+        self.assertEqual(self.client.get("/api/v1/auth/users/").status_code, 200)
+        self.assertEqual(self.client.get("/api/v1/auth/roles/").status_code, 200)

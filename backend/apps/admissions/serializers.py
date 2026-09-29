@@ -11,6 +11,8 @@ def serializer_for(model):
 
 class AdmissionApplicationSerializer(serializers.ModelSerializer):
     form_data = serializers.JSONField(required=False, default=dict)
+    course_title = serializers.CharField(source="course.title", read_only=True)
+    admission_fee = serializers.DecimalField(source="course.admission_fee", max_digits=12, decimal_places=2, read_only=True)
     class Meta:
         model = models.AdmissionApplication
         fields = "__all__"

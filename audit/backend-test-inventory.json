@@ -1,0 +1,246 @@
+[
+  {
+    "file": "backend\\apps\\academic\\tests\\test_academic_master_data_api.py",
+    "test": "test_academic_master_data_crud_endpoints_use_authenticated_organization"
+  },
+  {
+    "file": "backend\\apps\\academic\\tests\\test_subject_api.py",
+    "test": "test_subject_create_uses_authenticated_users_organization"
+  },
+  {
+    "file": "backend\\apps\\accounts\\tests\\test_auth_permissions.py",
+    "test": "test_public_register_creates_login_capable_user"
+  },
+  {
+    "file": "backend\\apps\\accounts\\tests\\test_auth_permissions.py",
+    "test": "test_public_register_assigns_requested_user_role"
+  },
+  {
+    "file": "backend\\apps\\accounts\\tests\\test_auth_permissions.py",
+    "test": "test_plain_authenticated_user_is_denied_student_admin_api"
+  },
+  {
+    "file": "backend\\apps\\accounts\\tests\\test_auth_permissions.py",
+    "test": "test_role_permission_allows_student_admin_api"
+  },
+  {
+    "file": "backend\\apps\\accounts\\tests\\test_auth_permissions.py",
+    "test": "test_plain_authenticated_user_is_denied_user_directory"
+  },
+  {
+    "file": "backend\\apps\\accounts\\tests\\test_auth_permissions.py",
+    "test": "test_user_view_permission_allows_user_directory"
+  },
+  {
+    "file": "backend\\apps\\admissions\\tests\\test_admission_lifecycle_api.py",
+    "test": "test_application_exam_mark_result_and_approval_flow"
+  },
+  {
+    "file": "backend\\apps\\admissions\\tests\\test_admission_lifecycle_api.py",
+    "test": "test_public_admission_creates_one_approved_enrollment"
+  },
+  {
+    "file": "backend\\apps\\admissions\\tests\\test_application_numbers.py",
+    "test": "test_application_number_has_expected_prefix"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_assignment_analytics_flow.py",
+    "test": "test_assignment_submission_validation_evaluation_and_analytics"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_assignment_analytics_flow.py",
+    "test": "test_assigned_teacher_content_is_reviewed_then_visible_to_student_notice_board"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_course_result_security.py",
+    "test": "test_student_cannot_fetch_another_students_enrollment_overview"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_course_result_security.py",
+    "test": "test_student_cannot_fetch_another_students_course_result"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_course_result_security.py",
+    "test": "test_student_own_academic_overview_shows_published_percentage_and_grade"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_course_result_security.py",
+    "test": "test_unpublished_result_never_leaks_percentage_or_grade_to_student"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_course_result_security.py",
+    "test": "test_student_cannot_reach_subject_outside_their_course_via_manipulated_id"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_course_result_security.py",
+    "test": "test_unrelated_teacher_cannot_access_gradebook"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_course_result_security.py",
+    "test": "test_student_cannot_submit_rating_for_another_students_enrollment"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_gradebook_publish.py",
+    "test": "test_recalculate_after_publish_keeps_result_published"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_gradebook_publish.py",
+    "test": "test_calculate_before_publish_still_sets_calculated"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_live_mcq_flow.py",
+    "test": "test_student_mcq_does_not_leak_correct_answer_and_auto_scores_submission"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_live_mcq_flow.py",
+    "test": "test_future_mcq_is_not_listed_as_playable_content"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_student_privacy.py",
+    "test": "test_student_cannot_fetch_another_students_feedback_by_id"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_student_privacy.py",
+    "test": "test_student_own_feedback_endpoint_never_returns_another_students_row"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_student_privacy.py",
+    "test": "test_student_cannot_fetch_another_students_intervention_by_id"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_student_privacy.py",
+    "test": "test_student_own_actions_endpoint_never_returns_another_students_row"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_student_privacy.py",
+    "test": "test_student_cannot_fetch_another_students_bookmark_by_id"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_student_privacy.py",
+    "test": "test_student_cannot_delete_another_students_bookmark"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_student_privacy.py",
+    "test": "test_teacher_private_note_never_reachable_by_a_student_token"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_student_privacy.py",
+    "test": "test_teacher_private_note_fields_absent_from_every_student_facing_response"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_student_scope_security.py",
+    "test": "test_student_cannot_list_or_read_answer_key_via_admin_options_endpoint"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_student_scope_security.py",
+    "test": "test_student_cannot_list_questions_via_admin_endpoint"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_student_scope_security.py",
+    "test": "test_student_cannot_read_another_students_attempt_via_admin_endpoint"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_student_scope_security.py",
+    "test": "test_student_cannot_read_another_students_submission_via_admin_endpoint"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_student_scope_security.py",
+    "test": "test_student_history_only_returns_own_attempts_not_email_matched_across_org"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_student_scope_security.py",
+    "test": "test_student_dashboard_results_only_returns_own_attempts"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_student_scope_security.py",
+    "test": "test_student_own_student_facing_endpoints_still_work"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_teacher_scope_security.py",
+    "test": "test_physics_teacher_cannot_list_or_read_chemistry_question_options"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_teacher_scope_security.py",
+    "test": "test_physics_teacher_cannot_edit_chemistry_answer_key"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_teacher_scope_security.py",
+    "test": "test_physics_teacher_cannot_access_chemistry_assessment_question_link"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_teacher_scope_security.py",
+    "test": "test_physics_teacher_cannot_access_chemistry_student_attempt"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_teacher_scope_security.py",
+    "test": "test_physics_teacher_cannot_grade_or_view_chemistry_submission"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_teacher_scope_security.py",
+    "test": "test_physics_teacher_cannot_access_chemistry_submission_attachment"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_teacher_scope_security.py",
+    "test": "test_physics_teacher_cannot_view_chemistry_subject_analytics"
+  },
+  {
+    "file": "backend\\apps\\assessments\\tests\\test_teacher_scope_security.py",
+    "test": "test_chemistry_teacher_can_still_access_own_subject_records"
+  },
+  {
+    "file": "backend\\apps\\courses\\tests\\test_phase1_foundation.py",
+    "test": "test_student_registration_creates_profile_but_not_enrollment"
+  },
+  {
+    "file": "backend\\apps\\courses\\tests\\test_phase1_foundation.py",
+    "test": "test_course_structure_teacher_assignment_and_duplicate_enrollment_rule"
+  },
+  {
+    "file": "backend\\apps\\courses\\tests\\test_phase1_foundation.py",
+    "test": "test_admin_can_assign_program_head_teacher_for_admission_course"
+  },
+  {
+    "file": "backend\\apps\\courses\\tests\\test_phase1_foundation.py",
+    "test": "test_admin_can_create_admission_card_without_manual_slug"
+  },
+  {
+    "file": "backend\\apps\\courses\\tests\\test_phase1_foundation.py",
+    "test": "test_superuser_without_organization_can_create_admission_card"
+  },
+  {
+    "file": "backend\\apps\\courses\\tests\\test_student_scope_security.py",
+    "test": "test_student_cannot_list_courses_via_admin_endpoint"
+  },
+  {
+    "file": "backend\\apps\\courses\\tests\\test_student_scope_security.py",
+    "test": "test_student_cannot_list_other_students_enrollments"
+  },
+  {
+    "file": "backend\\apps\\courses\\tests\\test_student_scope_security.py",
+    "test": "test_student_cannot_list_teacher_assignments"
+  },
+  {
+    "file": "backend\\apps\\courses\\tests\\test_student_scope_security.py",
+    "test": "test_student_cannot_read_or_write_syllabus_items"
+  },
+  {
+    "file": "backend\\apps\\courses\\tests\\test_student_scope_security.py",
+    "test": "test_teacher_can_still_manage_own_syllabus_items"
+  },
+  {
+    "file": "backend\\apps\\courses\\tests\\test_student_scope_security.py",
+    "test": "test_teacher_can_still_list_own_courses"
+  },
+  {
+    "file": "backend\\apps\\exams\\tests\\test_result_service.py",
+    "test": "test_grade_lookup_uses_percentage_range"
+  },
+  {
+    "file": "backend\\apps\\hr\\tests\\test_payroll_calculation.py",
+    "test": "test_payroll_structure_calculates_percentages"
+  },
+  {
+    "file": "backend\\apps\\people\\tests\\test_student_api.py",
+    "test": "test_student_create_list_search_and_delete"
+  }
+]

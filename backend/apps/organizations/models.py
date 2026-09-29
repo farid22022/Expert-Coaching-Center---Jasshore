@@ -12,6 +12,10 @@ class Organization(TimeStampedModel):
     established_year = models.PositiveIntegerField(null=True, blank=True)
     logo = models.ImageField(upload_to="organizations/logos/", blank=True)
     favicon = models.ImageField(upload_to="organizations/favicons/", blank=True)
+    theme_primary_color = models.CharField(max_length=7, blank=True)
+    theme_accent_color = models.CharField(max_length=7, blank=True)
+    theme_font_family = models.CharField(max_length=60, blank=True)
+    theme_font_scale = models.CharField(max_length=10, blank=True)
     is_active = models.BooleanField(default=True)
 
     def __str__(self):

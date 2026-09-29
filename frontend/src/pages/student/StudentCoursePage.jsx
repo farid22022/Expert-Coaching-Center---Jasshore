@@ -1,4 +1,6 @@
 import CurriculumOutline from "./CurriculumOutline.jsx";
+import { AnimatePresence, motion } from "framer-motion";
+import { StudentMotion } from "../../components/common/StudentMotion.jsx";
 import PageIllustration from "../../components/common/PageIllustration.jsx";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -470,6 +472,14 @@ export default function StudentCoursePage() {
   const [drawer, setDrawer] = useState(false);
   const [expanded, setExpanded] = useState({});
 
+  useEffect(() => { setSelected(null); setDrawer(false); }, [enrollmentId]);
+  useEffect(() => {
+    if (!drawer) return;
+    const escape = (event) => { if (event.key === "Escape") setDrawer(false); };
+    document.addEventListener("keydown", escape);
+    return () => document.removeEventListener("keydown", escape);
+  }, [drawer]);
+
   const groups = useMemo(() => buildGroups(data), [data]);
   const allItems = useMemo(() => groups.flatMap((group) => group.items), [groups]);
 
@@ -506,14 +516,14 @@ export default function StudentCoursePage() {
         {!data && !error && <div className="animate-pulse rounded-lg bg-white p-8">Loading your enrolled course...</div>}
         {data && (
           <>
-            <header className="mb-5 flex items-end justify-between gap-3">
+            <StudentMotion as="header" className="mb-5 flex items-end justify-between gap-3">
               <div>
                 <p className="text-sm font-black uppercase text-emerald-700">My course</p>
                 <h1 className="text-2xl font-black sm:text-3xl">{data.enrollment.course_title}</h1>
                 <p className="mt-1 text-sm font-semibold text-slate-500">{data.progress?.percentage || 0}% complete · {data.progress?.completed_units || 0}/{data.progress?.total_units || 0} activities completed</p>
               </div>
               <button className="btn btn-outline lg:hidden" onClick={() => setDrawer(true)}><Menu size={17} />Content</button>
-            </header>
+            </StudentMotion>
             {(data.notices || []).length > 0 && (
               <section className="mb-5 rounded-lg border border-emerald-100 bg-white p-4 shadow-sm">
                 <h2 className="font-black text-emerald-950">Notice board</h2>
@@ -536,10 +546,10 @@ export default function StudentCoursePage() {
                 </div>
               </section>
             )}
-            <div className="grid min-h-[620px] overflow-hidden rounded-lg border bg-white shadow-sm lg:grid-cols-[minmax(0,1fr)_360px]">
-              <main className="min-w-0 p-5 sm:p-7">
-                {content}
-                <div className="mt-8 flex justify-between">
+            <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+              <StudentMotion as="section" className="min-w-0" index={1}>
+                <AnimatePresence mode="wait"><StudentMotion key={`${enrollmentId}-${selected?.unit_type}-${selected?.id || selected?.groupKey || "empty"}`} className="learning-panel min-h-80 p-5 sm:p-7">{content}</StudentMotion></AnimatePresence>
+                <StudentMotion className="mt-5 flex justify-between" index={2}>
                   <button className="btn btn-outline" disabled={selectedIndex <= 0} onClick={() => setSelected(allItems[selectedIndex - 1])}>Previous</button>
                   <button
                     className="btn btn-success text-white"
@@ -551,11 +561,11 @@ export default function StudentCoursePage() {
                   >
                     Next
                   </button>
-                </div>
-              </main>
-              <div className="hidden lg:block">{outline}</div>
+                </StudentMotion>
+              </StudentMotion>
+              <StudentMotion className="hidden max-h-[calc(100dvh-200px)] overflow-y-auto lg:sticky lg:top-0 lg:block" index={2}>{outline}</StudentMotion>
             </div>
-            {drawer && <div className="fixed inset-0 z-50 bg-black/40 lg:hidden"><div className="ml-auto h-full w-[min(390px,92vw)] bg-white">{outline}</div></div>}
+            <AnimatePresence>{drawer && <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:0.18}} className="fixed inset-0 z-50 bg-black/40 lg:hidden" onClick={() => setDrawer(false)}><motion.div role="dialog" aria-modal="true" aria-label="Course content" initial={{x:"100%"}} animate={{x:0}} exit={{x:"100%"}} transition={{duration:0.25}} className="ml-auto h-full w-[min(390px,92vw)] bg-white" onClick={(event) => event.stopPropagation()}>{outline}</motion.div></motion.div>}</AnimatePresence>
           </>
         )}
       </section>

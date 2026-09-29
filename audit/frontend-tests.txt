@@ -1,0 +1,46 @@
+TAP version 13
+# Subtest: concurrent expired requests exchange one refresh and persist its rotation
+ok 1 - concurrent expired requests exchange one refresh and persist its rotation
+  ---
+  duration_ms: 14.936
+  type: 'test'
+  ...
+# Subtest: next expiration uses rotated refresh token
+ok 2 - next expiration uses rotated refresh token
+  ---
+  duration_ms: 7.3264
+  type: 'test'
+  ...
+# Subtest: temporary refresh outage preserves session
+ok 3 - temporary refresh outage preserves session
+  ---
+  duration_ms: 3.5154
+  type: 'test'
+  ...
+# Subtest: invalid refresh clears session and notifies UI
+ok 4 - invalid refresh clears session and notifies UI
+  ---
+  duration_ms: 2.7227
+  type: 'test'
+  ...
+# Subtest: late refresh cannot restore a logged out session
+ok 5 - late refresh cannot restore a logged out session
+  ---
+  duration_ms: 23.9724
+  type: 'test'
+  ...
+# Subtest: bad login does not trigger token refresh
+ok 6 - bad login does not trigger token refresh
+  ---
+  duration_ms: 4.438
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 588.1231

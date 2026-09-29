@@ -1,8 +1,11 @@
 from rest_framework.routers import DefaultRouter
 
 from . import views
+from .curriculum_api import SubjectWeekViewSet, CourseChapterViewSet
 
 router = DefaultRouter()
+router.register("weeks", SubjectWeekViewSet)
+router.register("chapters", CourseChapterViewSet)
 router.register("courses", views.CourseViewSet)
 router.register("sections", views.CourseSectionViewSet)
 router.register("subjects", views.CourseSubjectViewSet)

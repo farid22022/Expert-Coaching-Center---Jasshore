@@ -1,3 +1,5 @@
+import "../../styles/admin-system.css";
+import PageEntrance from "../../components/common/PageEntrance.jsx";
 import { useEffect, useRef, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
@@ -55,7 +57,6 @@ export default function DashboardLayout() {
         }
         setCurrentUser(user);
         setChecked(true);
-        setChecked(true);
       })
       .catch(() => navigate("/admin/login", { replace: true }));
   }, [navigate]);
@@ -67,10 +68,8 @@ export default function DashboardLayout() {
 
   if (!checked) return <p role="status" className="p-8 text-center">Verifying your session...</p>;
 
-  if (!checked) return <p role="status" className="p-8 text-center">Verifying your session...</p>;
-
   return (
-    <div className="dashboard-layout grid h-screen overflow-hidden bg-soft lg:grid-cols-[248px_minmax(0,1fr)]">
+    <div className="admin-portal dashboard-layout grid h-screen overflow-hidden bg-soft lg:grid-cols-[248px_minmax(0,1fr)]">
       <DashboardSidebar
         mobileOpen={sidebarOpen}
         setMobileOpen={setSidebarOpen}
@@ -142,7 +141,7 @@ export default function DashboardLayout() {
         </header>
 
         <section className="dashboard-content flex-1 overflow-y-auto p-4 lg:p-6">
-          <Outlet />
+          <PageEntrance><Outlet /></PageEntrance>
         </section>
       </main>
     </div>
