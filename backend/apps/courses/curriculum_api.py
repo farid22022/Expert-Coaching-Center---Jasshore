@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from apps.core.viewsets import OrganizationScopedModelViewSet
 from apps.people.models import Employee
 from .models import SubjectWeek, CourseChapter, TeacherAssignment
-from .services import ensure_teacher_subject_scope
+from .services import ensure_head_teacher_of_course
 
 
 class WeekSerializer(serializers.ModelSerializer):
@@ -61,7 +61,7 @@ class CurriculumViewSet(OrganizationScopedModelViewSet):
         if parent.organization_id != self.request.user.organization_id or subject.organization_id != self.request.user.organization_id:
             raise ValidationError({field: "Choose a record in your organization."})
         if not (self.request.user.is_staff or self.request.user.is_superuser):
-            ensure_teacher_subject_scope(self._teacher(), self.request.user.organization, subject)
+            ensure_head_teacher_of_course(self._teacher(), self.request.user.organization, subject.course_section.course_id)
         if serializer.instance and getattr(serializer.instance, f"{field}_id") != parent.id:
             raise ValidationError({field: "Create a new record to move curriculum between subjects or weeks."})
 

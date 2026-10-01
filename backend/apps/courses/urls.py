@@ -1,7 +1,9 @@
 from rest_framework.routers import DefaultRouter
+from django.urls import path
 
 from . import views
 from .curriculum_api import SubjectWeekViewSet, CourseChapterViewSet
+from .material_media import student_material_media
 
 router = DefaultRouter()
 router.register("weeks", SubjectWeekViewSet)
@@ -16,4 +18,4 @@ router.register("enrollments", views.EnrollmentViewSet)
 router.register("student/dashboard", views.StudentPortalViewSet, basename="student-dashboard")
 router.register("teacher/dashboard", views.TeacherDashboardViewSet, basename="teacher-dashboard")
 
-urlpatterns = router.urls
+urlpatterns = [path("student/materials/<int:material_id>/file/", student_material_media, name="student-material-media")] + router.urls

@@ -39,6 +39,15 @@ const mediaUrl = (value) => {
 };
 
 const looksLikeImage = (value = "") => /\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(value.split("?")[0]);
+const videoEmbedUrl = (value) => {
+  try {
+    const url = new URL(value);
+    let id = "";
+    if (["youtube.com", "www.youtube.com", "m.youtube.com"].includes(url.hostname)) id = url.searchParams.get("v") || url.pathname.match(/^\/shorts\/([\w-]+)/)?.[1] || "";
+    if (["youtu.be", "www.youtu.be"].includes(url.hostname)) id = url.pathname.split("/")[1] || "";
+    return /^[\w-]{11}$/.test(id) ? `https://www.youtube-nocookie.com/embed/${id}` : value;
+  } catch { return value; }
+};
 const rowIcon = (type) => (type === "video" ? PlayCircle : assessmentTypes.includes(type) ? ClipboardList : FileText);
 
 function useCourseContent(enrollmentId) {
@@ -105,19 +114,24 @@ function MaterialMedia({ material }) {
   if (!source) return null;
 
   if (material.material_type === "video") {
+    const directVideo = Boolean(material.file) || /\.(mp4|webm|ogg)(\?.*)?$/i.test(source);
     return (
       <div className="mt-6 overflow-hidden rounded-lg border border-emerald-100 bg-slate-950">
-        <iframe className="aspect-video w-full" src={source} title={material.title} allowFullScreen />
+        {directVideo ? <video className="aspect-video w-full" src={source} controls preload="metadata" aria-label={material.title} /> : <iframe className="aspect-video w-full" src={videoEmbedUrl(source)} title={material.title} allowFullScreen />}
       </div>
     );
   }
 
-  if (looksLikeImage(source)) {
+  if (looksLikeImage(material.file_name || source)) {
     return (
       <figure className="mt-6 rounded-lg border border-emerald-100 bg-white p-3">
         <img src={source} alt={material.title} className="mx-auto max-h-[680px] w-auto max-w-full rounded object-contain" />
       </figure>
     );
+  }
+
+  if (/\.pdf(\?.*)?$/i.test(material.file_name || source)) {
+    return <div className="mt-6"><iframe className="h-[65vh] w-full rounded-lg border border-emerald-100" src={source} title={material.title} /><a className="btn btn-outline btn-success mt-3" href={source} target="_blank" rel="noreferrer" download>Open or download PDF</a></div>;
   }
 
   return (
@@ -128,7 +142,7 @@ function MaterialMedia({ material }) {
 }
 
 function MaterialDetails({ material, enrollmentId, onViewed }) {
-  const TypeIcon = material.material_type === "video" ? Video : looksLikeImage(material.file || material.url) ? ImageIcon : FileText;
+  const TypeIcon = material.material_type === "video" ? Video : looksLikeImage(material.file_name || material.file || material.url) ? ImageIcon : FileText;
 
   useEffect(() => {
     if (material.viewed) return;

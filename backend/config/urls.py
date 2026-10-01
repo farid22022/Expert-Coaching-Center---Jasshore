@@ -65,4 +65,9 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    # Academic lesson uploads have a signed, enrollment-scoped delivery endpoint.
+    # Do not let Django's development media server bypass those checks.
+    from django.http import HttpResponseNotFound
+    from django.urls import re_path
+    urlpatterns += [re_path(r"^media/assessments/materials/.*$", lambda request: HttpResponseNotFound())]
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

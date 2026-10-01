@@ -1,7 +1,9 @@
 from django.db.models import Sum
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
 from . import models
+from .validators import validate_material_upload
 
 
 class CurriculumContentSerializer(serializers.ModelSerializer):
@@ -25,6 +27,27 @@ class CurriculumContentSerializer(serializers.ModelSerializer):
 
 
 class CourseMaterialSerializer(CurriculumContentSerializer):
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get("request")
+        if request and instance.file and request.user.is_authenticated:
+            from apps.courses.material_media import staff_material_url
+            data["file"] = staff_material_url(request, instance)
+        return data
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        material_type = attrs.get("material_type", getattr(self.instance, "material_type", "note"))
+        upload = attrs.get("file")
+        if upload:
+            try:
+                validate_material_upload(upload, material_type)
+            except DjangoValidationError as exc:
+                raise serializers.ValidationError({"file": exc.messages}) from exc
+        if material_type == "video" and not (upload or attrs.get("url") or (self.instance and (self.instance.file or self.instance.url))):
+            raise serializers.ValidationError({"file": "Upload a video or enter a video URL."})
+        return attrs
+
     class Meta:
         model = models.CourseMaterial
         fields = "__all__"

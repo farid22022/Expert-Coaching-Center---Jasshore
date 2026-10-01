@@ -425,6 +425,7 @@ class StudentAssessmentViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=["get"])
     def materials(self, request):
+        from apps.courses.material_media import student_material_url
         student = Student.objects.filter(organization=request.user.organization, email=request.user.email).first()
         if not student:
             return Response([])
@@ -439,10 +440,22 @@ class StudentAssessmentViewSet(viewsets.ReadOnlyModelViewSet):
             review_status=models.ContentReviewStatus.APPROVED,
         ).filter(
             Q(course_section__isnull=True) | Q(course_section_id__in=enrolled_section_ids),
+            Q(subject__isnull=True) | Q(subject__course_section_id__in=enrolled_section_ids),
             released_content(),
             Q(publish_at__isnull=True) | Q(publish_at__lte=timezone.now()),
         ).select_related("course", "course_section", "subject", "created_by_teacher")
-        return Response(serializers.CourseMaterialSerializer(materials, many=True).data)
+        material_rows = list(materials)
+        data = serializers.CourseMaterialSerializer(material_rows, many=True).data
+        enrollments = list(active_enrollments)
+        for item, material in zip(data, material_rows):
+            if not material.file:
+                continue
+            enrollment = next((row for row in enrollments if row.course_id == material.course_id and
+                               (material.course_section_id is None or row.course_section_id == material.course_section_id)), None)
+            if enrollment:
+                item["file"] = student_material_url(request, material, enrollment)
+                item["file_name"] = material.file.name.rsplit("/", 1)[-1]
+        return Response(data)
 
     @action(detail=True, methods=["post"])
     def start(self, request, pk=None):

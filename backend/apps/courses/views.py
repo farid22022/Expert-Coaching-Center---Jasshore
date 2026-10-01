@@ -13,6 +13,7 @@ from apps.messaging.models import Notice
 from apps.people.models import Employee, Student
 from . import models, serializers
 from .permissions import HeadTeacherCourseScopeMixin
+from .material_media import student_material_url
 
 
 def _is_teacher(request):
@@ -194,6 +195,7 @@ class StudentPortalViewSet(viewsets.ViewSet):
             review_status="approved",
         ).filter(
             Q(course_section__isnull=True) | Q(course_section=enrollment.course_section),
+            Q(subject__isnull=True) | Q(subject__course_section=enrollment.course_section) if enrollment.course_section_id else Q(),
             released_content(now),
             Q(publish_at__isnull=True) | Q(publish_at__lte=now),
         ).select_related("subject", "created_by_teacher").order_by("-reviewed_at", "-updated_at", "-created_at")
@@ -217,6 +219,7 @@ class StudentPortalViewSet(viewsets.ViewSet):
         subject_names = {subject.id: subject.name for subject in subjects_in_order}
         teacher_names = {assignment.teacher_id: assignment.teacher.full_name for assignment in enrollment.course.teacher_assignments.select_related("teacher")}
         material_data = assessment_serializers.CourseMaterialSerializer(materials, many=True).data
+        material_files = {material.id: material for material in materials if material.file}
         assessment_data = assessment_serializers.AssessmentSerializer(assessments, many=True).data
         attempts = {
             attempt.assessment_id: attempt
@@ -238,6 +241,10 @@ class StudentPortalViewSet(viewsets.ViewSet):
             assessment_models.MaterialView.objects.filter(student=student, material__in=materials).values_list("material_id", flat=True)
         )
         for item in material_data:
+            if item["id"] in material_files:
+                material = material_files[item["id"]]
+                item["file"] = student_material_url(request, material, enrollment)
+                item["file_name"] = material.file.name.rsplit("/", 1)[-1]
             item["subject_name"] = subject_names.get(item.get("subject"), "General")
             item["teacher_name"] = teacher_names.get(item.get("created_by_teacher"), "Expert Coaching Center")
             item["unit_type"] = item.get("material_type") or "material"
@@ -343,7 +350,7 @@ class StudentPortalViewSet(viewsets.ViewSet):
                 {"id": week.id, "subject": week.subject_id, "number": week.number,
                  "title": week.title, "release_at": week.release_at,
                  "locked": week.release_at > now,
-                 "chapters": [{"id": chapter.id, "title": chapter.title, "order": chapter.order} for chapter in week.chapters.all()] if week.release_at <= now else []}
+                 "chapters": [{"id": chapter.id, "title": chapter.title, "description": chapter.description, "order": chapter.order} for chapter in week.chapters.all()] if week.release_at <= now else []}
                 for week in models.SubjectWeek.objects.filter(subject__in=subjects_in_order, is_published=True).prefetch_related("chapters")
             ],
             "materials": material_data,

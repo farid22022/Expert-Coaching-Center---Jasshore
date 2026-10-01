@@ -16,6 +16,8 @@ import {
   applicantDocumentApi,
   applicationApi,
   courseApi,
+  courseSectionApi,
+  courseSubjectApi,
   employeeApi,
   galleryApi,
   noticeApi,
@@ -197,7 +199,7 @@ export function AdminAdmissionsPage() {
   const { courses, reload } = useAdminData(); const [selected, setSelected] = useState(null); const [form, setForm] = useState({ title: "", code: "", description: "", admission_fee: "0", capacity: "", enrollment_start: "", enrollment_end: "", status: "admission_open", is_published: true }); const [error, setError] = useState("");
   const admissions = courses.filter((course) => course.course_type === "admission");
   const loadDetails = (course) => { setSelected(course); setForm({ ...course, admission_fee: course.admission_fee ?? "0", capacity: course.capacity ?? "", enrollment_start: course.enrollment_start || "", enrollment_end: course.enrollment_end || "" }); };
-  const submit = async (event) => { event.preventDefault(); setError(""); const payload = { ...form, course_type: "admission", capacity: form.capacity || null, is_published: Boolean(form.is_published), course_fee: 0 }; try { const saved = selected ? await courseApi.update(selected.id, payload) : await courseApi.create(payload); await reload(); loadDetails(saved); notifySuccess(selected ? "Admission updated." : "Admission created."); } catch (err) { setError(message(err)); notifyError(message(err)); } };
+  const submit = async (event) => { event.preventDefault(); setError(""); const payload = { ...form, course_type: "admission", capacity: form.capacity || null, enrollment_start: form.enrollment_start || null, enrollment_end: form.enrollment_end || null, is_published: Boolean(form.is_published), course_fee: 0 }; try { const saved = selected ? await courseApi.update(selected.id, payload) : await courseApi.create(payload); await reload(); loadDetails(saved); notifySuccess(selected ? "Admission updated." : "Admission created."); } catch (err) { setError(message(err)); notifyError(message(err)); } };
   const deleteAdmission = async () => { if (!selected) return; if (!(await confirmAction({ title: `Delete ${selected.title}?`, text: "Existing applications prevent unsafe deletion. This action cannot be undone.", confirmText: "Yes, delete", danger: true }))) return; try { await courseApi.remove(selected.id); setSelected(null); await reload(); notifySuccess("Admission deleted."); } catch (err) { setError(message(err)); notifyError(message(err)); } };
   return <div><PageHeader eyebrow="Admissions" title="Admissions" description="Create and publish admission programs. Once created, assign a Head Teacher to build its academic structure (subjects, sections, grading)." /><div className="grid gap-6 xl:grid-cols-[350px_minmax(0,1fr)]"><aside className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"><button onClick={() => { setSelected(null); setForm({ title: "", code: "", description: "", admission_fee: "0", capacity: "", enrollment_start: "", enrollment_end: "", status: "admission_open", is_published: true }); }} className="btn btn-success mb-3 w-full text-white"><Plus size={17}/>New admission</button><div className="space-y-2">{admissions.map((course) => <button key={course.id} onClick={() => loadDetails(course)} className={`w-full rounded-lg border p-3 text-left ${selected?.id === course.id ? "border-emerald-500 bg-emerald-50" : "border-slate-200 hover:border-emerald-200"}`}><p className="font-bold">{course.title}</p><p className="mt-1 text-xs text-slate-500">{course.code || "No code"} · <Status value={course.status}/></p></button>)}{!admissions.length && <Empty>No admission programs yet.</Empty>}</div></aside><div className="min-w-0 space-y-6"><form onSubmit={submit} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-black">{selected ? `Edit ${selected.title}` : "Create admission program"}</h2>{selected && <button type="button" onClick={deleteAdmission} className="btn btn-error btn-sm text-white"><Trash2 size={16}/>Delete admission</button>}</div>{error && <p className="alert alert-error mt-3 text-sm">{error}</p>}<div className="mt-4 grid gap-3 md:grid-cols-2">{[["title", "Program name", "text"], ["code", "Program code", "text"], ["admission_fee", "Admission fee (BDT)", "number"], ["capacity", "Seats available", "number"], ["enrollment_start", "Application opens", "date"], ["enrollment_end", "Application closes", "date"]].map(([name, placeholder, type]) => <label key={name} className="form-control"><span className="mb-1 text-sm font-bold">{placeholder}</span><input required={name === "title"} name={name} type={type} value={form[name] ?? ""} onChange={(e) => setForm({ ...form, [name]: e.target.value })} className="input input-bordered w-full" /></label>)}<label className="form-control"><span className="mb-1 text-sm font-bold">Status</span><select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="select select-bordered">{admissionStates.map((state) => <option key={state}>{state}</option>)}</select></label><label className="form-control md:col-span-2"><span className="mb-1 text-sm font-bold">Description</span><RichTextEditor value={form.description || ""} onChange={(value) => setForm({ ...form, description: value })} placeholder="Describe this admission program..." /></label><label className="label justify-start gap-2 font-bold"><input type="checkbox" checked={Boolean(form.is_published)} onChange={(e) => setForm({ ...form, is_published: e.target.checked })} className="checkbox checkbox-success"/>Published on the public admission page</label></div><button className="btn btn-success mt-5 text-white">{selected ? "Save admission" : "Create admission"}</button></form>{selected && <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">Subjects, sections, academic stages, assessment scheme and grading are managed by this admission's assigned Head Teacher once one is assigned below.</div>}</div></div></div>;
 }
@@ -217,6 +219,7 @@ const landingTabs = [
   ["overview", "Overview"],
   ["landing", "Landing Page"],
   ["teachers", "Teachers"],
+  ["subjects", "Subjects"],
   ["form", "Application Form"],
 ];
 
@@ -445,7 +448,7 @@ export function AdminAdmissionFormBuilderPage() {
         description="Edit each admission card, its public landing page, and the application form students will submit."
         action={
           <div className="flex gap-2">
-            <Link className="btn btn-outline btn-sm" to="/admin/dashboard/admissions">Subjects →</Link>
+            <button type="button" className="btn btn-outline btn-sm" onClick={() => (form ? setActiveTab("subjects") : notifyError("Select an admission card first to manage its subjects."))}>Subjects →</button>
             <Link className="btn btn-outline btn-sm" to="/admin/dashboard/admission-applications">Applications →</Link>
           </div>
         }
@@ -515,9 +518,11 @@ export function AdminAdmissionFormBuilderPage() {
                 <FormSchemaTab schema={schema} setSchema={editSchema} updateSection={updateSection} updateField={updateField} />
               )}
             </form>
+            {/* Rendered outside the editor form: subjects save through their own form, and HTML forms cannot nest. */}
+            {activeTab === "subjects" && selected && <SubjectsTab course={selected} />}
           </div>
         ) : (
-          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"><Empty>Select an admission card to edit its card fields and application form.</Empty></section>
+          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"><Empty>Select an admission card to edit its card fields, subjects and application form.</Empty></section>
         )}
       </div>
     </div>
@@ -803,6 +808,164 @@ function TeachersTab({ teacherRows, teacherLoading, teachers, updateTeacherRow }
         </table>
       </div>
       {!teacherLoading && !teacherRows.length && <Empty>No teachers are assigned to this admission yet. Assign teachers from Teacher Assignments.</Empty>}
+    </section>
+  );
+}
+
+const NEW_SECTION = "__new__";
+const blankSubjectForm = (sectionId) => ({ course_section: sectionId ? String(sectionId) : NEW_SECTION, new_section: "General", name: "", code: "", order: 0, description: "" });
+// CourseSubject is unique per (section, code), so a blank code would collide with the next blank one.
+const subjectCodeFromName = (name) => name.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
+
+function SubjectsTab({ course }) {
+  const [sections, setSections] = useState([]);
+  const [subjects, setSubjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState(blankSubjectForm());
+  const [editing, setEditing] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const rows = asArray(await courseSectionApi.listResults({ course: course.id, page_size: 200 }));
+      const lists = await Promise.all(rows.map((section) => courseSubjectApi.listResults({ course_section: section.id, page_size: 200 })));
+      setSections(rows);
+      setSubjects(lists.flatMap(asArray));
+      return rows;
+    } catch (err) {
+      setError(message(err));
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    setEditing(null);
+    setError("");
+    load().then((rows) => setForm(blankSubjectForm(rows[0]?.id)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [course.id]);
+
+  const set = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+  const sectionName = (id) => sections.find((section) => String(section.id) === String(id))?.name || "-";
+  const cancelEdit = () => { setEditing(null); setError(""); setForm(blankSubjectForm(form.course_section === NEW_SECTION ? sections[0]?.id : form.course_section)); };
+  const startEdit = (subject) => {
+    setError("");
+    setEditing(subject);
+    setForm({ course_section: String(subject.course_section), new_section: "", name: subject.name || "", code: subject.code || "", order: subject.order ?? 0, description: subject.description || "" });
+  };
+
+  const save = async (event) => {
+    event.preventDefault();
+    const name = form.name.trim();
+    const newSectionName = form.new_section.trim();
+    if (!name) { setError("Subject name is required."); return; }
+    if (form.course_section === NEW_SECTION && !newSectionName) { setError("Enter a name for the new section."); return; }
+    setSaving(true);
+    setError("");
+    try {
+      let sectionId = form.course_section;
+      if (sectionId === NEW_SECTION) {
+        const section = await courseSectionApi.create({ course: course.id, name: newSectionName, status: "active", order: sections.length });
+        sectionId = String(section.id);
+        // Keep the new section selected so a failed subject save can be retried without re-creating it.
+        setSections((current) => [...current, section]);
+        set("course_section", sectionId);
+      }
+      const payload = { course_section: Number(sectionId), name, code: form.code.trim() || subjectCodeFromName(name), order: Number(form.order) || 0, description: form.description.trim() };
+      if (editing) await courseSubjectApi.update(editing.id, payload);
+      else await courseSubjectApi.create({ ...payload, status: "active" });
+      notifySuccess(editing ? "Subject updated." : `${name} added to ${course.title}.`);
+      setEditing(null);
+      setForm(blankSubjectForm(sectionId));
+      await load();
+    } catch (err) {
+      setError(message(err));
+      notifyError(message(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const remove = async (subject) => {
+    if (!(await confirmDelete(`The subject "${subject.name}"`))) return;
+    try {
+      await courseSubjectApi.remove(subject.id);
+      notifySuccess("Subject deleted.");
+      if (editing?.id === subject.id) cancelEdit();
+      await load();
+    } catch (err) {
+      notifyError(message(err));
+    }
+  };
+
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 className="font-black">Subjects for {course.title}</h2>
+      <p className="mt-1 text-sm text-slate-500">Subjects are grouped under a section (for example Science or A Unit). Changes here save immediately.</p>
+      {error && <p className="alert alert-error mt-4 text-sm">{error}</p>}
+      <form onSubmit={save} className="mt-4 grid gap-3 rounded-lg border border-emerald-100 bg-emerald-50/30 p-4 md:grid-cols-2">
+        <label className="form-control">
+          <span className="mb-1 text-sm font-bold">Section *</span>
+          <select value={form.course_section} onChange={(event) => set("course_section", event.target.value)} className="select select-bordered">
+            {sections.map((section) => <option key={section.id} value={String(section.id)}>{section.name}</option>)}
+            <option value={NEW_SECTION}>+ New section…</option>
+          </select>
+        </label>
+        {form.course_section === NEW_SECTION ? (
+          <label className="form-control">
+            <span className="mb-1 text-sm font-bold">New section name *</span>
+            <input value={form.new_section} onChange={(event) => set("new_section", event.target.value)} className="input input-bordered" placeholder="e.g. Science, A Unit, General" />
+          </label>
+        ) : <div className="hidden md:block" />}
+        <label className="form-control">
+          <span className="mb-1 text-sm font-bold">Subject name *</span>
+          <input value={form.name} onChange={(event) => set("name", event.target.value)} className="input input-bordered" placeholder="e.g. Physics" />
+        </label>
+        <label className="form-control">
+          <span className="mb-1 text-sm font-bold">Subject code</span>
+          <input value={form.code} onChange={(event) => set("code", event.target.value)} className="input input-bordered" placeholder="Auto-generated from the name if left blank" />
+        </label>
+        <label className="form-control">
+          <span className="mb-1 text-sm font-bold">Display order</span>
+          <input type="number" min="0" value={form.order} onChange={(event) => set("order", event.target.value)} className="input input-bordered" />
+        </label>
+        <label className="form-control md:col-span-2">
+          <span className="mb-1 text-sm font-bold">Description (optional)</span>
+          <textarea value={form.description} onChange={(event) => set("description", event.target.value)} className="textarea textarea-bordered min-h-16" />
+        </label>
+        <div className="flex gap-2 md:col-span-2">
+          <button disabled={saving || loading} className="btn btn-success btn-sm text-white"><Plus size={16} />{saving ? "Saving..." : editing ? "Update subject" : "Add subject"}</button>
+          {editing && <button type="button" onClick={cancelEdit} className="btn btn-ghost btn-sm">Cancel</button>}
+        </div>
+      </form>
+      <div className="mt-4 overflow-x-auto">
+        <table className="table">
+          <thead><tr><th>Section</th><th>Subject</th><th>Code</th><th>Order</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            {subjects.map((subject) => (
+              <tr key={subject.id} className={editing?.id === subject.id ? "bg-emerald-50" : ""}>
+                <td>{sectionName(subject.course_section)}</td>
+                <td className="font-bold">{subject.name}</td>
+                <td>{subject.code || "-"}</td>
+                <td>{subject.order ?? 0}</td>
+                <td><Status value={subject.status} /></td>
+                <td>
+                  <div className="flex justify-end gap-1">
+                    <button type="button" onClick={() => startEdit(subject)} className="btn btn-outline btn-xs">Edit</button>
+                    <button type="button" onClick={() => remove(subject)} className="btn btn-ghost btn-xs text-error" aria-label={`Delete ${subject.name}`}><Trash2 size={14} /></button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {loading && <p className="mt-3 text-sm text-slate-500">Loading subjects...</p>}
+      {!loading && !subjects.length && <Empty>No subjects yet. Add the first subject for this admission above.</Empty>}
     </section>
   );
 }

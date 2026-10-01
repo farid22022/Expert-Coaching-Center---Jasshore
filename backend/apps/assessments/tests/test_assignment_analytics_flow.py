@@ -72,6 +72,13 @@ class AssignmentAnalyticsFlowTests(APITestCase):
         )
         self.assertEqual(rejected.status_code, 400)
 
+        disguised = SimpleUploadedFile("answer.pdf", b"not really a PDF", content_type="application/pdf")
+        rejected = self.client.post(
+            f"/api/v1/assessments/student/assessments/{self.assessment.id}/submit_assignment/",
+            {"files": [disguised]}, format="multipart",
+        )
+        self.assertEqual(rejected.status_code, 400)
+
         pdf = SimpleUploadedFile("answer.pdf", b"%PDF-1.4 demo", content_type="application/pdf")
         submitted = self.client.post(
             f"/api/v1/assessments/student/assessments/{self.assessment.id}/submit_assignment/",

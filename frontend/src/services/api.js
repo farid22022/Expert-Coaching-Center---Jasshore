@@ -103,12 +103,12 @@ export function getApiErrorMessage(error, fallback = "Request failed. Please try
   if (error?.response?.status >= 500) return "The server could not complete this request. Please try again.";
   if (error?.response?.status === 429) return "Too many requests. Please wait a moment and try again.";
   const data = error?.response?.data;
-  if (typeof data?.message === "string") return data.message;
   if (typeof data?.detail === "string") return data.detail;
   if (data?.errors && typeof data.errors === "object") {
     const first = Object.values(data.errors).flat?.()[0];
     if (first) return String(first);
   }
+  if (typeof data?.message === "string") return data.message;
   if (data && typeof data === "object") {
     const first = Object.entries(data)
       .filter(([key]) => !["success", "message", "data"].includes(key))

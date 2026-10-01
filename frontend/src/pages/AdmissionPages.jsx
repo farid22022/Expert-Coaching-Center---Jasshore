@@ -649,9 +649,9 @@ const enrollSteps = [
   "Open this admission page and click Apply Now",
   "Complete the online admission form",
   "Submit required information and documents",
-  "Complete payment if required",
   "Admin reviews your application",
-  "Once approved, the course appears in your Student Dashboard",
+  "After approval, complete payment if required",
+  "After verified payment (or approval for a free admission), find the course in My Courses",
 ];
 
 function HowToEnroll() {
