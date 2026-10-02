@@ -19,7 +19,7 @@ class AdmissionService:
     @staticmethod
     @transaction.atomic
     def approve_application(application, approved_by, activate_existing=False):
-        application = AdmissionApplication.objects.select_for_update().select_related("course", "organization").get(pk=application.pk)
+        application = AdmissionApplication.objects.select_for_update(of=("self",)).select_related("course", "organization").get(pk=application.pk)
         if application.status == ApplicationStatus.APPROVED:
             enrollment = Enrollment.objects.filter(application=application, status=EnrollmentStatus.ACTIVE).first()
             if enrollment or not activate_existing:

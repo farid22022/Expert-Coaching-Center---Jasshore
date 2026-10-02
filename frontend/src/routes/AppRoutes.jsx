@@ -398,6 +398,7 @@ import {
 } from "../pages/admin/Dashboard/courses/CourseFoundationPages.jsx";
 import { BannersPage, SuccessStoriesPage, RenownedTeachersPage } from "../pages/admin/Dashboard/website/WebsiteContentPages.jsx";
 import WebsiteSettingsPage from "../pages/admin/Dashboard/website/WebsiteSettingsPage.jsx";
+import IntegrationsPage from "../pages/admin/Dashboard/website/IntegrationsPage.jsx";
 
 import {
   AdminAcademicPage,
@@ -1748,6 +1749,7 @@ function adminDashboardChildren() {
       <Route path="website/success-stories" element={<SuccessStoriesPage />} />
       <Route path="website/renowned-teachers" element={<RenownedTeachersPage />} />
       <Route path="website/settings" element={<WebsiteSettingsPage />} />
+      <Route path="integrations" element={<IntegrationsPage />} />
       <Route path="*" element={<Navigate to="" replace />} />
     </>
   );

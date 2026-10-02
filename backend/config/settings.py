@@ -2,11 +2,9 @@ from datetime import timedelta
 from pathlib import Path
 import os
 import sys
+from urllib.parse import parse_qsl, unquote, urlparse
 
-import pymysql
 from dotenv import load_dotenv
-
-pymysql.install_as_MySQLdb()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 # The project .env is the source of truth for this local backend. This also
@@ -49,6 +47,7 @@ INSTALLED_APPS = [
     "apps.messaging",
     "apps.website",
     "apps.audit",
+    "apps.integrations",
 ]
 
 MIDDLEWARE = [
@@ -80,25 +79,78 @@ TEMPLATES = [
     }
 ]
 
-DATABASES = {
-    "default": {
+def _database_from_url(url):
+    """Parse DATABASE_URL (postgresql://user:pass@host:port/db?sslmode=require)."""
+    parsed = urlparse(url)
+    if parsed.scheme not in {"postgres", "postgresql", "postgresql+psycopg"}:
+        raise ValueError("DATABASE_URL must be a postgresql:// URL.")
+    options = dict(parse_qsl(parsed.query))
+    config = {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": unquote(parsed.path.lstrip("/")),
+        "USER": unquote(parsed.username or ""),
+        "PASSWORD": unquote(parsed.password or ""),
+        "HOST": parsed.hostname or "localhost",
+        "PORT": str(parsed.port or 5432),
+        "CONN_MAX_AGE": int(env("DB_CONN_MAX_AGE", "30")),
+        "CONN_HEALTH_CHECKS": True,
+        "OPTIONS": {k: v for k, v in options.items() if k in {"sslmode", "channel_binding", "sslrootcert", "connect_timeout", "application_name"}},
+    }
+    # Neon requires TLS; default to it for remote hosts unless the URL says otherwise.
+    if config["HOST"] not in {"localhost", "127.0.0.1", "::1"}:
+        config["OPTIONS"].setdefault("sslmode", "require")
+    config["OPTIONS"].setdefault("connect_timeout", "10")
+    return config
+
+
+DATABASE_URL = env("DATABASE_URL", "")
+LEGACY_MYSQL_MIGRATION_MODE = bool(env("LEGACY_MYSQL_NAME", ""))
+
+if DATABASE_URL:
+    # Production / Neon / local PostgreSQL. Only PostgreSQL is supported here.
+    DATABASES = {"default": _database_from_url(DATABASE_URL)}
+else:
+    # Pre-cutover fallback: the original MySQL/MariaDB database. Remove once the
+    # PostgreSQL cutover is complete and rollback is no longer required.
+    import pymysql
+
+    pymysql.install_as_MySQLdb()
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.mysql",
+            "NAME": env("DB_NAME", "expert_coaching"),
+            "USER": env("DB_USER", "expert_user"),
+            "PASSWORD": env("DB_PASSWORD", ""),
+            "HOST": env("DB_HOST", "localhost"),
+            "PORT": env("DB_PORT", "3306"),
+            "OPTIONS": {"charset": "utf8mb4"},
+        }
+    }
+
+if LEGACY_MYSQL_MIGRATION_MODE:
+    # Migration tooling only (manage.py migrate_mysql_to_postgres). Never set in production.
+    import pymysql
+
+    pymysql.install_as_MySQLdb()
+    DATABASES["legacy_mysql"] = {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": env("DB_NAME", "expert_coaching"),
-        "USER": env("DB_USER", "expert_user"),
-        "PASSWORD": env("DB_PASSWORD", ""),
-        "HOST": env("DB_HOST", "localhost"),
-        "PORT": env("DB_PORT", "3306"),
+        "NAME": env("LEGACY_MYSQL_NAME"),
+        "USER": env("LEGACY_MYSQL_USER", ""),
+        "PASSWORD": env("LEGACY_MYSQL_PASSWORD", ""),
+        "HOST": env("LEGACY_MYSQL_HOST", "localhost"),
+        "PORT": env("LEGACY_MYSQL_PORT", "3306"),
         "OPTIONS": {"charset": "utf8mb4"},
     }
-}
 
-if "test" in sys.argv:
-    DATABASES["default"] = {
+# Tests use SQLite unless TEST_USE_DATABASE_URL=1 (then they run against the PostgreSQL DATABASE_URL).
+if "test" in sys.argv and not (DATABASE_URL and env("TEST_USE_DATABASE_URL", "") == "1"):
+    DATABASES = {"default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "test.sqlite3",
-    }
+    }}
 
 AUTH_USER_MODEL = "accounts.User"
+AUTHENTICATION_BACKENDS = ["apps.accounts.backends.CaseInsensitiveEmailBackend"]
 LOGIN_REDIRECT_URL = "/api/v1/"
 LOGOUT_REDIRECT_URL = "/api/v1/"
 
@@ -147,6 +199,7 @@ CORS_ALLOWED_ORIGINS = [
 for local_origin in ("http://localhost:5173", "http://127.0.0.1:5173"):
     if local_origin not in CORS_ALLOWED_ORIGINS:
         CORS_ALLOWED_ORIGINS.append(local_origin)
+CORS_ALLOWED_ORIGINS += [o.strip() for o in env("CORS_EXTRA_ORIGINS", "").split(",") if o.strip() and o.strip() not in CORS_ALLOWED_ORIGINS]
 CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
 
 LANGUAGE_CODE = "en-us"
@@ -160,6 +213,13 @@ STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").is_dir() else 
 MEDIA_URL = env("MEDIA_URL", "/media/")
 MEDIA_ROOT = BASE_DIR / env("MEDIA_ROOT", "media")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Integration secrets (server-side only; never exposed to the frontend).
+# Master key for encrypting admin-saved integration API keys (Fernet key). Keep outside the DB.
+APP_CONFIG_ENCRYPTION_KEY = env("APP_CONFIG_ENCRYPTION_KEY", "")
+# Optional ImgBB fallback used when no admin-configured key is enabled.
+IMGBB_API_KEY = env("IMGBB_API_KEY", "")
+IMGBB_TIMEOUT_SECONDS = int(env("IMGBB_TIMEOUT_SECONDS", "20"))
 
 PAYMENT_PROVIDER = env("PAYMENT_PROVIDER", "bkash").lower()
 BKASH_MODE = env("BKASH_MODE", "mock").lower()

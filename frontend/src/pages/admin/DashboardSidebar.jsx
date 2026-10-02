@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Bell, BookOpen, ClipboardCheck, CreditCard, FilePenLine, GraduationCap, Image, LayoutDashboard, LayoutTemplate, LogOut, Palette, Sparkles, UserCheck, Users, X } from "lucide-react";
+import { Bell, BookOpen, ClipboardCheck, CreditCard, FilePenLine, GraduationCap, Image, LayoutDashboard, LayoutTemplate, LogOut, Palette, PlugZap, Sparkles, UserCheck, Users, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { logout } from "../../services/authApi.js";
@@ -20,6 +20,7 @@ const navItems = [
   { labelKey: "nav.successStories", path: "/website/success-stories", icon: Sparkles },
   { labelKey: "nav.renownedTeachers", path: "/website/renowned-teachers", icon: UserCheck },
   { labelKey: "nav.websiteSettings", path: "/website/settings", icon: Palette },
+  { labelKey: "nav.integrations", path: "/integrations", icon: PlugZap },
 ];
 
 export default function DashboardSidebar({ mobileOpen, setMobileOpen }) {

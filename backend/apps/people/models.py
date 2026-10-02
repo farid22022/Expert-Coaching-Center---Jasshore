@@ -1,4 +1,5 @@
 from django.db import models
+from apps.core.fields import HostedImageField
 from apps.core.models import OrganizationScopedModel, StatusChoices
 
 
@@ -28,7 +29,7 @@ class StudentProfile(OrganizationScopedModel):
     date_of_birth = models.DateField(null=True, blank=True)
     phone = models.CharField(max_length=50, blank=True, db_index=True)
     email = models.EmailField(blank=True)
-    photo = models.ImageField(upload_to="student-profiles/photos/", blank=True)
+    photo = HostedImageField(upload_to="student-profiles/photos/", blank=True)
     guardian_name = models.CharField(max_length=180, blank=True)
     guardian_phone = models.CharField(max_length=50, blank=True)
     present_address = models.TextField(blank=True)
@@ -55,7 +56,7 @@ class Student(OrganizationScopedModel):
     date_of_birth = models.DateField(null=True, blank=True)
     phone = models.CharField(max_length=50, blank=True, db_index=True)
     email = models.EmailField(blank=True)
-    photo = models.ImageField(upload_to="students/photos/", blank=True)
+    photo = HostedImageField(upload_to="students/photos/", blank=True)
     session = models.ForeignKey("academic.AcademicSession", null=True, blank=True, on_delete=models.SET_NULL)
     academic_class = models.ForeignKey("academic.AcademicClass", null=True, blank=True, on_delete=models.SET_NULL)
     section = models.ForeignKey("academic.Section", null=True, blank=True, on_delete=models.SET_NULL)
@@ -132,7 +133,7 @@ class Employee(OrganizationScopedModel):
     phone = models.CharField(max_length=50, blank=True, db_index=True)
     email = models.EmailField(blank=True)
     joining_date = models.DateField(null=True, blank=True)
-    photo = models.ImageField(upload_to="employees/photos/", blank=True)
+    photo = HostedImageField(upload_to="employees/photos/", blank=True)
     rfid = models.CharField(max_length=120, blank=True, db_index=True)
     status = models.CharField(max_length=20, choices=StatusChoices.choices, default=StatusChoices.ACTIVE)
 

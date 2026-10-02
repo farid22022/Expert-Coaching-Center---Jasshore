@@ -61,6 +61,7 @@ urlpatterns = [
     path("api/v1/sms/", include("apps.messaging.urls")),
     path("api/v1/website/", include("apps.website.urls")),
     path("api/v1/audit/", include("apps.audit.urls")),
+    path("api/v1/", include("apps.integrations.urls")),
 ]
 
 if settings.DEBUG:

@@ -11,6 +11,7 @@ import api, { getApiErrorMessage, API_BASE_URL } from "../../services/api.js";
 import { confirmAction, confirmDelete, notifyError, notifySuccess } from "../../services/alerts.js";
 import RichTextEditor from "../../components/common/RichTextEditor.jsx";
 import Modal from "../../components/common/Modal.jsx";
+import ImageUploader from "../../components/common/ImageUploader.jsx";
 import {
   admissionPaymentApi,
   applicantDocumentApi,
@@ -262,9 +263,10 @@ export function AdminAdmissionFormBuilderPage() {
   const [schema, setSchema] = useState([]);
   const [content, setContent] = useState([]);
   const [landingPage, setLandingPage] = useState(blankLandingPage());
-  const [thumbnail, setThumbnail] = useState(null);
-  const [coverImage, setCoverImage] = useState(null);
-  const [heroImage, setHeroImage] = useState(null);
+  // Image state holds the public URL (uploaded via Django -> ImgBB), not a File.
+  const [thumbnail, setThumbnail] = useState("");
+  const [coverImage, setCoverImage] = useState("");
+  const [heroImage, setHeroImage] = useState("");
   const [contentFiles, setContentFiles] = useState({});
   const [teacherRows, setTeacherRows] = useState([]);
   const [teacherLoading, setTeacherLoading] = useState(false);
@@ -310,9 +312,9 @@ export function AdminAdmissionFormBuilderPage() {
   const loadAdmission = (course) => {
     setSelectedId(course?.id || "");
     setActiveTab("overview");
-    setThumbnail(null);
-    setCoverImage(null);
-    setHeroImage(null);
+    setThumbnail(course?.thumbnail || "");
+    setCoverImage(course?.cover_image || "");
+    setHeroImage(course?.hero_image || "");
     setContentFiles({});
     setNotice("");
     setError("");
@@ -417,14 +419,11 @@ export function AdminAdmissionFormBuilderPage() {
         admission_form_schema: savedSchema,
         landing_page: landingPage,
       };
-      let body = payload;
-      if (thumbnail || coverImage || heroImage) {
-        body = new FormData();
-        Object.entries(payload).forEach(([key, value]) => body.append(key, typeof value === "object" && value !== null ? JSON.stringify(value) : value ?? ""));
-        if (thumbnail) body.append("thumbnail", thumbnail);
-        if (coverImage) body.append("cover_image", coverImage);
-        if (heroImage) body.append("hero_image", heroImage);
-      }
+      // Only changed images are sent (as the hosted public URL); unchanged ones are left alone.
+      if (thumbnail !== (selected.thumbnail || "")) payload.thumbnail = thumbnail;
+      if (coverImage !== (selected.cover_image || "")) payload.cover_image = coverImage;
+      if (heroImage !== (selected.hero_image || "")) payload.hero_image = heroImage;
+      const body = payload;
       const saved = await courseApi.update(selected.id, body);
       await reload();
       loadAdmission(saved);
@@ -561,14 +560,8 @@ function OverviewTab({ form, setCard, thumbnail, setThumbnail, coverImage, setCo
             <span className="mb-1 text-sm font-bold">Full description</span>
             <RichTextEditor value={form.description || ""} onChange={(value) => setCard("description", value)} placeholder="Describe this admission program..." />
           </label>
-          <label className="form-control">
-            <span className="mb-1 text-sm font-bold">Card image (listing thumbnail)</span>
-            <input type="file" accept="image/*" onChange={(event) => setThumbnail(event.target.files?.[0] || null)} className="file-input file-input-bordered" />
-          </label>
-          <label className="form-control">
-            <span className="mb-1 text-sm font-bold">Cover image</span>
-            <input type="file" accept="image/*" onChange={(event) => setCoverImage(event.target.files?.[0] || null)} className="file-input file-input-bordered" />
-          </label>
+          <ImageUploader label="Card image (listing thumbnail)" context="thumbnail" value={thumbnail} onChange={(url) => setThumbnail(url)} />
+          <ImageUploader label="Cover image" context="admission_cover" value={coverImage} onChange={(url) => setCoverImage(url)} />
         </div>
       </section>
 
@@ -588,10 +581,7 @@ function OverviewTab({ form, setCard, thumbnail, setThumbnail, coverImage, setCo
             <span className="mb-1 text-sm font-bold">Hero subtitle</span>
             <input value={form.hero_subtitle || ""} onChange={(event) => setCard("hero_subtitle", event.target.value)} className="input input-bordered" />
           </label>
-          <label className="form-control">
-            <span className="mb-1 text-sm font-bold">Hero image</span>
-            <input type="file" accept="image/*" onChange={(event) => setHeroImage(event.target.files?.[0] || null)} className="file-input file-input-bordered" />
-          </label>
+          <ImageUploader label="Hero image" context="admission_cover" value={heroImage} onChange={(url) => setHeroImage(url)} />
           <label className="form-control">
             <span className="mb-1 text-sm font-bold">Promo video URL (optional)</span>
             <input value={form.promo_video_url || ""} onChange={(event) => setCard("promo_video_url", event.target.value)} className="input input-bordered" placeholder="YouTube embed URL — shown instead of the hero image" />

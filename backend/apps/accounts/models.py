@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from apps.core.fields import HostedImageField
 
 
 class Permission(models.Model):
@@ -49,7 +50,7 @@ class User(AbstractUser):
         related_name="users",
     )
     phone = models.CharField(max_length=50, blank=True, db_index=True)
-    avatar = models.ImageField(upload_to="users/avatars/", blank=True)
+    avatar = HostedImageField(upload_to="users/avatars/", blank=True)
     roles = models.ManyToManyField(Role, blank=True, related_name="users")
 
     USERNAME_FIELD = "email"

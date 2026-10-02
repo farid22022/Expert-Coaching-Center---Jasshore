@@ -1,4 +1,5 @@
 from django.db import models
+from apps.core.fields import HostedImageField
 from apps.core.models import OrganizationScopedModel
 
 
@@ -44,7 +45,7 @@ class AdmissionApplication(OrganizationScopedModel):
     mother_profession = models.CharField(max_length=120, blank=True)
     guardian_relation = models.CharField(max_length=80, blank=True)
     previous_institute = models.CharField(max_length=255, blank=True)
-    photo = models.ImageField(upload_to="admissions/photos/", blank=True)
+    photo = HostedImageField(upload_to="admissions/photos/", blank=True)
     payment_status = models.CharField(max_length=30, default="pending", db_index=True)
     payment_reference = models.CharField(max_length=120, blank=True)
     status = models.CharField(max_length=20, choices=ApplicationStatus.choices, default=ApplicationStatus.PENDING, db_index=True)

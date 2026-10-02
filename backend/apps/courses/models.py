@@ -1,4 +1,5 @@
 from django.db import models
+from apps.core.fields import HostedImageField
 from django.utils.text import slugify
 
 from apps.core.models import OrganizationScopedModel
@@ -47,7 +48,7 @@ class Course(OrganizationScopedModel):
     code = models.CharField(max_length=80, blank=True, db_index=True)
     description = models.TextField(blank=True)
     course_type = models.CharField(max_length=20, choices=CourseType.choices, default=CourseType.REGULAR)
-    thumbnail = models.ImageField(upload_to="courses/thumbnails/", blank=True)
+    thumbnail = HostedImageField(upload_to="courses/thumbnails/", blank=True)
     admission_fee = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     course_fee = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     capacity = models.PositiveIntegerField(null=True, blank=True)
@@ -64,8 +65,8 @@ class Course(OrganizationScopedModel):
 
     # Landing page fields
     short_description = models.TextField(blank=True)
-    cover_image = models.ImageField(upload_to="courses/covers/", blank=True)
-    hero_image = models.ImageField(upload_to="courses/hero/", blank=True)
+    cover_image = HostedImageField(upload_to="courses/covers/", blank=True)
+    hero_image = HostedImageField(upload_to="courses/hero/", blank=True)
     promo_video_url = models.URLField(blank=True)
     offer_fee = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     hero_badge = models.CharField(max_length=120, blank=True)

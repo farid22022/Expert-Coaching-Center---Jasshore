@@ -1,4 +1,5 @@
 from django.db import models
+from apps.core.fields import HostedImageField
 from apps.core.models import TimeStampedModel
 
 
@@ -10,8 +11,8 @@ class Organization(TimeStampedModel):
     phone = models.CharField(max_length=50, blank=True)
     address = models.TextField(blank=True)
     established_year = models.PositiveIntegerField(null=True, blank=True)
-    logo = models.ImageField(upload_to="organizations/logos/", blank=True)
-    favicon = models.ImageField(upload_to="organizations/favicons/", blank=True)
+    logo = HostedImageField(upload_to="organizations/logos/", blank=True)
+    favicon = HostedImageField(upload_to="organizations/favicons/", blank=True)
     theme_primary_color = models.CharField(max_length=7, blank=True)
     theme_accent_color = models.CharField(max_length=7, blank=True)
     theme_font_family = models.CharField(max_length=60, blank=True)

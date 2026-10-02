@@ -1,4 +1,5 @@
 from django.db import models
+from apps.core.fields import HostedImageField
 from django.utils import timezone
 
 from apps.core.models import OrganizationScopedModel
@@ -78,8 +79,8 @@ class Question(OrganizationScopedModel):
     text = models.TextField()
     explanation = models.TextField(blank=True)
     question_type = models.CharField(max_length=20, choices=QuestionType.choices, default=QuestionType.SINGLE)
-    image = models.ImageField(upload_to="assessments/questions/", blank=True)
-    diagram = models.ImageField(upload_to="assessments/diagrams/", blank=True)
+    image = HostedImageField(upload_to="assessments/questions/", blank=True)
+    diagram = HostedImageField(upload_to="assessments/diagrams/", blank=True)
     attachment = models.FileField(upload_to="assessments/question-files/", blank=True)
     marks = models.DecimalField(max_digits=6, decimal_places=2, default=1)
     negative_marks = models.DecimalField(max_digits=6, decimal_places=2, default=0)
@@ -100,7 +101,7 @@ class Question(OrganizationScopedModel):
 class QuestionOption(OrganizationScopedModel):
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="options")
     text = models.CharField(max_length=500)
-    image = models.ImageField(upload_to="assessments/options/", blank=True)
+    image = HostedImageField(upload_to="assessments/options/", blank=True)
     is_correct = models.BooleanField(default=False)
     order = models.PositiveIntegerField(default=0)
 
@@ -167,7 +168,7 @@ class Assessment(OrganizationScopedModel):
     max_file_size_mb = models.PositiveIntegerField(default=10)
     allowed_file_types = models.JSONField(default=list, blank=True)
     question_file = models.FileField(upload_to="assessments/test-files/", blank=True)
-    question_image = models.ImageField(upload_to="assessments/test-images/", blank=True)
+    question_image = HostedImageField(upload_to="assessments/test-images/", blank=True)
     supporting_file = models.FileField(upload_to="assessments/supporting-files/", blank=True)
     attempts_allowed = models.PositiveIntegerField(default=1, help_text="Use 0 for unlimited.")
     shuffle_questions = models.BooleanField(default=False)

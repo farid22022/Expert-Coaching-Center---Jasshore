@@ -1,4 +1,5 @@
 from django.db import models
+from apps.core.fields import HostedImageField, HostedMediaField
 from apps.core.models import OrganizationScopedModel
 
 
@@ -15,7 +16,7 @@ class ContentItem(OrganizationScopedModel):
     slug = models.SlugField(max_length=280)
     summary = models.TextField(blank=True)
     body = models.TextField(blank=True)
-    image = models.ImageField(upload_to="website/content/", blank=True)
+    image = HostedImageField(upload_to="website/content/", blank=True)
     published = models.BooleanField(default=False)
     published_at = models.DateTimeField(null=True, blank=True)
 
@@ -23,7 +24,7 @@ class ContentItem(OrganizationScopedModel):
 class GalleryItem(OrganizationScopedModel):
     type = models.CharField(max_length=20, default="photo")
     title = models.CharField(max_length=255)
-    file = models.FileField(upload_to="website/gallery/", blank=True)
+    file = HostedMediaField(upload_to="website/gallery/", blank=True)
     url = models.URLField(blank=True)
     published = models.BooleanField(default=True)
 
@@ -39,7 +40,7 @@ class WebsiteSetting(OrganizationScopedModel):
 class Banner(OrganizationScopedModel):
     title = models.CharField(max_length=200, blank=True)
     subtitle = models.CharField(max_length=255, blank=True)
-    image = models.ImageField(upload_to="website/banners/", blank=True)
+    image = HostedImageField(upload_to="website/banners/", blank=True)
     link_url = models.URLField(blank=True)
     display_order = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
@@ -55,7 +56,7 @@ class SuccessStory(OrganizationScopedModel):
     name = models.CharField(max_length=200)
     outcome = models.CharField(max_length=255, blank=True)
     quote = models.TextField(blank=True)
-    photo = models.ImageField(upload_to="website/success-stories/", blank=True)
+    photo = HostedImageField(upload_to="website/success-stories/", blank=True)
     display_order = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
 
@@ -70,7 +71,7 @@ class RenownedTeacher(OrganizationScopedModel):
     name = models.CharField(max_length=200)
     designation = models.CharField(max_length=200, blank=True)
     subject = models.CharField(max_length=120, blank=True)
-    image = models.ImageField(upload_to="website/teachers/", blank=True)
+    image = HostedImageField(upload_to="website/teachers/", blank=True)
     bio = models.TextField(blank=True)
     years_experience = models.PositiveIntegerField(default=0)
     badge = models.CharField(max_length=80, blank=True)

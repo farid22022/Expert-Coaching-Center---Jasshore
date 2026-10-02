@@ -1,0 +1,18 @@
+
+> dev
+> vite --host 0.0.0.0 --host 127.0.0.1
+
+
+  VITE v7.3.6  ready in 64404 ms
+
+  ➜  Local:   http://127.0.0.1:5173/
+  ➜  press h + enter to show help
+/*! 🌼 daisyUI 5.7.39 */
+1:18:16 PM [vite] (client) hmr update /src/routes/AppRoutes.jsx, /src/index.css
+1:18:18 PM [vite] (client) hmr update /src/index.css, /src/pages/admin/DashboardSidebar.jsx
+1:18:18 PM [vite] (client) page reload src/i18n/locales/en/admin.json
+1:18:18 PM [vite] (client) page reload src/i18n/locales/bn/admin.json
+1:18:51 PM [vite] (client) hmr update /src/pages/admin/AdminPortalPages.jsx, /src/index.css
+1:37:53 PM [vite] (client) hmr update /src/index.css, /src/pages/admin/Dashboard/website/IntegrationsPage.jsx
+1:37:54 PM [vite] (client) hmr update /src/index.css
+1:37:54 PM [vite] (client) hmr update /src/index.css, /src/pages/admin/Dashboard/website/IntegrationsPage.jsx

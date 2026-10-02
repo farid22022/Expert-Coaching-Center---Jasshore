@@ -26,7 +26,7 @@ class PaymentService:
     def _get_record(public_id, user=None, for_update=False):
         queryset = AdmissionPaymentTransaction.objects
         if for_update:
-            queryset = queryset.select_for_update()
+            queryset = queryset.select_for_update(of=("self",))
         queryset = queryset.select_related("application__course", "application__organization", "agreement")
         if user is not None:
             queryset = queryset.filter(payer=user)
@@ -59,7 +59,7 @@ class PaymentService:
     @staticmethod
     @transaction.atomic
     def initiate(application_id, user):
-        application = AdmissionApplication.objects.select_for_update().select_related("course", "organization").get(pk=application_id)
+        application = AdmissionApplication.objects.select_for_update(of=("self",)).select_related("course", "organization").get(pk=application_id)
         amount = PaymentService._assert_eligible(application, user)
         existing = AdmissionPaymentTransaction.objects.select_for_update().filter(application=application, status__in=ACTIVE_STATUSES).first()
         if existing:
@@ -255,10 +255,10 @@ class PaymentService:
     @staticmethod
     @transaction.atomic
     def complete_admission_payment(record):
-        record = AdmissionPaymentTransaction.objects.select_for_update().select_related("application__course", "application__organization").get(pk=record.pk)
+        record = AdmissionPaymentTransaction.objects.select_for_update(of=("self",)).select_related("application__course", "application__organization").get(pk=record.pk)
         if record.status != PaymentStatus.COMPLETED:
             raise ValidationError("Only verified completed transactions can activate enrollment.")
-        application = AdmissionApplication.objects.select_for_update().select_related("course", "organization").get(pk=record.application_id)
+        application = AdmissionApplication.objects.select_for_update(of=("self",)).select_related("course", "organization").get(pk=record.application_id)
         if application.payment_status != "paid":
             application.payment_status = "paid"
             application.payment_reference = record.transaction_id or record.merchant_invoice_number

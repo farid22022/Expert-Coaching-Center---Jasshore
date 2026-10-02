@@ -13,7 +13,8 @@
     "banners": "Banners",
     "successStories": "Success Stories",
     "renownedTeachers": "Renowned Teachers",
-    "websiteSettings": "Website Settings"
+    "websiteSettings": "Website Settings",
+    "integrations": "Integrations"
   },
   "portal": "Admin Portal",
   "websiteSettingsPage": {
