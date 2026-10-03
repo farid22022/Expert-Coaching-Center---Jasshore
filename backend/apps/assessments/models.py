@@ -163,6 +163,9 @@ class Assessment(OrganizationScopedModel):
     reviewed_at = models.DateTimeField(null=True, blank=True)
     review_note = models.TextField(blank=True)
     published_at = models.DateTimeField(null=True, blank=True)
+    # Set when the publish notification was delivered (lets future-dated publications be
+    # delivered later by `deliver_due_test_notifications` without double notifying).
+    notified_at = models.DateTimeField(null=True, blank=True)
     allow_late_join = models.BooleanField(default=False)
     late_deadline = models.DateTimeField(null=True, blank=True)
     max_file_size_mb = models.PositiveIntegerField(default=10)

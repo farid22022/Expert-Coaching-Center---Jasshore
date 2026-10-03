@@ -71,3 +71,7 @@ The supplied files are `frontend/public/academic/prob ch-2.pdf` (16,471,876 byte
 ### Current Test Status
 
 Repository test modules and frontend build command exist. At the moment this baseline was written, the current working tree had **no fresh test/build/browser result** for this request, so none is labeled PASS. Test outcomes and unresolved limits belong in `ACADEMIC_WORKFLOW_IMPLEMENTATION_REPORT.md` after implementation.
+
+## Update 2026-10-02: Test → Notification → Student pipeline
+
+Database is now PostgreSQL on Neon (see `POSTGRES_NEON_IMGBB_MIGRATION_STATE.md`). Test publication is centralised in `apps/assessments/publication.py` (`TestPublicationService`): publish / head-teacher approval / reschedule / cancel create one structured `messaging.Notification` per eligible active-enrolled student (idempotent via `dedupe_key`). Students open a test at `/student/tests/:id`; availability and countdown come from the backend (`student_status`, `server_time`) and `start` is still gated server-side. No React Query and no background worker exist in this project. Details: `TEST_NOTIFICATION_STUDENT_PIPELINE_STATE.md` (before), `TEST_NOTIFICATION_PIPELINE_REPORT.md` (after), `ACADEMIC_NOTIFICATION_MATRIX.md` (events).

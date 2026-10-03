@@ -1,3 +1,4 @@
+import django_filters
 import json
 
 from django.db import transaction
@@ -13,13 +14,21 @@ from . import models, serializers
 from .services import AdmissionService
 
 
+class AdmissionApplicationFilter(django_filters.FilterSet):
+    status__in = django_filters.BaseInFilter(field_name="status", lookup_expr="in")
+
+    class Meta:
+        model = models.AdmissionApplication
+        fields = ("course", "session", "academic_class", "group", "shift", "status")
+
+
 class AdmissionApplicationViewSet(OrganizationScopedModelViewSet):
     queryset = models.AdmissionApplication.objects.select_related("applicant", "course", "session", "academic_class", "group", "shift", "reviewed_by", "approved_student")
     serializer_class = serializers.AdmissionApplicationSerializer
     permission_classes = [HasActionPermission]
     permission_module = "application"
     search_fields = ("application_no", "applicant_name", "applicant_phone")
-    filterset_fields = ("course", "session", "academic_class", "group", "shift", "status")
+    filterset_class = AdmissionApplicationFilter
 
     def get_permissions(self):
         if self.action == "create":

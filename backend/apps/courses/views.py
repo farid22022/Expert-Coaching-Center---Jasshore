@@ -50,14 +50,11 @@ class StudentPortalViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def _student(self, request):
-        from apps.people.models import Student
-        return Student.objects.filter(
-            organization=request.user.organization,
-            email__iexact=request.user.email,
-        ).first()
+        from apps.core.request_cache import student_for_user
+        return student_for_user(request.user)
 
     def _progress(self, student, course):
-        return self._progress_by_course(None, student, [course.id], organization=course.organization)[course.id]
+        return self._progress_by_course(None, student, [course.id], organization=course.organization_id)[course.id]
 
     def _progress_by_course(self, request, student, course_ids, organization=None):
         """Counts materials (viewed) + assessments (attempted) together as "units" so
@@ -210,7 +207,11 @@ class StudentPortalViewSet(viewsets.ViewSet):
             Q(publish_at__isnull=True) | Q(publish_at__lte=now),
             Q(starts_at__isnull=True) | Q(starts_at__lte=now),
             Q(ends_at__isnull=True) | Q(ends_at__gte=now),
-        ).select_related("subject", "created_by_teacher").order_by("-published_at", "-reviewed_at", "-updated_at", "-created_at")
+            # Individually-targeted tests (e.g. personalised practice) belong to their target student only,
+            # exactly as in StudentAssessmentViewSet; without this, other students saw them and got a 404 on Start.
+            Q(allowed_students__isnull=True) | Q(allowed_students=student),
+        # allowed_students is serialized by AssessmentSerializer (fields="__all__"): prefetch it, otherwise it costs one query per assessment.
+        ).select_related("subject", "created_by_teacher").prefetch_related("allowed_students").distinct().order_by("-published_at", "-reviewed_at", "-updated_at", "-created_at")
         sections = list(enrollment.course.sections.filter(pk=enrollment.course_section_id).prefetch_related("subjects").all()) if enrollment.course_section_id else list(enrollment.course.sections.prefetch_related("subjects").all())
         subjects_in_order = sorted(
             (subject for section in sections for subject in section.subjects.all()),
@@ -223,7 +224,7 @@ class StudentPortalViewSet(viewsets.ViewSet):
         assessment_data = assessment_serializers.AssessmentSerializer(assessments, many=True).data
         attempts = {
             attempt.assessment_id: attempt
-            for attempt in assessment_models.AssessmentAttempt.objects.filter(
+            for attempt in assessment_models.AssessmentAttempt.objects.select_related("assessment").filter(
                 organization=request.user.organization,
                 student=student,
                 assessment__in=assessments,

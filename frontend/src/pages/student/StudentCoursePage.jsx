@@ -3,7 +3,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { StudentMotion } from "../../components/common/StudentMotion.jsx";
 import PageIllustration from "../../components/common/PageIllustration.jsx";
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
   AlertCircle,
   ArrowRight,
@@ -197,8 +198,9 @@ function EmptySubjectState({ group }) {
   );
 }
 
-function Test({ item, close, onDone }) {
-  const [started, setStarted] = useState(false);
+export function StudentTestRunner({ item, close, onDone, autoStart = false }) {
+  const queryClient = useQueryClient();
+  const [started, setStarted] = useState(autoStart);
   const [saving, setSaving] = useState(false);
   const [attempt, setAttempt] = useState(null);
   const [index, setIndex] = useState(0);
@@ -241,6 +243,8 @@ function Test({ item, close, onDone }) {
       const response = await api.post(`/assessments/student/assessments/${item.id}/submit/`, { attempt: attempt.id });
       setResult(response.data?.data || response.data);
       notifySuccess("Test submitted successfully.");
+      // A submitted test changes the dashboard, the assessment list, results and the review: drop only those caches.
+      ["studentDashboard", "studentAssessments", "testReview"].forEach((key) => queryClient.invalidateQueries({ queryKey: [key] }));
       onDone?.();
     } catch (requestError) {
       setError(getApiErrorMessage(requestError));
@@ -275,7 +279,10 @@ function Test({ item, close, onDone }) {
         <CheckCircle2 className="mx-auto text-emerald-700" size={44} />
         <h2 className="mt-3 text-2xl font-black">Assessment submitted</h2>
         <p className="mt-3 font-bold">Score: {result.score} / {result.total_marks}</p>
-        <button className="btn btn-success mt-5 text-white" onClick={close}>Return to course</button>
+        <div className="mt-5 flex flex-wrap justify-center gap-2">
+          <Link className="btn btn-success text-white" to={`/student/tests/${item.id}/review`}>Review answers</Link>
+          <button className="btn btn-outline btn-success" onClick={close}>Return to course</button>
+        </div>
       </div>
     );
   }
@@ -287,7 +294,10 @@ function Test({ item, close, onDone }) {
         <h2 className="mt-3 text-2xl font-black">This test is already completed</h2>
         <p className="mt-2 font-semibold text-slate-600">Your previous attempt is marked as {attempt.status.replaceAll("_", " ")}.</p>
         <p className="mt-3 font-bold">Score: {attempt.score} / {attempt.total_marks}</p>
-        <button className="btn btn-success mt-5 text-white" onClick={close}>Return to course</button>
+        <div className="mt-5 flex flex-wrap justify-center gap-2">
+          <Link className="btn btn-success text-white" to={`/student/tests/${item.id}/review`}>Review answers</Link>
+          <button className="btn btn-outline btn-success" onClick={close}>Return to course</button>
+        </div>
       </div>
     );
   }
@@ -481,6 +491,7 @@ export function StudentMaterialDetailPage() {
 
 export default function StudentCoursePage() {
   const { enrollmentId } = useParams();
+  const [searchParams] = useSearchParams();
   const { data, error, refetch } = useCourseContent(enrollmentId);
   const [selected, setSelected] = useState(null);
   const [drawer, setDrawer] = useState(false);
@@ -499,6 +510,12 @@ export default function StudentCoursePage() {
 
   useEffect(() => {
     if (!data || selected) return;
+    // Deep link (?open=assignment:12 / assessment:12 / material:12) from a notification wins over the default landing item.
+    const [openType, openId] = (searchParams.get("open") || "").split(":");
+    if (openId) {
+      const wanted = allItems.find((item) => String(item.id) === openId && (openType === "material" ? !assessmentTypes.includes(item.unit_type) : assessmentTypes.includes(item.unit_type)));
+      if (wanted) { setSelected(wanted); return; }
+    }
     // Land the student on their first incomplete item in the "current" subject
     // (their real next step), not always the very first item in the course.
     const currentGroup = groups.find((group) => group.status === "current");
@@ -514,7 +531,7 @@ export default function StudentCoursePage() {
   ) : selected.unit_type === "empty" && selectedGroup ? (
     <EmptySubjectState group={selectedGroup} />
   ) : ["mcq", "exam"].includes(selected.unit_type) ? (
-    <Test key={selected.id} item={selected} close={() => setSelected(null)} onDone={refetch} />
+    <StudentTestRunner key={selected.id} item={selected} close={() => setSelected(null)} onDone={refetch} />
   ) : selected.unit_type === "assignment" ? (
     <AssignmentSubmission key={selected.id} item={selected} onDone={refetch} />
   ) : (

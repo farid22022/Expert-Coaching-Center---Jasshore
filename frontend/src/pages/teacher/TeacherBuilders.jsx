@@ -156,7 +156,10 @@ export function AssessmentBuilder({ data, assessment, onClose, onSaved }) {
     setSaving(true); setError("");
     try {
       const payload = { ...form, curriculum_chapter: form.curriculum_chapter || null, course_section: form.course_section || null, subject: form.subject || null, duration_minutes: Number(form.duration_minutes), attempts_allowed: Number(form.attempts_allowed), passing_percentage: Number(form.passing_percentage), starts_at: form.starts_at || null, ends_at: form.ends_at || null, publish_at: form.publish_at || null };
-      const saved = assessment ? await assessmentApi.update(assessment.id, payload) : await assessmentApi.create(payload);
+      // New tests are created as a draft, get their questions, and only then are published - so the
+      // "new test" notification (sent by the backend on publish) never points at an empty test.
+      const wantsPublished = !assessment && payload.status !== "draft";
+      const saved = assessment ? await assessmentApi.update(assessment.id, payload) : await assessmentApi.create(wantsPublished ? { ...payload, status: "draft" } : payload);
       if (!assessment && form.assessment_type !== "assignment") {
         const activeQuestions = questions.filter((row) => !isBlankRichText(row.text));
         for (let index = 0; index < activeQuestions.length; index += 1) {
@@ -172,7 +175,16 @@ export function AssessmentBuilder({ data, assessment, onClose, onSaved }) {
           await assessmentQuestionApi.create({ assessment: saved.id, question: question.id, order: index + 1, marks: Number(row.marks) });
         }
       }
-      notifySuccess(assessment ? "Assessment updated successfully." : `${form.assessment_type === "assignment" ? "Assignment" : "Test"} created successfully.`);
+      let notified = null;
+      if (wantsPublished) {
+        try {
+          const published = await assessmentApi.action(saved.id, "publish");
+          notified = published?.notified ?? published?.data?.notified ?? null;
+        } catch {
+          // Subject teachers cannot publish: the test stays pending for head-teacher review (existing rule).
+        }
+      }
+      notifySuccess(assessment ? "Assessment updated successfully." : `${form.assessment_type === "assignment" ? "Assignment" : "Test"} created successfully.${notified ? ` ${notified} student${notified === 1 ? "" : "s"} notified.` : ""}`);
       await onSaved(); onClose();
     } catch (requestError) {
       const message = getApiErrorMessage(requestError, "Could not save the assessment.");

@@ -16,6 +16,7 @@ from apps.courses.permissions import HeadTeacherCourseScopeMixin
 from apps.people.models import Employee
 from . import models, serializers
 from .services import AssessmentService, _notify_student, notify_enrolled_students
+from .publication import TestPublicationService, is_student_visible
 
 
 class AssessmentAdminViewSet(OrganizationScopedModelViewSet):
@@ -127,7 +128,11 @@ class AssessmentAdminViewSet(OrganizationScopedModelViewSet):
         # created, or a model with no review gate at all) - a subject teacher's draft/
         # pending-review content isn't visible to anyone yet, so notifying here would be
         # a false alarm before it's ever approved.
-        if is_head and model in (models.Assessment, models.CourseMaterial):
+        if is_head and model is models.Assessment:
+            # Published-only: a draft (or future-dated) test notifies nobody. The builder creates
+            # as draft, attaches questions, then calls publish, which is the normal path.
+            TestPublicationService.notify_published(instance, self.request.user)
+        elif is_head and model is models.CourseMaterial:
             self._notify_enrolled_students_of_new_content(instance, model)
         return instance
 
@@ -183,7 +188,17 @@ class AssessmentAdminViewSet(OrganizationScopedModelViewSet):
                 extra.update({"is_published": False, "status": "draft"})
             elif model is models.Assessment:
                 extra["status"] = "draft"
-        serializer.save(**extra)
+        was_visible = model is models.Assessment and is_student_visible(instance)
+        old_starts_at = getattr(instance, "starts_at", None)
+        saved = serializer.save(**extra)
+        if model is models.Assessment and is_head:
+            now_visible = is_student_visible(saved)
+            if not was_visible and now_visible:
+                TestPublicationService.notify_published(saved, self.request.user)
+            elif was_visible and not now_visible and saved.status == models.AssessmentStatus.ARCHIVED:
+                TestPublicationService.notify_cancelled(saved, self.request.user)
+            elif was_visible and now_visible and saved.starts_at and saved.starts_at != old_starts_at:
+                TestPublicationService.notify_rescheduled(saved, self.request.user)
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -234,11 +249,14 @@ class AssessmentAdminViewSet(OrganizationScopedModelViewSet):
                 item.status = "published"
             elif isinstance(item, models.Assessment):
                 item.status = request.data.get("publish_status", "published")
-                item.published_at = timezone.now()
+                item.published_at = item.published_at or timezone.now()
         elif isinstance(item, models.CourseMaterial):
             item.is_published = False
             item.status = "draft"
         item.save()
+        if decision == "approve" and isinstance(item, models.Assessment):
+            # Head-teacher approval IS the publication event for a subject teacher's test.
+            TestPublicationService.notify_published(item, request.user)
         return Response(self.get_serializer(item).data)
 
 
@@ -275,14 +293,10 @@ class AssessmentViewSet(AssessmentAdminViewSet):
         teacher = self._teacher()
         if not teacher or not self._is_head_teacher(teacher, assessment.course_id, assessment.course_section_id):
             return Response({"detail": "Head teacher approval is required before publishing."}, status=status.HTTP_403_FORBIDDEN)
-        assessment.review_status = "approved"
-        assessment.reviewed_by = teacher
-        assessment.reviewed_at = timezone.now()
-        assessment.status = models.AssessmentStatus.PUBLISHED
-        assessment.published_at = timezone.now()
-        assessment.updated_by = request.user
-        assessment.save(update_fields=["status", "review_status", "reviewed_by", "reviewed_at", "published_at", "updated_by", "updated_at"])
-        return success_response(self.get_serializer(assessment).data, "Assessment published.")
+        # Idempotent: a double-click / retried request re-publishes the same row and the
+        # per-student dedupe key guarantees one notification per student.
+        assessment, notified = TestPublicationService.publish(assessment, request.user, teacher)
+        return success_response({**self.get_serializer(assessment).data, "notified": notified}, "Assessment published.")
 
     @action(detail=False, methods=["post"], url_path="generate-practice")
     def generate_practice(self, request):
@@ -384,7 +398,7 @@ class SubmissionAttachmentViewSet(AssessmentAdminViewSet):
 
 class StudentAssessmentViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = serializers.AssessmentSerializer
+    serializer_class = serializers.StudentAssessmentSerializer
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "assessment_submit"
 
@@ -393,19 +407,53 @@ class StudentAssessmentViewSet(viewsets.ReadOnlyModelViewSet):
             return super().get_throttles()
         return []
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        user = self.request.user
+        if user.is_authenticated:
+            context["student"] = self._current_student()
+        return context
+
+    def _current_student(self):
+        # One lookup per request (context + queryset + retrieve all need it); each query is a
+        # full round trip to the remote database.
+        from apps.core.request_cache import student_for_user
+        return student_for_user(self.request.user)
+
+    def list(self, request, *args, **kwargs):
+        TestPublicationService.deliver_due_throttled()
+        return super().list(request, *args, **kwargs)
+
+    def retrieve(self, request, *args, **kwargs):
+        assessment = self.get_object()
+        student = self.get_serializer_context().get("student")
+        # Same auto-submit-on-expiry the course workspace performs, so a student who left
+        # mid-test and returns after the deadline sees the finished state, not a stuck timer.
+        attempt = models.AssessmentAttempt.objects.filter(assessment=assessment, student=student, status=models.AttemptStatus.IN_PROGRESS).first() if student else None
+        if attempt and timezone.now() > attempt.deadline:
+            AssessmentService.submit_attempt(attempt, request.user, auto=True)
+        return Response(self.get_serializer(assessment).data)
+
     def get_queryset(self):
         user = self.request.user
-        student = Student.objects.filter(organization=user.organization, email=user.email).first()
+        student = self._current_student()
         if not student:
             return models.Assessment.objects.none()
         active_enrollments = student.course_enrollments.filter(status="active")
         enrolled_course_ids = active_enrollments.values_list("course_id", flat=True)
         enrolled_section_ids = active_enrollments.values_list("course_section_id", flat=True)
         now = timezone.now()
+        statuses = [models.AssessmentStatus.PUBLISHED, models.AssessmentStatus.SCHEDULED, models.AssessmentStatus.LIVE]
+        # A single-test page must still resolve a finished/cancelled test (an old notification
+        # must land on "ended"/"cancelled", not a 404). Start/answer/submit stay on the strict set.
+        detail = self.action in {"retrieve", "review"}
+        if detail:
+            statuses += [models.AssessmentStatus.CLOSED, models.AssessmentStatus.ARCHIVED]
+        ends_filter = Q() if detail else Q(ends_at__isnull=True) | Q(ends_at__gte=now)
         return models.Assessment.objects.filter(
-            organization=user.organization,
+            organization_id=user.organization_id,
             course_id__in=enrolled_course_ids,
-            status__in=[models.AssessmentStatus.PUBLISHED, models.AssessmentStatus.SCHEDULED, models.AssessmentStatus.LIVE],
+            status__in=statuses,
             review_status=models.ContentReviewStatus.APPROVED,
         ).filter(
             Q(course_section__isnull=True) | Q(course_section_id__in=enrolled_section_ids),
@@ -416,17 +464,31 @@ class StudentAssessmentViewSet(viewsets.ReadOnlyModelViewSet):
             # can show it under "Upcoming" (AssessmentService.ensure_assessment_open
             # independently re-validates starts_at before a student can actually
             # start an attempt, so this doesn't weaken the real start-time gate).
-            Q(ends_at__isnull=True) | Q(ends_at__gte=now),
+            ends_filter,
             # Individually-targeted assessments (e.g. personalized practice, allowed_students
             # non-empty) were previously visible to every enrolled student even though
             # start/submit already blocked them - this was a real visibility gap.
             Q(allowed_students__isnull=True) | Q(allowed_students=student),
-        ).select_related("course", "course_section", "subject").distinct()
+        ).select_related("course", "course_section", "subject", "created_by_teacher").prefetch_related(
+            # question_count is only serialized by the list/retrieve serializer, so only prefetch it there.
+            *(["allowed_students", "assessment_questions"] if self.action in {"list", "retrieve"} else ["allowed_students"])
+        ).distinct().order_by("-created_at", "-id")
+
+    @action(detail=True, methods=["get"])
+    def review(self, request, pk=None):
+        """The student's own answers, the correct answers and explanations for a finished MCQ test."""
+        assessment = self.get_object()
+        student = self._current_student()
+        attempt = models.AssessmentAttempt.objects.filter(assessment=assessment, student=student).select_related("assessment").first() if student else None
+        if not attempt or attempt.status == models.AttemptStatus.IN_PROGRESS:
+            return Response({"detail": "Submit this test to review your answers."}, status=409)
+        from .services import attempt_review
+        return Response(attempt_review(attempt))
 
     @action(detail=False, methods=["get"])
     def materials(self, request):
         from apps.courses.material_media import student_material_url
-        student = Student.objects.filter(organization=request.user.organization, email=request.user.email).first()
+        student = self._current_student()
         if not student:
             return Response([])
         active_enrollments = student.course_enrollments.filter(status=EnrollmentStatus.ACTIVE)
@@ -459,7 +521,7 @@ class StudentAssessmentViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=["post"])
     def start(self, request, pk=None):
-        student = Student.objects.filter(organization=request.user.organization, email=request.user.email).first()
+        student = self._current_student()
         if not student:
             return Response({"detail": "Student record not found."}, status=404)
         attempt = AssessmentService.start_attempt(self.get_object(), student, request.user)
@@ -467,7 +529,7 @@ class StudentAssessmentViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=["post"])
     def answer(self, request, pk=None):
-        student = Student.objects.filter(organization=request.user.organization, email=request.user.email).first()
+        student = self._current_student()
         if not student:
             return Response({"detail": "Student record not found."}, status=404)
         attempt = models.AssessmentAttempt.objects.filter(
@@ -485,7 +547,7 @@ class StudentAssessmentViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=["post"])
     def submit(self, request, pk=None):
-        student = Student.objects.filter(organization=request.user.organization, email=request.user.email).first()
+        student = self._current_student()
         if not student:
             return Response({"detail": "Student record not found."}, status=404)
         attempt = models.AssessmentAttempt.objects.filter(
@@ -500,7 +562,7 @@ class StudentAssessmentViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=["get"])
     def dashboard(self, request):
-        student = Student.objects.filter(organization=request.user.organization, email=request.user.email).first()
+        student = self._current_student()
         queryset = self.get_queryset()
         now = timezone.now()
         available = queryset.filter(
@@ -523,7 +585,7 @@ class StudentAssessmentViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=["post"])
     def submit_assignment(self, request, pk=None):
-        student = Student.objects.filter(organization=request.user.organization, email=request.user.email).first()
+        student = self._current_student()
         if not student:
             return Response({"detail": "Student record not found."}, status=404)
         submission = AssessmentService.submit_assignment(self.get_object(), student, request.FILES.getlist("files"), request.user)
@@ -531,14 +593,14 @@ class StudentAssessmentViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=["get"])
     def performance(self, request):
-        student = Student.objects.filter(organization=request.user.organization, email=request.user.email).first()
+        student = self._current_student()
         if not student:
             return Response({"detail": "Student record not found."}, status=404)
         return Response(AssessmentService.student_performance(student))
 
     @action(detail=False, methods=["get"])
     def history(self, request):
-        student = Student.objects.filter(organization=request.user.organization, email=request.user.email).first()
+        student = self._current_student()
         if not student:
             return Response({"attempts": [], "submissions": []})
         attempts = models.AssessmentAttempt.objects.filter(student=student).exclude(status=models.AttemptStatus.IN_PROGRESS)
@@ -552,7 +614,7 @@ class StudentAssessmentViewSet(viewsets.ReadOnlyModelViewSet):
     def recommended(self, request):
         """"Recommended for You" (spec §13/§60) - open interventions with a linked
         practice set, plus recent feedback, for the logged-in student only."""
-        student = Student.objects.filter(organization=request.user.organization, email=request.user.email).first()
+        student = self._current_student()
         if not student:
             return Response({"interventions": [], "feedback": []})
         interventions = models.StudentIntervention.objects.filter(
@@ -567,7 +629,7 @@ class StudentAssessmentViewSet(viewsets.ReadOnlyModelViewSet):
         })
 
     def _student(self, request):
-        return Student.objects.filter(organization=request.user.organization, email=request.user.email).first()
+        return self._current_student()
 
     @action(detail=False, methods=["get"])
     def actions(self, request):

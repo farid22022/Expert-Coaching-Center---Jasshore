@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { CheckCircle2, ClipboardList, XCircle } from "lucide-react";
 
 import api, { getApiErrorMessage } from "../../services/api.js";
@@ -77,6 +78,7 @@ export default function StudentResultsPage() {
                     <div className="flex items-center gap-4">
                       <p className="text-lg font-black text-slate-950">{attempt.score} / {attempt.total_marks} <span className="text-sm font-bold text-slate-500">({pct}%)</span></p>
                       <span className={`badge gap-1 ${passed ? "badge-success text-white" : "badge-error text-white"}`}>{passed ? <CheckCircle2 size={13} /> : <XCircle size={13} />} {passed ? "Passed" : "Failed"}</span>
+                      <Link className="btn btn-outline btn-success btn-sm" to={`/student/tests/${attempt.assessment}/review`}>Review answers</Link>
                     </div>
                   </article>
                 );

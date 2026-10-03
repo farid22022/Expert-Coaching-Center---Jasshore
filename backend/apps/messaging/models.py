@@ -81,9 +81,19 @@ class Notification(OrganizationScopedModel):
     target_url = models.CharField(max_length=255, blank=True)
     is_read = models.BooleanField(default=False, db_index=True)
     read_at = models.DateTimeField(null=True, blank=True)
+    # Structured target so the client never has to guess where a notification leads from
+    # its text. `target_url` stays as the (internal-only) deep link.
+    target_type = models.CharField(max_length=40, blank=True, db_index=True)
+    target_id = models.PositiveBigIntegerField(null=True, blank=True)
+    priority = models.CharField(max_length=12, default="normal")
+    metadata = models.JSONField(default=dict, blank=True)
+    # Idempotency key (e.g. "assessment:12:published"); unique per recipient so retried or
+    # double-clicked publish requests can never notify the same student twice. NULL = no key.
+    dedupe_key = models.CharField(max_length=190, null=True, blank=True)
 
     class Meta:
         indexes = [models.Index(fields=["organization", "recipient", "is_read"])]
+        constraints = [models.UniqueConstraint(fields=["recipient", "dedupe_key"], name="uniq_notification_recipient_dedupe_key")]
         ordering = ("-created_at",)
 
 

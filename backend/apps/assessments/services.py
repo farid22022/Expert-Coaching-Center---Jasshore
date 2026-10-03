@@ -259,6 +259,69 @@ def create_practice_assessment(organization, title, course_id, course_section_id
     return assessment
 
 
+def attempt_review(attempt, now=None):
+    """Question-by-question review of a submitted attempt: the student's own selection, the correct
+    option(s), marks and explanation. Constant query count (2 prefetches + 1 answers query).
+
+    Release rule: a practice test, or a test whose window has closed, shows everything. While a
+    live/scheduled window is still open, classmates may still be taking it, so correct answers and
+    explanations are shown only if the teacher enabled `show_correct_answers` / `show_explanations`
+    (controlled separately). The student's own selections are always returned."""
+    now = now or timezone.now()
+    assessment = attempt.assessment
+    window_open = bool(assessment.ends_at and now <= assessment.ends_at and assessment.timing_mode != models.TimingMode.PRACTICE)
+    correct_released = not window_open or assessment.show_correct_answers
+    explanations_released = not window_open or assessment.show_explanations
+    links = assessment.assessment_questions.select_related("question").prefetch_related("question__options")
+    answers = {answer.question_id: answer for answer in attempt.answers.prefetch_related("selected_options")}
+
+    questions = []
+    for link in links:
+        question = link.question
+        answer = answers.get(question.id)
+        selected_ids = {option.id for option in answer.selected_options.all()} if answer else set()
+        options = [{
+            "id": option.id,
+            "text": option.text,
+            "image": option.image.url if getattr(option, "image", None) else "",
+            "selected": option.id in selected_ids,
+            "is_correct": option.is_correct if correct_released else None,
+        } for option in question.options.all()]
+        if not answer or not selected_ids:
+            result = "unanswered"
+        elif not correct_released:
+            result = "answered"
+        else:
+            result = "correct" if answer.is_correct else "incorrect"
+        questions.append({
+            "id": question.id,
+            "order": link.order,
+            "text": question.text,
+            "image": question.image.url if question.image else "",
+            "question_type": question.question_type,
+            "marks": link.marks,
+            "marks_obtained": answer.marks_obtained if answer else 0,
+            "result": result,
+            "options": options,
+            "explanation": question.explanation if explanations_released else None,
+        })
+    return {
+        "assessment": {"id": assessment.id, "title": assessment.title},
+        "attempt": {"id": attempt.id, "score": attempt.score, "total_marks": attempt.total_marks, "submitted_at": attempt.submitted_at, "status": attempt.status},
+        "answers_released": correct_released,
+        "explanations_released": explanations_released,
+        "release_at": assessment.ends_at if window_open and not (correct_released and explanations_released) else None,
+        "summary": {
+            "total": len(questions),
+            "correct": sum(1 for q in questions if q["result"] == "correct"),
+            "incorrect": sum(1 for q in questions if q["result"] == "incorrect"),
+            "answered": sum(1 for q in questions if q["result"] != "unanswered"),
+            "unanswered": sum(1 for q in questions if q["result"] == "unanswered"),
+        },
+        "questions": questions,
+    }
+
+
 def student_mistakes(student, organization, subject_id=None, chapter=None, topic=None):
     """Incorrect StudentAnswer rows the student is allowed to review (spec §22-23) -
     respects each assessment's own show_correct_answers/show_explanations flags, the

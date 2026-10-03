@@ -38,6 +38,8 @@ def api_root(request):
         }
     )
 
+from apps.core.dashboard import AdminDashboardStatsView
+
 urlpatterns = [
     path("", api_root, name="api-root"),
     path("health/", api_root, name="health-check"),
@@ -46,6 +48,7 @@ urlpatterns = [
     path("api/v1/", browsable_api_root, name="browsable-api-root"),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+    path("api/v1/dashboard/admin-stats/", AdminDashboardStatsView.as_view(), name="admin-dashboard-stats"),
     path("api/v1/auth/", include("apps.accounts.urls")),
     path("api/v1/organizations/", include("apps.organizations.urls")),
     path("api/v1/academic/", include("apps.academic.urls")),

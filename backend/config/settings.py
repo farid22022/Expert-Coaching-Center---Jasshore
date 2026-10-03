@@ -96,6 +96,22 @@ def _database_from_url(url):
         "CONN_HEALTH_CHECKS": True,
         "OPTIONS": {k: v for k, v in options.items() if k in {"sslmode", "channel_binding", "sslrootcert", "connect_timeout", "application_name"}},
     }
+    remote = config["HOST"] not in {"localhost", "127.0.0.1", "::1"}
+    # Neon's pooler runs PgBouncer in transaction mode: server-side cursors (QuerySet.iterator()) are unsafe there.
+    if "-pooler" in config["HOST"]:
+        config["DISABLE_SERVER_SIDE_CURSORS"] = True
+    # In-process connection pool (Django 5.1 + psycopg_pool). Per-thread persistent connections cannot
+    # be reused by threaded dev servers (a new thread per request) and each fresh TLS connect to a remote
+    # Neon endpoint costs 2+ seconds, so a shared pool is what actually removes the reconnect cost.
+    # Django requires CONN_MAX_AGE=0 when pooling. Set DB_USE_POOL=0 to fall back to CONN_MAX_AGE.
+    if remote and env("DB_USE_POOL", "1") == "1":
+        config["CONN_MAX_AGE"] = 0
+        config["OPTIONS"]["pool"] = {
+            "min_size": int(env("DB_POOL_MIN_SIZE", "4")),
+            "max_size": int(env("DB_POOL_MAX_SIZE", "10")),
+            "timeout": float(env("DB_POOL_TIMEOUT", "20")),
+            "max_idle": float(env("DB_POOL_MAX_IDLE", "300")),
+        }
     # Neon requires TLS; default to it for remote hosts unless the URL says otherwise.
     if config["HOST"] not in {"localhost", "127.0.0.1", "::1"}:
         config["OPTIONS"].setdefault("sslmode", "require")
@@ -160,7 +176,7 @@ REST_FRAMEWORK = {
         "rest_framework.renderers.BrowsableAPIRenderer",
     ),
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "apps.core.authentication.OrganizationAwareJWTAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),

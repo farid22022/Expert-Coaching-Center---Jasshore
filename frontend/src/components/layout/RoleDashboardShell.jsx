@@ -6,7 +6,10 @@ import { Bell, CheckCheck, ChevronDown, LogOut, Menu, UserRound, X } from "lucid
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 
+import { useQueryClient } from "@tanstack/react-query";
 import api from "../../services/api.js";
+import { fetchUnreadCount } from "../../services/notificationsQuery.js";
+import { openNotification } from "../../services/notificationTarget.js";
 import { getDashboardPathForUser, getStoredUser, logout } from "../../services/authApi.js";
 import ThemeToggle from "../common/ThemeToggle.jsx";
 import LanguageSwitcher from "../common/LanguageSwitcher.jsx";
@@ -21,26 +24,29 @@ function NotificationBell() {
   const [items, setItems] = useState([]);
   const [loaded, setLoaded] = useState(false);
   const ref = useRef(null);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     let active = true;
-    const refresh = () => {
+    const refresh = (fresh = false) => {
       if (document.visibilityState === "hidden") return;
-      api.get("/sms/notifications/unread_count/").then((response) => {
-        if (active) setUnread((response.data?.data || response.data)?.unread || 0);
+      fetchUnreadCount(queryClient, { fresh }).then((data) => {
+        if (active) setUnread(data?.unread || 0);
       }).catch(() => {});
     };
     const changed = () => { setLoaded(false); refresh(); };
+    const mutated = () => { setLoaded(false); refresh(true); };
     refresh();
     window.addEventListener("focus", changed);
-    window.addEventListener("notificationschange", changed);
+    window.addEventListener("notificationschange", mutated);
     document.addEventListener("visibilitychange", changed);
     const timer = window.setInterval(changed, 60000);
     return () => {
       active = false;
       clearInterval(timer);
       window.removeEventListener("focus", changed);
-      window.removeEventListener("notificationschange", changed);
+      window.removeEventListener("notificationschange", mutated);
       document.removeEventListener("visibilitychange", changed);
     };
   }, []);
@@ -68,15 +74,14 @@ function NotificationBell() {
     }
   };
 
-  const markRead = async (notification) => {
-    if (notification.is_read) return;
-    try {
-      await api.post(`/sms/notifications/${notification.id}/read/`);
-      setItems((current) => current.map((item) => (item.id === notification.id ? { ...item, is_read: true } : item)));
-      setUnread((value) => Math.max(0, value - 1));
-    } catch {
-      // Non-critical - leave state as-is if the mark-as-read call fails.
-    }
+  const openItem = (notification) => {
+    setOpen(false);
+    openNotification(notification, navigate, {
+      onRead: (row) => {
+        setItems((current) => current.map((item) => (item.id === row.id ? { ...item, is_read: true } : item)));
+        setUnread((value) => Math.max(0, value - 1));
+      },
+    });
   };
 
   const markAllRead = async () => {
@@ -117,7 +122,7 @@ function NotificationBell() {
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => markRead(item)}
+                  onClick={() => openItem(item)}
                   className={`block w-full rounded-md px-2 py-2 text-left text-sm outline-none hover:bg-soft focus-visible:bg-soft ${item.is_read ? "" : "bg-soft/70"}`}
                 >
                   <p className="font-bold text-slate-900">{item.title}</p>

@@ -49,7 +49,11 @@ class CourseSerializer(serializers.ModelSerializer):
         items = getattr(obj, "syllabus_items", None)
         if items is None:
             return []
-        return CourseSyllabusItemSerializer(items.filter(is_public=True).select_related("course_section", "subject"), many=True).data
+        # Filter in Python: .filter() on a prefetched manager bypasses the prefetch cache
+        # and costs one remote round trip per course. The viewset prefetches
+        # syllabus_items with course_section/subject already.
+        public_items = [item for item in items.all() if item.is_public]
+        return CourseSyllabusItemSerializer(public_items, many=True).data
 
     def validate_slug(self, value):
         if not value:
@@ -497,7 +501,11 @@ def _is_enrolled_for(obj, request):
 
     from apps.people.models import Student
 
-    student = Student.objects.filter(organization=obj.organization, email__iexact=user.email).first()
+    if obj.organization_id == user.organization_id:
+        from apps.core.request_cache import student_for_user
+        student = student_for_user(user)
+    else:
+        student = Student.objects.filter(organization=obj.organization, email__iexact=user.email).first()
     if not student:
         return False
     return models.Enrollment.objects.filter(

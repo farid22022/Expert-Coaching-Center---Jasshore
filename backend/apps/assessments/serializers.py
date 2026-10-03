@@ -89,6 +89,83 @@ class AssessmentSerializer(CurriculumContentSerializer):
         fields = "__all__"
 
 
+class StudentAssessmentSerializer(AssessmentSerializer):
+    """Student view of a test: the stored fields plus server-computed state, so the browser
+    never decides availability from its own clock. `server_time` lets the client compute a
+    clock offset for the pre-start countdown."""
+    server_time = serializers.SerializerMethodField()
+    student_status = serializers.SerializerMethodField()
+    can_start = serializers.SerializerMethodField()
+    attempt = serializers.SerializerMethodField()
+    enrollment_id = serializers.SerializerMethodField()
+    subject_name = serializers.SerializerMethodField()
+    teacher_name = serializers.SerializerMethodField()
+    course_title = serializers.CharField(source="course.title", read_only=True)
+    question_count = serializers.SerializerMethodField()
+
+    class Meta(AssessmentSerializer.Meta):
+        pass
+
+    def _now(self):
+        if "now" not in self.context:
+            from django.utils import timezone
+            self.context["now"] = timezone.now()
+        return self.context["now"]
+
+    # Cached per serializer context so a list response costs two extra queries, not two per row.
+    def _attempts(self):
+        cache = self.context.get("_attempts")
+        if cache is None:
+            student = self.context.get("student")
+            cache = {a.assessment_id: a for a in models.AssessmentAttempt.objects.filter(student=student).select_related("assessment")} if student else {}
+            self.context["_attempts"] = cache
+        return cache
+
+    def _enrollments(self):
+        cache = self.context.get("_enrollments")
+        if cache is None:
+            student = self.context.get("student")
+            cache = {}
+            if student:
+                for enrollment in student.course_enrollments.filter(status="active").order_by("id"):
+                    cache.setdefault((enrollment.course_id, enrollment.course_section_id), enrollment.id)
+                    cache.setdefault((enrollment.course_id, None), enrollment.id)
+            self.context["_enrollments"] = cache
+        return cache
+
+    def get_server_time(self, obj):
+        return self._now().isoformat()
+
+    def get_student_status(self, obj):
+        from .student_status import compute_student_status
+        return compute_student_status(obj, self._attempts().get(obj.id), self._now())
+
+    def get_can_start(self, obj):
+        return self.get_student_status(obj) in {"AVAILABLE_NOW", "IN_PROGRESS"}
+
+    def get_attempt(self, obj):
+        attempt = self._attempts().get(obj.id)
+        if not attempt:
+            return None
+        return {"id": attempt.id, "status": attempt.status, "score": attempt.score, "total_marks": attempt.total_marks,
+                "started_at": attempt.started_at, "submitted_at": attempt.submitted_at, "deadline": attempt.deadline}
+
+    def get_enrollment_id(self, obj):
+        enrollments = self._enrollments()
+        return enrollments.get((obj.course_id, obj.course_section_id)) or enrollments.get((obj.course_id, None))
+
+    def get_subject_name(self, obj):
+        return obj.subject.name if obj.subject_id else ""
+
+    def get_teacher_name(self, obj):
+        return obj.created_by_teacher.full_name if obj.created_by_teacher_id else ""
+
+    def get_question_count(self, obj):
+        # len(.all()) uses the prefetch cache when the queryset prefetches assessment_questions (one query
+        # for the whole list); .count() would issue one query per row.
+        return len(obj.assessment_questions.all())
+
+
 class AssessmentQuestionSerializer(serializers.ModelSerializer):
     question_detail = QuestionSerializer(source="question", read_only=True)
 

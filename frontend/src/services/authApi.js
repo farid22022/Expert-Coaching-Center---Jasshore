@@ -35,12 +35,24 @@ export async function logout() {
   }
 }
 
-export async function me() {
-  const { data } = await api.get("/auth/me/");
-  const user = data.data || data.user || data;
-  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
-  notifyAuthChange();
-  return user;
+// /auth/me/ is used as an identity guard by several layouts mounted together. Share one
+// in-flight request and reuse the result briefly. Keyed on the access token, so login, logout
+// and token refresh always miss the cache; pass { force: true } after editing the profile.
+const ME_TTL_MS = 30_000;
+let meCache = null;
+
+export function me({ force = false } = {}) {
+  const token = localStorage.getItem("access_token");
+  if (!force && meCache && meCache.token === token && Date.now() - meCache.at < ME_TTL_MS) return meCache.promise;
+  const promise = api.get("/auth/me/").then(({ data }) => {
+    const user = data.data || data.user || data;
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+    notifyAuthChange();
+    return user;
+  });
+  meCache = { token, at: Date.now(), promise };
+  promise.catch(() => { if (meCache?.promise === promise) meCache = null; });
+  return promise;
 }
 
 export function getStoredUser() {

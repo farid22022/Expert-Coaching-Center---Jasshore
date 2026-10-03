@@ -6,8 +6,10 @@ const MotionLink = motion.create(Link);
 import { useEffect, useMemo, useState } from "react";
 import { cleanSchemaForSave } from "../../services/admissionFormSchema.js";
 import { Link } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "../../services/queryClient.js";
 import { Bell, BookOpen, CheckCircle2, ClipboardCheck, FilePenLine, GraduationCap, Image, Plus, Trash2, UserPlus, Users } from "lucide-react";
-import api, { getApiErrorMessage, API_BASE_URL } from "../../services/api.js";
+import api, { getApiErrorMessage, unwrapResults, API_BASE_URL } from "../../services/api.js";
 import { confirmAction, confirmDelete, notifyError, notifySuccess } from "../../services/alerts.js";
 import RichTextEditor from "../../components/common/RichTextEditor.jsx";
 import Modal from "../../components/common/Modal.jsx";
@@ -90,34 +92,52 @@ function Status({ value }) {
   return <span className={`badge badge-sm ${color} font-bold text-white`}>{String(value || "pending").replaceAll("_", " ")}</span>;
 }
 
-function useAdminData() {
-  const [data, setData] = useState({ courses: [], teachers: [], assignments: [], applications: [] });
-  const [loading, setLoading] = useState(true);
-  const load = async () => {
-    setLoading(true);
-    try {
-      const [courses, teachers, assignments, applications] = await Promise.all([
-        courseApi.listResults({ page_size: 100 }),
-        employeeApi.listResults({ employee_type: "teacher", page_size: 100 }),
-        teacherAssignmentApi.listResults({ page_size: 200 }),
-        applicationApi.listResults({ page_size: 200, ordering: "-created_at" }),
-      ]);
-      setData({ courses: asArray(courses), teachers: asArray(teachers), assignments: asArray(assignments), applications: asArray(applications) });
-    } finally { setLoading(false); }
+const ADMIN_LISTS = {
+  courses: { key: (p) => queryKeys.courses(p), params: { page_size: 100 }, fetch: (p) => courseApi.listResults(p) },
+  teachers: { key: (p) => queryKeys.employees(p), params: { employee_type: "teacher", page_size: 100 }, fetch: (p) => employeeApi.listResults(p) },
+  assignments: { key: (p) => queryKeys.teacherAssignments(p), params: { page_size: 200 }, fetch: (p) => teacherAssignmentApi.listResults(p) },
+  applications: { key: (p) => queryKeys.applications(p), params: { page_size: 200, ordering: "-created_at" }, fetch: (p) => applicationApi.listResults(p) },
+};
+
+// Shared, cached admin lists. Every page asks only for what it renders; identical requests
+// from different components share one cache entry instead of refetching on every mount.
+function useAdminData(needs = ["courses", "teachers", "assignments", "applications"]) {
+  const queryClient = useQueryClient();
+  const results = Object.fromEntries(
+    Object.entries(ADMIN_LISTS).map(([name, spec]) => [
+      name,
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      useQuery({ queryKey: spec.key(spec.params), queryFn: () => spec.fetch(spec.params), enabled: needs.includes(name), select: asArray }),
+    ]),
+  );
+  const loading = needs.some((name) => results[name].isLoading);
+  const reload = () => Promise.all(needs.map((name) => queryClient.invalidateQueries({ queryKey: ADMIN_LISTS[name].key(ADMIN_LISTS[name].params).slice(0, 1) })));
+  return {
+    courses: results.courses.data || EMPTY_LIST,
+    teachers: results.teachers.data || EMPTY_LIST,
+    assignments: results.assignments.data || EMPTY_LIST,
+    applications: results.applications.data || EMPTY_LIST,
+    loading,
+    reload,
   };
-  useEffect(() => { load(); }, []);
-  return { ...data, loading, reload: load };
 }
+const EMPTY_LIST = [];
 
 export function AdminPortalDashboard() {
-  const { courses, teachers, assignments, applications, loading } = useAdminData();
-  const admissions = courses.filter((course) => course.course_type === "admission");
-  const pending = applications.filter((application) => ["pending", "under_review"].includes(application.status));
+  const { data: stats, isLoading: loading } = useQuery({
+    queryKey: queryKeys.adminStats,
+    queryFn: ({ signal }) => api.get("/dashboard/admin-stats/", { signal }).then((response) => response.data),
+  });
+  // Only the 5 newest pending applications are shown, so ask the server for exactly those.
+  const { data: pending = EMPTY_LIST, isLoading: pendingLoading } = useQuery({
+    queryKey: queryKeys.applications({ status__in: "pending,under_review", page_size: 5, ordering: "-created_at" }),
+    queryFn: ({ signal }) => api.get("/applications/", { params: { status__in: "pending,under_review", page_size: 5, ordering: "-created_at" }, signal }).then((response) => unwrapResults(response.data)),
+  });
   const statCards = [
-    ["Teachers", teachers.length, GraduationCap, "/admin/dashboard/teachers", "text-emerald-700"],
-    ["Admissions", admissions.length, BookOpen, "/admin/dashboard/admissions", "text-blue-600"],
-    ["Assignments", assignments.length, Users, "/admin/dashboard/teacher-assignments", "text-purple-600"],
-    ["Pending review", pending.length, ClipboardCheck, "/admin/dashboard/admission-applications", "text-amber-600"],
+    ["Teachers", stats?.teachers ?? 0, GraduationCap, "/admin/dashboard/teachers", "text-emerald-700"],
+    ["Admissions", stats?.admissions ?? 0, BookOpen, "/admin/dashboard/admissions", "text-blue-600"],
+    ["Assignments", stats?.teacher_assignments ?? 0, Users, "/admin/dashboard/teacher-assignments", "text-purple-600"],
+    ["Pending review", stats?.pending_applications ?? 0, ClipboardCheck, "/admin/dashboard/admission-applications", "text-amber-600"],
   ];
   const quickLinks = [
     ["Notices", "/admin/dashboard/notices", Bell, "Create & manage public notices, banners, stories"],
@@ -158,7 +178,7 @@ export function AdminPortalDashboard() {
           <Link className="btn btn-outline btn-sm" to="/admin/dashboard/admission-applications">View all</Link>
         </div>
         <div className="divide-y">
-          {pending.slice(0, 5).map((item) => (
+          {pending.map((item) => (
             <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 p-3 sm:p-4">
               <div>
                 <p className="font-bold text-sm">{item.applicant_name || "Applicant"}</p>
@@ -167,7 +187,7 @@ export function AdminPortalDashboard() {
               <Status value={item.status} />
             </div>
           ))}
-          {!loading && !pending.length && <div className="p-4"><Empty>No applications are waiting for review.</Empty></div>}
+          {!pendingLoading && !pending.length && <div className="p-4"><Empty>No applications are waiting for review.</Empty></div>}
         </div>
       </section>
     </div>
@@ -177,7 +197,7 @@ export function AdminPortalDashboard() {
 const TEACHERS_PAGE_SIZE = 10;
 
 export function AdminTeachersPage() {
-  const { teachers, assignments, courses, loading, reload } = useAdminData();
+  const { teachers, assignments, courses, loading, reload } = useAdminData(["courses", "teachers", "assignments"]);
   const [form, setForm] = useState({ employee_id: "", full_name: "", email: "", phone: "", joining_date: "", gender: "", qualification: "", specialization: "", bio: "", status: "active" });
   const [photo, setPhoto] = useState(null);
   const [saving, setSaving] = useState(false); const [error, setError] = useState(""); const [done, setDone] = useState("");
@@ -197,16 +217,25 @@ export function AdminTeachersPage() {
 }
 
 export function AdminAdmissionsPage() {
-  const { courses, reload } = useAdminData(); const [selected, setSelected] = useState(null); const [form, setForm] = useState({ title: "", code: "", description: "", admission_fee: "0", capacity: "", enrollment_start: "", enrollment_end: "", status: "admission_open", is_published: true }); const [error, setError] = useState("");
+  const { courses, reload } = useAdminData(["courses"]); const [selected, setSelected] = useState(null); const [form, setForm] = useState({ title: "", code: "", description: "", admission_fee: "0", capacity: "", enrollment_start: "", enrollment_end: "", status: "admission_open", is_published: true }); const [error, setError] = useState("");
   const admissions = courses.filter((course) => course.course_type === "admission");
   const loadDetails = (course) => { setSelected(course); setForm({ ...course, admission_fee: course.admission_fee ?? "0", capacity: course.capacity ?? "", enrollment_start: course.enrollment_start || "", enrollment_end: course.enrollment_end || "" }); };
   const submit = async (event) => { event.preventDefault(); setError(""); const payload = { ...form, course_type: "admission", capacity: form.capacity || null, enrollment_start: form.enrollment_start || null, enrollment_end: form.enrollment_end || null, is_published: Boolean(form.is_published), course_fee: 0 }; try { const saved = selected ? await courseApi.update(selected.id, payload) : await courseApi.create(payload); await reload(); loadDetails(saved); notifySuccess(selected ? "Admission updated." : "Admission created."); } catch (err) { setError(message(err)); notifyError(message(err)); } };
-  const deleteAdmission = async () => { if (!selected) return; if (!(await confirmAction({ title: `Delete ${selected.title}?`, text: "Existing applications prevent unsafe deletion. This action cannot be undone.", confirmText: "Yes, delete", danger: true }))) return; try { await courseApi.remove(selected.id); setSelected(null); await reload(); notifySuccess("Admission deleted."); } catch (err) { setError(message(err)); notifyError(message(err)); } };
+  const deleteAdmission = async () => { if (!selected) return; if (!(await confirmAction({ title: `Delete ${selected.title}?`, text: "Existing applications prevent unsafe deletion. This action cannot be undone.", confirmText: "Yes, delete", danger: true }))) return; try { await courseApi.remove(selected.id); setSelected(null); await reload(); notifySuccess("Admission deleted."); } catch (err) {
+    if (err?.response?.status === 409 && err.response.data?.action === "archive") {
+      // Historical applications reference this admission: offer the safe alternative instead of a dead-end error.
+      if (await confirmAction({ title: "Archive instead?", text: message(err), confirmText: "Archive admission" })) {
+        try { await courseApi.update(selected.id, { status: "archived", is_published: false }); setSelected(null); await reload(); notifySuccess("Admission archived. Existing applications were kept."); } catch (archiveErr) { notifyError(message(archiveErr)); }
+      }
+      return;
+    }
+    setError(message(err)); notifyError(message(err));
+  } };
   return <div><PageHeader eyebrow="Admissions" title="Admissions" description="Create and publish admission programs. Once created, assign a Head Teacher to build its academic structure (subjects, sections, grading)." /><div className="grid gap-6 xl:grid-cols-[350px_minmax(0,1fr)]"><aside className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"><button onClick={() => { setSelected(null); setForm({ title: "", code: "", description: "", admission_fee: "0", capacity: "", enrollment_start: "", enrollment_end: "", status: "admission_open", is_published: true }); }} className="btn btn-success mb-3 w-full text-white"><Plus size={17}/>New admission</button><div className="space-y-2">{admissions.map((course) => <button key={course.id} onClick={() => loadDetails(course)} className={`w-full rounded-lg border p-3 text-left ${selected?.id === course.id ? "border-emerald-500 bg-emerald-50" : "border-slate-200 hover:border-emerald-200"}`}><p className="font-bold">{course.title}</p><p className="mt-1 text-xs text-slate-500">{course.code || "No code"} · <Status value={course.status}/></p></button>)}{!admissions.length && <Empty>No admission programs yet.</Empty>}</div></aside><div className="min-w-0 space-y-6"><form onSubmit={submit} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-black">{selected ? `Edit ${selected.title}` : "Create admission program"}</h2>{selected && <button type="button" onClick={deleteAdmission} className="btn btn-error btn-sm text-white"><Trash2 size={16}/>Delete admission</button>}</div>{error && <p className="alert alert-error mt-3 text-sm">{error}</p>}<div className="mt-4 grid gap-3 md:grid-cols-2">{[["title", "Program name", "text"], ["code", "Program code", "text"], ["admission_fee", "Admission fee (BDT)", "number"], ["capacity", "Seats available", "number"], ["enrollment_start", "Application opens", "date"], ["enrollment_end", "Application closes", "date"]].map(([name, placeholder, type]) => <label key={name} className="form-control"><span className="mb-1 text-sm font-bold">{placeholder}</span><input required={name === "title"} name={name} type={type} value={form[name] ?? ""} onChange={(e) => setForm({ ...form, [name]: e.target.value })} className="input input-bordered w-full" /></label>)}<label className="form-control"><span className="mb-1 text-sm font-bold">Status</span><select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="select select-bordered">{admissionStates.map((state) => <option key={state}>{state}</option>)}</select></label><label className="form-control md:col-span-2"><span className="mb-1 text-sm font-bold">Description</span><RichTextEditor value={form.description || ""} onChange={(value) => setForm({ ...form, description: value })} placeholder="Describe this admission program..." /></label><label className="label justify-start gap-2 font-bold"><input type="checkbox" checked={Boolean(form.is_published)} onChange={(e) => setForm({ ...form, is_published: e.target.checked })} className="checkbox checkbox-success"/>Published on the public admission page</label></div><button className="btn btn-success mt-5 text-white">{selected ? "Save admission" : "Create admission"}</button></form>{selected && <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">Subjects, sections, academic stages, assessment scheme and grading are managed by this admission's assigned Head Teacher once one is assigned below.</div>}</div></div></div>;
 }
 
 export function AdminTeacherAssignmentsPage() {
-  const { courses, teachers, assignments, reload } = useAdminData(); const [form, setForm] = useState({ teacher: "", course: "" }); const [error, setError] = useState("");
+  const { courses, teachers, assignments, reload } = useAdminData(["courses", "teachers", "assignments"]); const [form, setForm] = useState({ teacher: "", course: "" }); const [error, setError] = useState("");
   const admissions = courses.filter((course) => course.course_type === "admission");
   const headTeacherAssignments = assignments.filter((assignment) => assignment.role === "head_teacher");
   const submit = async (event) => { event.preventDefault(); setError(""); try { await teacherAssignmentApi.create({ teacher: form.teacher, course: form.course, course_section: null, subject: null, role: "head_teacher", assignment_status: "accepted", is_active: true }); setForm({ teacher: "", course: "" }); notifySuccess("Head Teacher assigned."); reload(); } catch (err) { setError(message(err)); notifyError(message(err)); } };
@@ -255,7 +284,7 @@ function normalizeLandingPageForEdit(landingPage) {
 }
 
 export function AdminAdmissionFormBuilderPage() {
-  const { courses, teachers, reload } = useAdminData();
+  const { courses, teachers, reload } = useAdminData(["courses", "teachers"]);
   const admissions = courses.filter((course) => course.course_type === "admission");
   const [selectedId, setSelectedId] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
@@ -1141,7 +1170,7 @@ function ApplicationDetailsModal({ application, course, onClose, onAction, busy 
 }
 
 export function AdminAdmissionApplicationsPage() {
-  const { applications, courses, reload, loading } = useAdminData(); const [selected, setSelected] = useState(null); const [busy, setBusy] = useState(false); const program = (id) => label(courses.find((course) => String(course.id) === String(id)));
+  const { applications, courses, reload, loading } = useAdminData(["applications", "courses"]); const [selected, setSelected] = useState(null); const [busy, setBusy] = useState(false); const program = (id) => label(courses.find((course) => String(course.id) === String(id)));
   const action = async (name, payload = {}) => {
     if (name === "approve" && !(await confirmAction({ title: "Approve this application?", text: "Paid admissions will require verified payment before enrollment. Free admissions activate immediately.", confirmText: "Yes, approve" }))) return;
     if (name === "reject" && !(await confirmAction({ title: "Reject this application?", text: "The applicant will be notified. This action cannot be undone.", confirmText: "Yes, reject", danger: true }))) return;

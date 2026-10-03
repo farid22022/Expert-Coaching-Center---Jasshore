@@ -106,8 +106,20 @@ class NotificationViewSet(OrganizationScopedModelViewSet):
         count = self.get_queryset().filter(is_read=False).update(is_read=True, read_at=timezone.now(), updated_by=request.user)
         return success_response({"updated": count}, "Notifications marked as read.")
 
+    def list(self, request, *args, **kwargs):
+        self._deliver_due()
+        return super().list(request, *args, **kwargs)
+
+    @staticmethod
+    def _deliver_due():
+        # Tests published with a future publish_at get their notification once they go live;
+        # there is no background worker, so any notification read triggers a throttled sweep.
+        from apps.assessments.publication import TestPublicationService
+        TestPublicationService.deliver_due_throttled()
+
     @action(detail=False, methods=["get"])
     def unread_count(self, request):
+        self._deliver_due()
         return success_response({"unread": self.get_queryset().filter(is_read=False).count()})
 
 
@@ -205,7 +217,8 @@ class NoticeViewSet(OrganizationScopedModelViewSet):
 
     @action(detail=False, methods=["get"])
     def student(self, request):
-        student = Student.objects.filter(organization=request.user.organization, email=request.user.email).first()
+        from apps.core.request_cache import student_for_user
+        student = student_for_user(request.user)
         if not student:
             return Response([])
         enrollments = student.course_enrollments.filter(status=EnrollmentStatus.ACTIVE)

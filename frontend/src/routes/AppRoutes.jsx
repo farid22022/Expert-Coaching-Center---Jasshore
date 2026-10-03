@@ -68,6 +68,8 @@ const StudentPaymentReceiptPage = lazy(() => import("../pages/student/StudentPay
 const StudentCoursePage = lazy(() => import("../pages/student/StudentCoursePage.jsx").then((module) => ({ default: module.default })));
 const StudentMaterialDetailPage = lazy(() => import("../pages/student/StudentCoursePage.jsx").then((module) => ({ default: module.StudentMaterialDetailPage })));
 const StudentCoursesPage = lazy(() => import("../pages/student/StudentCoursesPage.jsx").then((module) => ({ default: module.default })));
+const StudentTestReviewPage = lazy(() => import("../pages/student/StudentTestReviewPage.jsx").then((module) => ({ default: module.default })));
+const StudentTestPage = lazy(() => import("../pages/student/StudentTestPage.jsx").then((module) => ({ default: module.default })));
 const StudentAssessmentsPage = lazy(() => import("../pages/student/StudentAssessmentsPage.jsx").then((module) => ({ default: module.default })));
 const StudentAssignmentsPage = lazy(() => import("../pages/student/StudentAssignmentsPage.jsx").then((module) => ({ default: module.default })));
 const StudentResultsPage = lazy(() => import("../pages/student/StudentResultsPage.jsx").then((module) => ({ default: module.default })));
@@ -2178,6 +2180,8 @@ export default function AppRoutes() {
       <Route path="/student/courses/:enrollmentId/overview" element={<StudentAcademicOverviewPage />} />
       <Route path="/student/courses/:enrollmentId/subjects/:subjectId/result" element={<StudentCourseResultPage />} />
       <Route path="/student/assessments" element={<StudentAssessmentsPage />} />
+      <Route path="/student/tests/:assessmentId" element={<StudentTestPage />} />
+      <Route path="/student/tests/:assessmentId/review" element={<StudentTestReviewPage />} />
       <Route path="/student/assignments" element={<StudentAssignmentsPage />} />
       <Route path="/student/materials" element={<StudentMaterialsPage />} />
       <Route path="/student/results" element={<StudentResultsPage />} />

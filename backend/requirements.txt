@@ -5,7 +5,7 @@ django-cors-headers>=4.4,<5
 django-filter>=24.3,<25
 drf-spectacular>=0.27,<0.28
 python-dotenv>=1.0,<2
-psycopg[binary]>=3.2,<4
+psycopg[binary,pool]>=3.2,<4
 cryptography>=43
 requests>=2.32,<3
 # Kept until PostgreSQL cutover is final and rollback is no longer required (also used by migrate_mysql_to_postgres):

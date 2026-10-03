@@ -1,50 +1,29 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { CheckCircle2, Clock, Radio } from "lucide-react";
 
-import api, { getApiErrorMessage } from "../../services/api.js";
-import { studentDashboardApi } from "../../services/resourceApi.js";
+import { getApiErrorMessage } from "../../services/api.js";
+import { useStudentAssessments } from "../../hooks/useStudentAssessments.js";
+import { formatAppDateTime } from "../../hooks/useServerCountdown.js";
 import { LoadingOrError, PortalPage } from "./studentPortalShared.jsx";
 
+// Sections come from the backend's `student_status`, never from the device clock.
+const SECTION_OF = {
+  AVAILABLE_NOW: "available", IN_PROGRESS: "available",
+  UPCOMING: "upcoming", STARTING_SOON: "upcoming",
+  SUBMITTED: "completed",
+};
+const STATUS_LABEL = { AVAILABLE_NOW: "Available now", IN_PROGRESS: "In progress", UPCOMING: "Scheduled", STARTING_SOON: "Starting soon", SUBMITTED: "Completed" };
+
 export default function StudentAssessmentsPage() {
-  const [tests, setTests] = useState([]);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    Promise.all([
-      api.get("/assessments/student/assessments/?page_size=100"),
-      api.get("/assessments/student/assessments/history/"),
-      studentDashboardApi.list(),
-    ])
-      .then(([listResponse, historyResponse, learningData]) => {
-        const listData = listResponse.data?.data || listResponse.data;
-        const items = Array.isArray(listData) ? listData : listData?.results || [];
-        const history = historyResponse.data?.data || historyResponse.data;
-        const attempts = history?.attempts || [];
-        const courseToEnrollment = {};
-        (learningData?.enrollments || []).forEach((enrollment) => { courseToEnrollment[enrollment.course] = enrollment.id; });
-        const now = new Date();
-
-        const rows = items
-          .filter((item) => ["mcq", "exam"].includes(item.assessment_type))
-          .map((item) => {
-            const attempt = attempts.find((row) => row.assessment === item.id);
-            let section = "available";
-            if (attempt) section = "completed";
-            else if (item.starts_at && new Date(item.starts_at) > now) section = "upcoming";
-            return { ...item, attempt, section, enrollmentId: courseToEnrollment[item.course] };
-          });
-        setTests(rows);
-      })
-      .catch((requestError) => setError(getApiErrorMessage(requestError, "Unable to load assessments.")))
-      .finally(() => setLoading(false));
-  }, []);
+  const { data, error: requestError, isLoading: loading } = useStudentAssessments();
+  const error = requestError ? getApiErrorMessage(requestError, "Unable to load assessments.") : "";
+  const tests = useMemo(() => (data || []).filter((item) => ["mcq", "exam"].includes(item.assessment_type)), [data]);
 
   const groups = useMemo(() => ({
-    available: tests.filter((item) => item.section === "available"),
-    upcoming: tests.filter((item) => item.section === "upcoming"),
-    completed: tests.filter((item) => item.section === "completed"),
+    available: tests.filter((item) => SECTION_OF[item.student_status] === "available"),
+    upcoming: tests.filter((item) => SECTION_OF[item.student_status] === "upcoming"),
+    completed: tests.filter((item) => SECTION_OF[item.student_status] === "completed"),
   }), [tests]);
 
   return (
@@ -69,12 +48,15 @@ function Section({ title, icon: Icon, iconClass, items, emptyText }) {
         {items.map((test) => (
           <article key={test.id} className="rounded-lg border border-emerald-100 bg-emerald-50/40 p-4">
             <h3 className="font-black text-slate-950">{test.title}</h3>
-            <p className="mt-1 text-sm font-semibold text-slate-500">{test.duration_minutes} minutes {test.ends_at ? `· Available until ${new Date(test.ends_at).toLocaleDateString()}` : ""}</p>
-            {test.attempt ? (
-              <p className="mt-2 text-sm font-black text-emerald-700">Score: {test.attempt.score} / {test.attempt.total_marks}</p>
-            ) : test.enrollmentId ? (
-              <Link to={`/student/courses/${test.enrollmentId}`} className="btn btn-success btn-sm mt-3 text-white">Start Test</Link>
-            ) : null}
+            <p className="mt-1 text-sm font-semibold text-slate-500">{[test.subject_name, `${test.duration_minutes} minutes`].filter(Boolean).join(" · ")}</p>
+            <p className="mt-1 text-xs font-bold text-slate-500">
+              <span className="mr-2 rounded-full bg-white px-2 py-0.5 text-emerald-800">{STATUS_LABEL[test.student_status] || test.student_status}</span>
+              {test.starts_at && SECTION_OF[test.student_status] === "upcoming" ? `Starts ${formatAppDateTime(test.starts_at)}` : test.ends_at ? `Until ${formatAppDateTime(test.ends_at)}` : ""}
+            </p>
+            {test.attempt && test.student_status === "SUBMITTED" && <p className="mt-2 text-sm font-black text-emerald-700">Score: {test.attempt.score} / {test.attempt.total_marks}</p>}
+            <Link to={`/student/tests/${test.id}`} className="btn btn-success btn-sm mt-3 text-white">
+              {test.student_status === "AVAILABLE_NOW" ? "Start Test" : test.student_status === "IN_PROGRESS" ? "Resume Test" : "View details"}
+            </Link>
           </article>
         ))}
         {!items.length && <p className="rounded-lg border border-dashed border-slate-200 p-5 font-semibold text-slate-500">{emptyText}</p>}

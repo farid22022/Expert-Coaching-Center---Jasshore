@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, BookOpen, CalendarDays, CheckCircle2, ClipboardList, Clock, Flame, MessageSquare, Megaphone, Sparkles, X } from "lucide-react";
 
 import api, { getApiErrorMessage } from "../../services/api.js";
@@ -61,46 +62,36 @@ function CourseImage({ course, className }) {
   return <div className={`relative overflow-hidden bg-emerald-900 ${className}`}><img src={course.cover_image} alt="" className="absolute inset-0 h-full w-full object-cover" onError={(event) => { event.currentTarget.style.display = "none"; }} /><div className="relative z-10 flex h-full min-h-full items-center justify-center bg-emerald-950/30 p-5 text-center font-black text-white">{course.program}</div></div>;
 }
 
-export default function StudentDashboard() {
-  const [dashboard, setDashboard] = useState({ upcoming_tests: 0, live_tests: [] });
-  const [performance, setPerformance] = useState({ assignment_count: 0, average_score: 0 });
-  const [history, setHistory] = useState({ attempts: [], submissions: [] });
-  const [unread, setUnread] = useState(0);
-  const [materials, setMaterials] = useState([]);
-  const [learning, setLearning] = useState({ enrollments: [], pending_applications: [] });
-  const [announcements, setAnnouncements] = useState([]);
-  const [activeAnnouncement, setActiveAnnouncement] = useState(null);
-  const [recommended, setRecommended] = useState({ interventions: [], feedback: [] });
-  const [actions, setActions] = useState([]);
-  const [feedback, setFeedback] = useState([]);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
+const EMPTY_LIST = [];
+const EMPTY_LEARNING = { enrollments: [], pending_applications: [] };
+const EMPTY_DASHBOARD = { upcoming_tests: 0, live_tests: [] };
+const EMPTY_HISTORY = { attempts: [], submissions: [] };
+const asRows = (response) => { const payload = response.data?.data || response.data; return Array.isArray(payload) ? payload : payload?.results || []; };
 
-  useEffect(() => {
-    Promise.all([
-      studentDashboardApi.list(),
-      api.get("/assessments/student/assessments/dashboard/").then((response) => response.data),
-      api.get("/assessments/student/assessments/performance/").then((response) => response.data).catch(() => null),
-      api.get("/assessments/student/assessments/history/").then((response) => response.data).catch(() => null),
-      api.get("/sms/notifications/unread_count/").then((response) => response.data?.data || response.data).catch(() => ({ unread: 0 })),
-      api.get("/assessments/student/assessments/materials/").then((response) => response.data?.data || response.data || []).catch(() => []),
-      api.get("/sms/notifications/?page_size=5").then((response) => { const payload = response.data?.data || response.data; return Array.isArray(payload) ? payload : payload?.results || []; }).catch(() => []),
-      api.get("/assessments/student/assessments/recommended/").then((response) => response.data?.data || response.data).catch(() => ({ interventions: [], feedback: [] })),
-      studentPortalApi.actions().catch(() => []),
-      studentPortalApi.feedback().catch(() => []),
-    ]).then(([learningData, assessmentData, performanceData, historyData, notificationData, materialData, notificationList, recommendedData, actionsData, feedbackData]) => {
-      setLearning(learningData); setDashboard(assessmentData);
-      if (performanceData) setPerformance(performanceData);
-      if (historyData) setHistory(historyData);
-      setUnread(notificationData?.unread || notificationData?.data?.unread || 0);
-      setMaterials(Array.isArray(materialData) ? materialData : materialData?.results || []);
-      setAnnouncements(notificationList);
-      setRecommended(recommendedData || { interventions: [], feedback: [] });
-      setActions(Array.isArray(actionsData) ? actionsData : []);
-      setFeedback(Array.isArray(feedbackData) ? feedbackData : []);
-    }).catch((requestError) => setError(getApiErrorMessage(requestError, "Unable to load student dashboard.")))
-      .finally(() => setLoading(false));
-  }, []);
+// Each panel is its own cached query: the page renders as soon as the two core calls return, the
+// secondary panels fill in as they arrive, and revisiting the dashboard is served from cache
+// (30 s) instead of re-running every request. Only data the dashboard actually renders is fetched.
+function useDashboardQuery(key, queryFn, options = {}) {
+  return useQuery({ queryKey: ["studentDashboard", key], queryFn, staleTime: 30_000, ...options });
+}
+
+export default function StudentDashboard() {
+  const learningQuery = useDashboardQuery("learning", () => studentDashboardApi.list());
+  const dashboardQuery = useDashboardQuery("assessments", ({ signal }) => api.get("/assessments/student/assessments/dashboard/", { signal }).then((response) => response.data));
+  const historyQuery = useDashboardQuery("history", ({ signal }) => api.get("/assessments/student/assessments/history/", { signal }).then((response) => response.data), { retry: false });
+  const announcementsQuery = useDashboardQuery("announcements", ({ signal }) => api.get("/sms/notifications/", { params: { page_size: 5 }, signal }).then(asRows), { retry: false });
+  const actionsQuery = useDashboardQuery("actions", () => studentPortalApi.actions(), { retry: false });
+  const feedbackQuery = useDashboardQuery("feedback", () => studentPortalApi.feedback(), { retry: false });
+
+  const learning = learningQuery.data || EMPTY_LEARNING;
+  const dashboard = dashboardQuery.data || EMPTY_DASHBOARD;
+  const history = historyQuery.data || EMPTY_HISTORY;
+  const announcements = announcementsQuery.data || EMPTY_LIST;
+  const actions = Array.isArray(actionsQuery.data) ? actionsQuery.data : EMPTY_LIST;
+  const feedback = Array.isArray(feedbackQuery.data) ? feedbackQuery.data : EMPTY_LIST;
+  const loading = learningQuery.isLoading || dashboardQuery.isLoading;
+  const coreError = learningQuery.error || dashboardQuery.error;
+  const error = coreError ? getApiErrorMessage(coreError, "Unable to load student dashboard.") : "";
 
   const currentCourse = learning.enrollments[0];
   const learningStreak = useMemo(() => computeLearningStreak(history), [history]);

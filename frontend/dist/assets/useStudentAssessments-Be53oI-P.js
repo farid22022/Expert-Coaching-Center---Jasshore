@@ -1,0 +1,1 @@
+import{u as t}from"./useQuery-CciiCfds.js";import{K as a,a as n,O as r}from"./index-CREaDeHN.js";const u=["studentAssessments"];function i(){return t({queryKey:u,queryFn:({signal:s})=>n.get("/assessments/student/assessments/",{params:{page_size:100},signal:s}).then(e=>r(e.data)),staleTime:a.live,refetchInterval:6e4,refetchOnWindowFocus:!0})}export{i as u};
