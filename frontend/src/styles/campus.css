@@ -73,6 +73,7 @@
 :root[data-palette="heritage"] .experience-app .scene-book.book-front { background:linear-gradient(145deg,#d6ead7,#a8cfaa); color:#173d33; }
 :root[data-palette="heritage"] .experience-app .scene-book.book-back { background:linear-gradient(135deg,#28724d,#78a96d); }
 :root[data-palette="heritage"] .experience-app .scene-note-number { color:#0f7a55; }
+:root[data-palette="heritage"] .experience-app img[src*="/images/campus/empty-"] { filter:hue-rotate(-110deg) saturate(1.08); }
 .experience-app .experience-public-hero .wave-mesh canvas { filter:hue-rotate(-62deg) saturate(.9); }
 :root[data-palette="heritage"] .experience-app .campus-hero-scene canvas,
 :root[data-palette="heritage"] .experience-app .campus-hero-scene img { filter:hue-rotate(-62deg) saturate(.9); }
