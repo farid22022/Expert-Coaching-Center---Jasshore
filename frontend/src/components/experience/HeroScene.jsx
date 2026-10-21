@@ -19,7 +19,8 @@ export default function HeroScene() {
         scene=new T.Scene();camera=new T.PerspectiveCamera(33,1,.1,50);camera.position.set(0,.1,8.5);group=new T.Group();scene.add(group);
         scene.add(new T.AmbientLight(0xd8e8ff,1));const light=new T.DirectionalLight(0xc9f3ff,1.6);light.position.set(-3,5,6);scene.add(light);const rim=new T.PointLight(0x9e8bff,1.7);rim.position.set(4,1,2);scene.add(rim);
         const material=(color,extra={})=>{const m=new T.MeshPhysicalMaterial({color,roughness:.28,metalness:.08,clearcoat:1,...extra});materials.push(m);return m;};
-        const blue=material(0x7b83ec),glass=material(0xb7e9ff,{transparent:true,opacity:.76}),paper=material(0xecf3ff),violet=material(0x806de9),gold=material(0xa5f3fc);
+        const heritage=document.documentElement.dataset.palette==="heritage";
+        const blue=material(heritage?0x2c8a62:0x7b83ec),glass=material(heritage?0xc7ead5:0xb7e9ff,{transparent:true,opacity:.76}),paper=material(0xecf3ff),violet=material(heritage?0x176246:0x806de9),gold=material(heritage?0xf4d35e:0xa5f3fc);
         const box=(w,h,d,mat,x,y,z,rz=0)=>{const geo=new T.BoxGeometry(w,h,d);geometries.push(geo);const mesh=new T.Mesh(geo,mat);mesh.position.set(x,y,z);mesh.rotation.z=rz;group.add(mesh);return mesh;};
         box(2.1,2.75,.36,blue,.15,-.1,0,-.14);box(1.93,2.58,.25,paper,.16,-.1,.24,-.14);box(2.1,2.75,.08,glass,.15,-.1,.42,-.14);
         for(let i=0;i<3;i++)box(1.1-i*.15,.055,.03,blue,.12,.42-i*.19,.49,-.14);

@@ -12,9 +12,12 @@ function resolveInitialMode() {
   return "system";
 }
 function resolveInitialPalette() {
-  if (typeof window === "undefined") return "campus";
+  if (typeof window === "undefined") return "heritage";
   const stored = window.localStorage.getItem("theme-palette");
-  return ["campus", "heritage", "sunrise"].includes(stored) ? stored : "heritage";
+  // Migrate users who were left on the former blue default when Heritage
+  // became the institution's default palette.
+  if (stored === "campus") return "heritage";
+  return ["heritage", "sunrise"].includes(stored) ? stored : "heritage";
 }
 
 export function ThemeProvider({ children }) {
