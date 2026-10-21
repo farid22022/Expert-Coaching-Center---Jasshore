@@ -75,6 +75,18 @@
 :root[data-palette="heritage"] .experience-app .scene-note-number { color:#0f7a55; }
 :root[data-palette="heritage"] .experience-app img[src*="/images/campus/empty-"] { filter:hue-rotate(-110deg) saturate(1.08); }
 .experience-app .experience-public-hero .wave-mesh canvas { filter:hue-rotate(-62deg) saturate(.9); }
+.animated-book-illustration { overflow:visible; }
+.animated-book-float { transform-box:fill-box; transform-origin:center; animation:book-float 4.8s ease-in-out infinite; }
+.animated-book-page { transform-box:fill-box; transform-origin:left center; animation:book-page-turn 3.8s ease-in-out infinite; }
+.animated-book-shadow { transform-box:fill-box; transform-origin:center; animation:book-shadow-pulse 4.8s ease-in-out infinite; }
+.animated-book-spark { transform-box:fill-box; transform-origin:center; animation:book-sparkle 2.2s ease-in-out infinite; }
+.animated-book-dot { animation:book-dot 2.8s ease-in-out infinite alternate; }
+@keyframes book-float { 0%,100% { transform:translateY(0) rotate(-1deg); } 50% { transform:translateY(-6px) rotate(1deg); } }
+@keyframes book-page-turn { 0%,22%,100% { transform:rotateY(0); opacity:.96; } 48%,66% { transform:rotateY(-32deg); opacity:.7; } }
+@keyframes book-shadow-pulse { 0%,100% { transform:scaleX(1); opacity:.8; } 50% { transform:scaleX(.88); opacity:.5; } }
+@keyframes book-sparkle { 0%,100% { transform:scale(.82) rotate(0); opacity:.7; } 50% { transform:scale(1.08) rotate(28deg); opacity:1; } }
+@keyframes book-dot { from { transform:translateY(0); } to { transform:translateY(-5px); } }
+@media(prefers-reduced-motion:reduce) { .animated-book-float,.animated-book-page,.animated-book-shadow,.animated-book-spark,.animated-book-dot { animation:none!important; } }
 :root[data-palette="heritage"] .experience-app .campus-hero-scene canvas,
 :root[data-palette="heritage"] .experience-app .campus-hero-scene img { filter:hue-rotate(-62deg) saturate(.9); }
 .experience-app .marquee-track { animation:none; width:auto; display:flex; overflow-x:auto; scroll-snap-type:x proximity; padding:20px; }.experience-app .marquee-track article { backdrop-filter:none; scroll-snap-align:start; background:#ffffff0a; }

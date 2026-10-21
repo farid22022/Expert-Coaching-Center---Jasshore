@@ -1,4 +1,5 @@
 import SharedPageHeader from "../../components/common/PageHeader.jsx";
+import { WelcomePanel, StatCard } from "../../components/experience/ExperienceUI.jsx";
 import EmptyState from "../../components/common/EmptyState.jsx";
 import { motion } from "framer-motion";
 import { staggerContainer, fadeUp } from "../../components/common/motionVariants.js";
@@ -84,7 +85,8 @@ function PageHeader({ action, ...props }) {
 }
 
 function Empty({ children }) {
-  return <EmptyState description={children} />;
+  const animatedBook = String(children).startsWith("Create an admission card first");
+  return <EmptyState description={children} animatedBook={animatedBook} />;
 }
 
 function Status({ value }) {
@@ -146,19 +148,10 @@ export function AdminPortalDashboard() {
   ];
   return (
     <div>
-      <PageHeader
-        eyebrow="Expert Coaching Center"
-        title="Admin Portal"
-        description="Manage admissions, teachers, notices, gallery and all content from one place."
-        action={<Link className="btn btn-success btn-sm text-white" to="/admin/dashboard/admissions"><Plus size={17} /> New admission</Link>}
-      />
+      <WelcomePanel tone="admin" eyebrow="Expert · Control center" title="Everything in view. Everyone moving forward." description="Manage admissions, support your teachers and keep your institution’s next chapter on track." action={<Link className="btn experience-primary-cta" to="/admin/dashboard/admissions"><Plus size={17}/> New admission</Link>}/>
       <motion.div variants={staggerContainer} initial="hidden" animate="show" className="grid gap-3 grid-cols-2 xl:grid-cols-4">
         {statCards.map(([name, value, Icon, to, iconColor]) => (
-          <MotionLink variants={fadeUp} key={name} to={to} className="rounded-lg border border-emerald-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-300">
-            <Icon className={iconColor} size={20} />
-            <p className="mt-4 text-2xl sm:text-3xl font-black text-slate-950">{loading ? "..." : value}</p>
-            <p className="mt-0.5 text-xs sm:text-sm font-bold text-slate-600">{name}</p>
-          </MotionLink>
+          <StatCard key={name} label={name} value={loading ? "…" : value} icon={Icon} to={to} tone={name === "Teachers" ? "mint" : name === "Admissions" ? "blue" : name === "Assignments" ? "lilac" : "amber"}/>
         ))}
       </motion.div>
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
