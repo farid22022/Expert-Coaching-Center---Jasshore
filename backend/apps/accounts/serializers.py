@@ -35,6 +35,8 @@ class UserSerializer(serializers.ModelSerializer):
             "is_staff",
             "is_superuser",
             "role_codes",
+            "avatar",
+            "date_joined",
         )
         read_only_fields = ("is_superuser",)
 
@@ -123,6 +125,10 @@ class LoginSerializer(TokenObtainPairSerializer):
 
     def validate(self, attrs):
         data = super().validate(attrs)
+        from .sessions import create_session
+        session, refresh = create_session(self.user, self.context["request"])
+        data["refresh"] = str(refresh)
+        data["access"] = str(refresh.access_token)
         data["user"] = UserSerializer(self.user).data
         return data
 

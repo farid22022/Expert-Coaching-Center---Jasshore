@@ -33,7 +33,8 @@ class LoginView(TokenObtainPairView):
 
 
 class RefreshView(TokenRefreshView):
-    pass
+    from .session_views import ManagedRefreshSerializer
+    serializer_class = ManagedRefreshSerializer
 
 
 class RegisterView(CreateAPIView):
@@ -51,7 +52,15 @@ class RegisterView(CreateAPIView):
 def logout_view(request):
     refresh = request.data.get("refresh")
     if refresh:
-        RefreshToken(refresh).blacklist()
+        token = RefreshToken(refresh)
+        if str(token["user_id"]) == str(request.user.pk):
+            token.blacklist()
+    from .sessions import validate_session
+    from django.utils import timezone
+    current = validate_session(request.auth, request.user.pk)
+    if current:
+        current.revoked_at = timezone.now()
+        current.save(update_fields=["revoked_at"])
     return success_response(message="Logged out successfully.")
 
 

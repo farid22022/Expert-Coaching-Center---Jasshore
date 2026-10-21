@@ -70,3 +70,6 @@ class UserLoginHistory(models.Model):
 
     class Meta:
         ordering = ("-created_at",)
+
+
+from .session_models import UserSession, SessionPolicy  # noqa: E402,F401
