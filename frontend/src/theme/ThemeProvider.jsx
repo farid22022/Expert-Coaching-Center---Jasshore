@@ -14,7 +14,7 @@ function resolveInitialMode() {
 function resolveInitialPalette() {
   if (typeof window === "undefined") return "campus";
   const stored = window.localStorage.getItem("theme-palette");
-  return ["campus", "heritage", "sunrise"].includes(stored) ? stored : "campus";
+  return ["campus", "heritage", "sunrise"].includes(stored) ? stored : "heritage";
 }
 
 export function ThemeProvider({ children }) {

@@ -16,6 +16,6 @@ export default function ThemeToggle({ className = "" }) {
     >
       {isDark ? <Sun size={19} /> : <Moon size={19} />}
     </button>
-    <button type="button" className="btn btn-ghost btn-square" aria-label="Change color theme" title={`Color theme: ${palette}`} onClick={() => setPalette(palette === "campus" ? "heritage" : palette === "heritage" ? "sunrise" : "campus")}><Palette size={18}/></button>
+    <button type="button" className="btn btn-ghost btn-square" aria-label={`Change color theme. Current theme: ${palette}`} title={`Color theme: ${palette}`} onClick={() => setPalette(palette === "heritage" ? "campus" : palette === "campus" ? "sunrise" : "heritage")}><Palette size={18}/></button>
   </div>;
 }
