@@ -1,0 +1,52 @@
+/* Liquid Future Campus. Institution branding remains --brand / --accent for print. */
+@theme inline {
+  --color-campus-primary: var(--primary);
+  --color-campus-surface: var(--surface);
+  --color-campus-muted: var(--text-muted);
+}
+:root {
+  --primary:#4f46e5; --secondary:#0e7490; --accent-campus:#a5f3fc;
+  --success:#047857; --warning:#92400e; --error:#b91c1c; --info:#0369a1;
+  --neutral-50:#f8fafc; --neutral-100:#f1f5f9; --neutral-200:#e2e8f0;
+  --neutral-300:#cbd5e1; --neutral-400:#94a3b8; --neutral-500:#64748b;
+  --neutral-600:#475569; --neutral-700:#334155; --neutral-800:#1e293b;
+  --neutral-900:#0f172a; --neutral-950:#020617;
+  --background:#f3f5fc; --surface:#ffffff; --surface-raised:#eef2fa;
+  --border:#d6dfef; --text:#17223e; --text-muted:#54617c; --focus-ring:#5145cd;
+  --role-student:#4f46e5; --role-teacher:#08776d; --role-head:#7544c4; --role-admin:#96600e;
+  --glass-tint:rgba(255,255,255,.84); --glass-edge:rgba(255,255,255,.95); --glass-saturate:135%;
+  --glass-thin:8px; --glass-regular:16px; --glass-thick:28px;
+  --font-display:Manrope,"Noto Sans Bengali",sans-serif;
+  --font-body:var(--site-font-family,Manrope),"Noto Sans Bengali",system-ui,sans-serif;
+  --type-display:clamp(2.5rem,5.2vw,5rem); --type-title:clamp(1.7rem,3vw,2.6rem);
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-6:24px; --space-8:32px; --space-12:48px; --space-16:64px;
+  --radius-sm:8px; --radius-md:12px; --radius-lg:16px; --radius-xl:24px; --radius-2xl:32px; --radius-pill:999px;
+  --elevation-0:none; --elevation-1:0 2px 5px #14224c08,0 8px 24px #14224c05;
+  --elevation-2:0 4px 12px #14224c0a,0 16px 36px #14224c09;
+  --elevation-3:0 8px 24px #14224c12,0 28px 64px #14224c12;
+  --elevation-4:0 20px 80px #02061740; --elevation-5:0 32px 100px #02061766;
+  --glow-primary:0 6px 26px #6366f142;
+  --duration-instant:80ms; --duration-fast:160ms; --duration-base:240ms; --duration-slow:400ms; --duration-scene:800ms;
+  --ease-standard:cubic-bezier(.2,0,0,1); --ease-emphasized:cubic-bezier(.22,1,.36,1); --ease-spring:cubic-bezier(.34,1.56,.64,1);
+  --z-base:0; --z-sticky:30; --z-dropdown:50; --z-overlay:100; --z-modal:300; --z-toast:500; --z-tooltip:600;
+  /* Design breakpoints: 320, 480, 768, 1024, 1280, 1536px. */
+  --ex-primary:var(--primary); --ex-secondary:var(--secondary); --ex-accent:var(--accent-campus);
+  --ex-success:var(--success); --ex-warning:var(--warning); --ex-error:var(--error);
+  --ex-bg:var(--background); --ex-surface:var(--surface); --ex-raised:var(--surface-raised);
+  --ex-border:var(--border); --ex-text:var(--text); --ex-muted:var(--text-muted);
+  --ex-radius:var(--radius-xl); --ex-shadow:var(--elevation-1); --ex-shadow-hover:var(--elevation-2);
+}
+:root[data-theme="dark"] {
+  --primary:#a5b4fc; --secondary:#67e8f9; --accent-campus:#a5f3fc;
+  --success:#6ee7b7; --warning:#fcd34d; --error:#fca5a5; --info:#7dd3fc;
+  --background:#080e20; --surface:#111c32; --surface-raised:#19263f;
+  --border:#31415f; --text:#eff4ff; --text-muted:#aabbd7; --focus-ring:#a5b4fc;
+  --role-student:#a5b4fc; --role-teacher:#5eead4; --role-head:#c4b5fd; --role-admin:#fcd34d;
+  --glass-tint:rgba(17,28,50,.88); --glass-edge:rgba(202,220,255,.19);
+  --elevation-1:0 2px 8px #0002,0 8px 24px #0001; --elevation-2:0 8px 32px #0004;
+  --ex-primary:var(--primary); --ex-bg:var(--background); --ex-surface:var(--surface); --ex-raised:var(--surface-raised);
+  --ex-border:var(--border); --ex-text:var(--text); --ex-muted:var(--text-muted); --ex-shadow:var(--elevation-1); --ex-shadow-hover:var(--elevation-2);
+}
+.experience-app[data-area="teacher"] { --primary:var(--role-teacher); }
+.experience-app[data-area="head"] { --primary:var(--role-head); }
+.experience-app[data-area="admin"] { --primary:var(--role-admin); }

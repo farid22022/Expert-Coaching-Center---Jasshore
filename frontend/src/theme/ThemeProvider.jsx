@@ -9,17 +9,34 @@ function resolveInitialMode() {
   if (typeof window === "undefined") return "light";
   const stored = window.localStorage.getItem("theme-mode");
   if (stored === "light" || stored === "dark") return stored;
-  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return "system";
 }
 
 export function ThemeProvider({ children }) {
-  const [mode, setMode] = useState(resolveInitialMode);
+  const [preference, setPreference] = useState(resolveInitialMode);
+  const [systemDark, setSystemDark] = useState(() => window.matchMedia?.("(prefers-color-scheme: dark)").matches);
+  const mode = preference === "system" ? (systemDark ? "dark" : "light") : preference;
+  const [motion, setMotion] = useState(() => localStorage.getItem("motion-preference") || "system");
   const [siteInfo, setSiteInfo] = useState(readCachedSiteInfo);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", mode);
-    window.localStorage.setItem("theme-mode", mode);
-  }, [mode]);
+    window.localStorage.setItem("theme-mode", preference);
+  }, [mode, preference]);
+
+  useEffect(() => {
+    const media = matchMedia("(prefers-color-scheme: dark)");
+    const update = () => setSystemDark(media.matches);
+    media.addEventListener("change", update);
+    const eco = navigator.connection?.saveData || navigator.hardwareConcurrency <= 4 || navigator.deviceMemory <= 4;
+    document.documentElement.dataset.eco = String(Boolean(eco));
+    return () => media.removeEventListener("change", update);
+  }, []);
+  useEffect(() => {
+    localStorage.setItem("motion-preference", motion);
+    document.documentElement.dataset.motion = motion;
+    window.dispatchEvent(new Event("campus-preferences"));
+  }, [motion]);
 
   useEffect(() => {
     applyBrandColors(siteInfo?.theme_primary_color, siteInfo?.theme_accent_color, mode);
@@ -44,10 +61,10 @@ export function ThemeProvider({ children }) {
   }, []);
 
   const toggleMode = useCallback(() => {
-    setMode((current) => (current === "dark" ? "light" : "dark"));
-  }, []);
+    setPreference(mode === "dark" ? "light" : "dark");
+  }, [mode]);
 
-  const value = useMemo(() => ({ mode, toggleMode, siteInfo }), [mode, toggleMode, siteInfo]);
+  const value = useMemo(() => ({ mode, preference, setPreference, motion, setMotion, toggleMode, siteInfo }), [mode, preference, motion, toggleMode, siteInfo]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
