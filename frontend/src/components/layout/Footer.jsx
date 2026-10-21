@@ -1,20 +1,20 @@
 import { Link } from "react-router-dom";
 import { institution } from "../../data/site.js";
 import { useTheme } from "../../theme/ThemeProvider.jsx";
-import Reveal from "../common/Reveal.jsx";
 
 const cols = [
   ["Institution", [["History", "/about/history"], ["Teachers", "/about/teachers"], ["Contact", "/contact"]]],
   ["Quick Links", [["Student List", "/academic/students"], ["Class Routine", "/academic/class-routine"], ["Exam Routine", "/academic/exam-routine"]]],
-  ["Admission", [["Online Admission", "/admission/online"], ["Applicant's Form", "/admission/applicant"]]],
+  ["Course", [["Online Courses", "/admission/online"], ["My Courses", "/student/dashboard/courses"]]],
   ["Important", [["Notices", "/notices"], ["News", "/news"], ["Events", "/events"], ["Gallery", "/gallery/photos"], ["Stories", "/stories"]]],
 ];
 
 export default function Footer() {
   const { siteInfo } = useTheme();
   return (
-    <footer className="border-t border-emerald-900 bg-emerald-950 text-emerald-50">
-      <Reveal className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-2 lg:grid-cols-[1.4fr_repeat(4,1fr)] lg:px-8">
+    <footer className="experience-footer has-wave-mesh border-t border-emerald-900 bg-emerald-950 text-emerald-50">
+      <div className="footer-wave" aria-hidden="true" />
+      <div className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-2 lg:grid-cols-[1.4fr_repeat(4,1fr)] lg:px-8">
         <div className="grid gap-4">
           <Link className="flex items-center gap-3" to="/">
             <span className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-white p-1 shadow-sm">
@@ -52,7 +52,7 @@ export default function Footer() {
             ))}
           </div>
         ))}
-      </Reveal>
+      </div>
 
       <div className="border-t border-white/10 px-4 py-4 text-center text-xs font-semibold text-emerald-100/65">
         © {new Date().getFullYear()} {institution.name}. All rights reserved.

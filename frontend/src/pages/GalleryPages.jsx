@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import PageHeader from "../components/common/PageHeader.jsx";
 import SEO from "../components/common/SEO.jsx";
+import Modal from "../components/common/Modal.jsx";
 import { galleryApi } from "../services/resourceApi.js";
 import { API_BASE_URL } from "../services/api.js";
 
@@ -16,6 +17,8 @@ export function PhotoGalleryPage() {
   const [photos, setPhotos] = useState([]);
   const [active, setActive] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [featuredOnly, setFeaturedOnly] = useState(false);
 
   useEffect(() => {
     galleryApi
@@ -27,38 +30,46 @@ export function PhotoGalleryPage() {
       .catch(() => setPhotos([]))
       .finally(() => setLoading(false));
   }, []);
+  const visible = useMemo(() => photos.filter((photo) => (!featuredOnly || photo.featured) && `${photo.title || ""} ${photo.description || ""}`.toLowerCase().includes(query.trim().toLowerCase())), [photos, query, featuredOnly]);
 
   return (
     <>
       <SEO title="Photo Gallery" />
       <PageHeader title="Photo Gallery" eyebrow="Gallery" />
       <section>
-        <div className={`${containerClass} grid gap-5 sm:grid-cols-2 lg:grid-cols-3`}>
+        <div className={containerClass}>
+          <div className="gallery-toolbar mb-8 flex flex-wrap items-center gap-3 rounded-2xl p-4">
+            <input className="input input-bordered min-w-64 flex-1" aria-label="Search gallery" placeholder="Search campus moments" value={query} onChange={(e) => setQuery(e.target.value)} />
+            <button className={`btn ${featuredOnly ? "btn-primary" : "btn-ghost"}`} onClick={() => setFeaturedOnly((value) => !value)} type="button">Featured only</button>
+            <span className="text-sm text-slate-500">{visible.length} memories</span>
+          </div>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {loading && (
             <p className="col-span-full py-12 text-center text-slate-500">Loading photos…</p>
           )}
           {!loading && photos.length === 0 && (
             <p className="col-span-full py-12 text-center text-slate-500">No photos published yet.</p>
           )}
-          {photos.map((p) => (
+          {visible.map((p) => (
             <button
-              className="group overflow-hidden rounded-2xl border border-emerald-100 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+              className="gallery-card group overflow-hidden rounded-2xl border text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
               key={p.id}
               onClick={() => setActive(p)}
             >
               <img
-                src={resolveFileUrl(p.file)}
+                loading="lazy" width="960" height="720" src={resolveFileUrl(p.file)}
                 alt={p.title}
                 className="aspect-[4/3] w-full object-cover transition group-hover:scale-105"
               />
-              <span className="block p-4 font-black text-emerald-950">{p.title}</span>
+              <span className="block p-4"><strong className="block font-black">{p.title}</strong><small className="mt-1 block text-slate-500">{p.description || "Expert campus story"}</small></span>
             </button>
           ))}
+          </div>
         </div>
       </section>
 
       {active && (
-        <div className="fixed inset-0 z-[80] grid place-items-center bg-black/80 p-4" role="dialog">
+        <Modal open title={active.title || "Photo preview"} onClose={()=>setActive(null)}>
           <div className="grid w-full max-w-4xl gap-3 rounded-2xl bg-white p-4 shadow-2xl">
             <button className="btn btn-sm justify-self-end" onClick={() => setActive(null)}>
               Close
@@ -70,7 +81,7 @@ export function PhotoGalleryPage() {
             />
             <h2 className="text-xl font-black text-emerald-950">{active.title}</h2>
           </div>
-        </div>
+        </Modal>
       )}
     </>
   );

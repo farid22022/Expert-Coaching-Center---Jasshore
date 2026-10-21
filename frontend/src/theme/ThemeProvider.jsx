@@ -11,9 +11,15 @@ function resolveInitialMode() {
   if (stored === "light" || stored === "dark") return stored;
   return "system";
 }
+function resolveInitialPalette() {
+  if (typeof window === "undefined") return "campus";
+  const stored = window.localStorage.getItem("theme-palette");
+  return ["campus", "heritage", "sunrise"].includes(stored) ? stored : "campus";
+}
 
 export function ThemeProvider({ children }) {
   const [preference, setPreference] = useState(resolveInitialMode);
+  const [palette, setPalette] = useState(resolveInitialPalette);
   const [systemDark, setSystemDark] = useState(() => window.matchMedia?.("(prefers-color-scheme: dark)").matches);
   const mode = preference === "system" ? (systemDark ? "dark" : "light") : preference;
   const [motion, setMotion] = useState(() => localStorage.getItem("motion-preference") || "system");
@@ -21,8 +27,10 @@ export function ThemeProvider({ children }) {
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", mode);
+    document.documentElement.setAttribute("data-palette", palette);
     window.localStorage.setItem("theme-mode", preference);
-  }, [mode, preference]);
+    window.localStorage.setItem("theme-palette", palette);
+  }, [mode, preference, palette]);
 
   useEffect(() => {
     const media = matchMedia("(prefers-color-scheme: dark)");
@@ -64,7 +72,7 @@ export function ThemeProvider({ children }) {
     setPreference(mode === "dark" ? "light" : "dark");
   }, [mode]);
 
-  const value = useMemo(() => ({ mode, preference, setPreference, motion, setMotion, toggleMode, siteInfo }), [mode, preference, motion, toggleMode, siteInfo]);
+  const value = useMemo(() => ({ mode, preference, setPreference, palette, setPalette, motion, setMotion, toggleMode, siteInfo }), [mode, preference, palette, motion, toggleMode, siteInfo]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
