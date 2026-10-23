@@ -2,6 +2,16 @@
 
 Implementation branch: `codex/liquid-future-campus`. Work began 21 October and continued 22 October 2026. The reference application ITJiggasha was read-only throughout.
 
+## v3 palette addendum (23 October 2026)
+
+The product design tokens were retuned from the original indigo/cyan (v2) and the interim green+gold "heritage" palette to the **v3 "Liquid Green Campus"** spec (master-redesign-prompt v3, Section 6): pure white `#FFFFFF` / true black `#000000` backgrounds, primary emerald `#047857` (light) / `#34D399` (dark), teal-green secondary `#0F766E` / `#2DD4BF`, **lime** accent `#65A30D` / `#A3E635` (gold retained only as a small Head-Teacher detail), full emerald 50–950 scale, and the exact semantic tokens (surface/border/text/focus/gradient-brand/shadow).
+
+- **Changed:** `frontend/src/styles/tokens.css` (base `:root` light + dark) and the live `:root[data-palette="heritage"]` light/dark blocks and gold-specific rules in `frontend/src/styles/campus.css` (hero CTA, headline emphasis, active nav, sidebar/emblem/footer/welcome borders, course-cover art, hero status dot → emerald/mint/lime).
+- **Preserved (unchanged, by contract):** institution branding `--brand` / `--accent` (`#0f7a55` / `#c99a2e`, admin-controlled via `ThemeRuntime.applyBrandColors`) and the neutral print/result-card renderer. These remain separate from product chrome, so the admin ERP shell still carries the institution brand green rather than the product emerald.
+- **Verified:** home (light + dark) and student dashboard (data intact) render as v3 green; production build passes. No behaviour, routing, API or data changes.
+
+The v2 colour descriptions below are retained for history; the token values above are now authoritative.
+
 ## Outcome and boundary
 
 The existing React/Django application now has a blue, cyan and violet visual system, role-specific dashboard spotlights, bounded glass chrome, a progressive procedural 3D hero, original illustration assets, mobile student navigation, an accessible component guide, owner-scoped profile editing and real device-session revocation. Teacher question import and offline spreadsheet marking enhance the existing domain workflows rather than replace them.

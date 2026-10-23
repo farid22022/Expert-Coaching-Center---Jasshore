@@ -14,11 +14,15 @@ class PermissionSerializer(serializers.ModelSerializer):
 class RoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Role
-        fields = "__all__"
+        fields = ("id", "name", "code", "organization", "permissions", "is_system")
+        read_only_fields = ("organization", "is_system")
 
 
 class UserSerializer(serializers.ModelSerializer):
     role_codes = serializers.SerializerMethodField()
+    role_ids = serializers.SerializerMethodField()
+    permission_codes = serializers.SerializerMethodField()
+    roles = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all(), many=True, required=False, write_only=True)
 
     class Meta:
         model = User
@@ -35,13 +39,31 @@ class UserSerializer(serializers.ModelSerializer):
             "is_staff",
             "is_superuser",
             "role_codes",
+            "role_ids",
+            "permission_codes",
+            "roles",
             "avatar",
             "date_joined",
         )
-        read_only_fields = ("is_superuser",)
+        read_only_fields = ("is_superuser", "is_staff", "organization", "date_joined")
 
     def get_role_codes(self, obj):
-        return list(obj.roles.values_list("code", flat=True))
+        return [role.code for role in obj.roles.all()]
+
+    def get_role_ids(self, obj):
+        return [role.pk for role in obj.roles.all()]
+
+    def get_permission_codes(self, obj):
+        return sorted({permission.code for role in obj.roles.all() for permission in role.permissions.all()})
+
+    def validate_roles(self, roles):
+        request = self.context.get("request")
+        actor = getattr(request, "user", None)
+        if actor and not actor.is_superuser:
+            organization_id = actor.organization_id
+            if not organization_id or any(role.organization_id not in (None, organization_id) for role in roles):
+                raise serializers.ValidationError("You can only assign system roles or roles belonging to your organization.")
+        return roles
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -63,7 +85,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         password = validated_data.pop("password")
         name = validated_data.pop("name", "").strip()
-        role_code = validated_data.pop("role", "").strip().lower()
+        validated_data.pop("role", None)  # accepted for compatibility but ignored; see below
         email = validated_data.pop("email").strip().lower()
         username = validated_data.get("username") or email
         validated_data.pop("username", None)
@@ -95,27 +117,27 @@ class RegisterSerializer(serializers.ModelSerializer):
             **validated_data,
         )
 
-        if role_code in {"student", "learner", "teacher", "parent"}:
-            normalized_role_code = "student" if role_code == "learner" else role_code
-            role, _ = Role.objects.get_or_create(
-                organization=organization,
-                code=normalized_role_code,
-                defaults={"name": normalized_role_code.title(), "is_system": True},
-            )
-            user.roles.add(role)
+        # Public self-registration always creates a student. Privileged roles
+        # (teacher/parent/staff) must be granted by an admin via the user admin
+        # APIs; honoring a client-supplied role here is a privilege escalation.
+        role, _ = Role.objects.get_or_create(
+            organization=organization,
+            code="student",
+            defaults={"name": "Student", "is_system": True},
+        )
+        user.roles.add(role)
 
-        if role_code in {"student", "learner"}:
-            StudentProfile.objects.get_or_create(
-                user=user,
-                defaults={
-                    "organization": organization,
-                    "full_name": f"{user.first_name} {user.last_name}".strip() or user.email,
-                    "phone": user.phone,
-                    "email": user.email,
-                    "created_by": user,
-                    "updated_by": user,
-                },
-            )
+        StudentProfile.objects.get_or_create(
+            user=user,
+            defaults={
+                "organization": organization,
+                "full_name": f"{user.first_name} {user.last_name}".strip() or user.email,
+                "phone": user.phone,
+                "email": user.email,
+                "created_by": user,
+                "updated_by": user,
+            },
+        )
 
         return user
 
