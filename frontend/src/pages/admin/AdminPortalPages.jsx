@@ -4,12 +4,13 @@ import EmptyState from "../../components/common/EmptyState.jsx";
 import { motion } from "framer-motion";
 import { staggerContainer, fadeUp } from "../../components/common/motionVariants.js";
 const MotionLink = motion.create(Link);
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cleanSchemaForSave } from "../../services/admissionFormSchema.js";
-import { Link } from "react-router-dom";
+import { admissionCardSetup, buildCardEditorLink } from "../../services/admissionCardSetup.js";
+import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../../services/queryClient.js";
-import { Bell, BookOpen, CheckCircle2, ClipboardCheck, FilePenLine, GraduationCap, Image, Plus, Trash2, UserPlus, Users } from "lucide-react";
+import { AlertCircle, Bell, BookOpen, CalendarClock, CheckCircle2, ClipboardCheck, FilePenLine, GraduationCap, Image, Plus, Trash2, UserPlus, Users } from "lucide-react";
 import api, { getApiErrorMessage, unwrapResults, API_BASE_URL } from "../../services/api.js";
 import { confirmAction, confirmDelete, notifyError, notifySuccess } from "../../services/alerts.js";
 import RichTextEditor from "../../components/common/RichTextEditor.jsx";
@@ -135,6 +136,19 @@ export function AdminPortalDashboard() {
     queryKey: queryKeys.applications({ status__in: "pending,under_review", page_size: 5, ordering: "-created_at" }),
     queryFn: ({ signal }) => api.get("/applications/", { params: { status__in: "pending,under_review", page_size: 5, ordering: "-created_at" }, signal }).then((response) => unwrapResults(response.data)),
   });
+  const { data: navigationUsage } = useQuery({
+    queryKey: ["admin-navigation-usage", 30],
+    queryFn: () => api.get("/audit/navigation-usage/").then(({ data }) => data?.data || data),
+    staleTime: 60_000,
+  });
+  const { courses } = useAdminData(["courses"]);
+  const admissionSetups = useMemo(() => {
+    const cards = (courses || []).filter((course) => course.course_type === "admission");
+    return cards
+      .map((course) => ({ course, setup: admissionCardSetup(course) }))
+      .sort((a, b) => a.setup.percent - b.setup.percent || a.course.title.localeCompare(b.course.title));
+  }, [courses]);
+  const incompleteCount = admissionSetups.filter((row) => !row.setup.complete).length;
   const statCards = [
     ["Teachers", stats?.teachers ?? 0, GraduationCap, "/admin/dashboard/teachers", "text-emerald-700"],
     ["Admissions", stats?.admissions ?? 0, BookOpen, "/admin/dashboard/admissions", "text-blue-600"],
@@ -145,6 +159,7 @@ export function AdminPortalDashboard() {
     ["Notices", "/admin/dashboard/notices", Bell, "Create & manage public notices, banners, stories"],
     ["Gallery", "/admin/dashboard/gallery", Image, "Upload photos and videos to the gallery"],
     ["Admission Forms", "/admin/dashboard/admission-form-builder", FilePenLine, "Build custom admission form fields"],
+    ["Routine Builder", "/admin/dashboard/routine-builder", CalendarClock, "Create and maintain weekly class schedules"],
   ];
   return (
     <div>
@@ -154,7 +169,7 @@ export function AdminPortalDashboard() {
           <StatCard key={name} label={name} value={loading ? "…" : value} icon={Icon} to={to} tone={name === "Teachers" ? "mint" : name === "Admissions" ? "blue" : name === "Assignments" ? "lilac" : "amber"}/>
         ))}
       </motion.div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+      <div className="mt-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
         {quickLinks.map(([name, to, Icon, desc]) => (
           <Link key={name} to={to} className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm hover:border-emerald-300 hover:bg-emerald-50/40 transition">
             <Icon className="text-emerald-700 shrink-0 mt-0.5" size={18} />
@@ -162,6 +177,51 @@ export function AdminPortalDashboard() {
           </Link>
         ))}
       </div>
+      <section className="mt-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="font-black text-slate-950">Admission card setup</h2>
+            <p className="mt-0.5 text-sm font-medium text-slate-500">Finish each admission card so its public landing page is complete.</p>
+          </div>
+          <span className={`rounded-full px-3 py-1 text-xs font-black ${incompleteCount ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-800"}`}>
+            {incompleteCount ? `${incompleteCount} need${incompleteCount === 1 ? "s" : ""} setup` : "All cards ready"}
+          </span>
+        </div>
+        <div className="mt-3 space-y-2">
+          {admissionSetups.map(({ course, setup }) => {
+            const missing = setup.items.filter((item) => !item.done);
+            return (
+              <div key={course.id} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    {setup.complete ? <CheckCircle2 className="text-emerald-600 shrink-0" size={18} /> : <AlertCircle className="text-amber-500 shrink-0" size={18} />}
+                    <Link to={buildCardEditorLink(course.id, "overview")} className="font-bold text-slate-900 hover:text-emerald-700">{course.title}</Link>
+                    <span className="text-xs font-semibold text-slate-400">{setup.doneCount}/{setup.total}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-200" aria-hidden="true"><div className={`h-full rounded-full ${setup.complete ? "bg-emerald-500" : "bg-amber-400"}`} style={{ width: `${setup.percent}%` }} /></div>
+                    <span className="w-9 text-right text-xs font-black text-slate-600">{setup.percent}%</span>
+                  </div>
+                </div>
+                {missing.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {missing.map((item) => (
+                      <Link key={item.key} to={buildCardEditorLink(course.id, item.tab)} title={item.hint} className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800 hover:bg-amber-100">
+                        <AlertCircle size={12} />{item.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {!admissionSetups.length && <Empty>No admission cards yet. Create one to get started.</Empty>}
+        </div>
+      </section>
+      <section className="mt-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="font-black text-slate-950">Admin navigation activity</h2><p className="mt-1 text-sm text-slate-500">Last 30 days · repeat visits to the same page are grouped into five-minute windows.</p></div><span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-800">Route telemetry</span></div>
+        {navigationUsage?.routes?.length ? <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">{navigationUsage.routes.slice(0, 6).map((item) => <div key={item.record_id} className="min-w-0 rounded-lg border border-slate-100 bg-slate-50 p-3"><p className="truncate text-xs font-bold text-slate-700" title={item.record_id}>{item.record_id}</p><p className="mt-1 text-sm font-black text-emerald-800">{item.visits} visits · {item.staff} staff</p></div>)}</div> : <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-500">Navigation activity will appear as staff open admin pages. Existing routes stay available while usage is measured.</p>}
+      </section>
       <section className="mt-5 rounded-lg border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4 sm:p-5">
           <div>
@@ -295,6 +355,8 @@ export function AdminAdmissionFormBuilderPage() {
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+  const [searchParams] = useSearchParams();
+  const deepLinkApplied = useRef(false);
 
   const setContentFileFor = (itemId, file) => {
     if (file) {
@@ -461,6 +523,29 @@ export function AdminAdmissionFormBuilderPage() {
     }
   };
 
+  // Deep-link from the dashboard setup panel: ?card=<id>&tab=<tab> auto-selects
+  // the card and opens the relevant tab once the admissions list has loaded.
+  useEffect(() => {
+    if (deepLinkApplied.current || !admissions.length) return;
+    const cardId = searchParams.get("card");
+    if (!cardId) { deepLinkApplied.current = true; return; }
+    const match = admissions.find((course) => String(course.id) === String(cardId));
+    if (!match) return;
+    deepLinkApplied.current = true;
+    loadAdmission(match);
+    const tab = searchParams.get("tab");
+    if (tab && landingTabs.some(([key]) => key === tab)) setActiveTab(tab);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [admissions, searchParams]);
+
+  const setup = useMemo(() => (selected ? admissionCardSetup(selected) : null), [selected]);
+  const tabStatus = useMemo(() => {
+    if (!setup) return {};
+    const map = {};
+    setup.items.forEach((item) => { map[item.tab] = (map[item.tab] ?? true) && item.done; });
+    return map;
+  }, [setup]);
+
   return (
     <div>
       <PageHeader
@@ -478,12 +563,18 @@ export function AdminAdmissionFormBuilderPage() {
         <aside className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="font-black">Admission cards</h2>
           <div className="mt-4 space-y-2">
-            {admissions.map((course) => (
-              <button key={course.id} type="button" onClick={() => loadAdmission(course)} className={`w-full rounded-lg border p-3 text-left ${String(selectedId) === String(course.id) ? "border-emerald-500 bg-emerald-50" : "border-slate-200 hover:border-emerald-200"}`}>
-                <p className="font-bold">{course.title}</p>
-                <p className="mt-1 text-xs text-slate-500">{course.code || "No code"} · {course.status}</p>
-              </button>
-            ))}
+            {admissions.map((course) => {
+              const cardSetup = admissionCardSetup(course);
+              return (
+                <button key={course.id} type="button" onClick={() => loadAdmission(course)} className={`w-full rounded-lg border p-3 text-left ${String(selectedId) === String(course.id) ? "border-emerald-500 bg-emerald-50" : "border-slate-200 hover:border-emerald-200"}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="min-w-0 truncate font-bold">{course.title}</p>
+                    <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-black ${cardSetup.complete ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>{cardSetup.percent}%</span>
+                  </div>
+                  <p className="mt-1 text-xs text-slate-500">{course.code || "No code"} · {course.status}</p>
+                </button>
+              );
+            })}
             {!admissions.length && <Empty>Create an admission card first.</Empty>}
           </div>
         </aside>
@@ -492,15 +583,38 @@ export function AdminAdmissionFormBuilderPage() {
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
               <div className="flex flex-wrap gap-1">
-                {landingTabs.map(([key, tabLabel]) => (
-                  <button key={key} type="button" onClick={() => setActiveTab(key)} className={`btn btn-sm ${activeTab === key ? "btn-success text-white" : "btn-ghost"}`}>{tabLabel}</button>
-                ))}
+                {landingTabs.map(([key, tabLabel]) => {
+                  const status = tabStatus[key];
+                  return (
+                    <button key={key} type="button" onClick={() => setActiveTab(key)} className={`btn btn-sm gap-1 ${activeTab === key ? "btn-success text-white" : "btn-ghost"}`}>
+                      {tabLabel}
+                      {status === true && <CheckCircle2 size={14} className={activeTab === key ? "text-white" : "text-emerald-600"} />}
+                      {status === false && <AlertCircle size={14} className={activeTab === key ? "text-white" : "text-amber-500"} />}
+                    </button>
+                  );
+                })}
               </div>
               <div className="flex gap-2">
                 {selected?.slug && <a href={`/admission/online/${selected.slug}?preview=1`} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">Preview</a>}
                 <button form="admission-editor-form" disabled={saving} className="btn btn-success btn-sm text-white">{saving ? "Saving..." : "Save all changes"}</button>
               </div>
             </div>
+
+            {setup && !setup.complete && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                <p className="text-sm font-bold text-amber-800">Setup {setup.doneCount}/{setup.total} — finish these for a complete public landing page:</p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {setup.items.filter((item) => !item.done).map((item) => (
+                    <button key={item.key} type="button" onClick={() => setActiveTab(item.tab)} title={item.hint} className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-white px-2.5 py-1 text-xs font-bold text-amber-800 hover:bg-amber-100">
+                      <AlertCircle size={12} />{item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {setup && setup.complete && (
+              <div className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-800"><CheckCircle2 size={16} /> This admission card is fully set up.</div>
+            )}
 
             {notice && <p className="alert alert-success text-sm">{notice}</p>}
             {error && <p className="alert alert-error text-sm">{error}</p>}
@@ -1177,6 +1291,92 @@ export function AdminAdmissionApplicationsPage() {
   };
   return <div><PageHeader eyebrow="Admissions" title="Admission applications" description="Review student information, documents, approval, and gateway-verified payment state. Paid admissions activate only after verified payment." /><section className="rounded-lg border border-slate-200 bg-white shadow-sm"><div className="overflow-x-auto"><table className="table table-sm"><thead><tr><th>Applicant</th><th className="hidden sm:table-cell">Admission</th><th className="hidden md:table-cell">Payment</th><th>Status</th><th></th></tr></thead><tbody>{applications.map((application) => <tr key={application.id}><td><b className="block">{application.applicant_name}</b><p className="text-xs text-slate-500">{application.application_no}</p><p className="text-xs text-slate-400 sm:hidden">{program(application.course)}</p></td><td className="hidden sm:table-cell">{program(application.course)}</td><td className="hidden md:table-cell"><Status value={application.payment_status}/></td><td><Status value={application.status}/></td><td><button className="btn btn-outline btn-xs" onClick={() => setSelected(application)}>View Details</button></td></tr>)}</tbody></table></div>{!loading && !applications.length && <div className="p-5"><Empty>No admission applications have been submitted.</Empty></div>}</section>
     <ApplicationDetailsModal application={selected} course={courses.find((course) => String(course.id) === String(selected?.course))} onClose={() => setSelected(null)} onAction={action} busy={busy} />
+  </div>;
+}
+
+function requiredAdmissionDocuments(course) {
+  return (course?.admission_form_schema || []).flatMap((section) => section.fields || []).filter((field) => field.required && field.type === "file").map((field) => field.label || field.name).filter(Boolean);
+}
+
+export function AdminAdmissionPipelinePage() {
+  const { applications, courses, reload, loading } = useAdminData(["applications", "courses"]);
+  const documents = useQuery({ queryKey: ["admin-admission-pipeline-documents"], queryFn: async () => {
+    const all = [];
+    let page = 1;
+    while (page <= 100) {
+      const response = await api.get("/applications/documents/", { params: { page, page_size: 200 } });
+      const payload = response.data?.data || response.data;
+      all.push(...(Array.isArray(payload?.results) ? payload.results : asArray(payload)));
+      if (!payload?.next || !Array.isArray(payload?.results)) break;
+      page += 1;
+    }
+    return all;
+  }, staleTime: 20_000 });
+  const [selected, setSelected] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const attached = asArray(documents.data);
+  const docsByApplication = useMemo(() => {
+    const result = new Map();
+    attached.forEach((item) => result.set(String(item.application), [...(result.get(String(item.application)) || []), item]));
+    return result;
+  }, [documents.data]);
+  const openCards = courses.filter((course) => course.course_type === "admission" && course.is_published && course.status === "admission_open");
+  const courseFor = (application) => courses.find((course) => String(course.id) === String(application.course));
+  const stateFor = (application) => {
+    const course = courseFor(application);
+    const required = requiredAdmissionDocuments(course);
+    const uploaded = docsByApplication.get(String(application.id)) || [];
+    const missing = required.filter((label) => !uploaded.some((doc) => doc.title?.trim().toLowerCase() === label.trim().toLowerCase()));
+    const paid = Number(course?.admission_fee || application.admission_fee || 0) > 0;
+    let next = "Application closed";
+    if (["pending", "under_review"].includes(application.status)) {
+      if (missing.length) next = `Request ${missing.length} missing document${missing.length === 1 ? "" : "s"}`;
+      else if (application.status === "pending") next = "Review application";
+      else next = "Approve application";
+    } else if (application.status === "approved" && paid && application.payment_status !== "paid") next = "Verify payment";
+    else if (application.status === "approved" && application.approved_student) next = "Enrollment active";
+    else if (application.status === "approved") next = "Check enrollment";
+    const documentState = required.length ? `${required.length - missing.length}/${required.length} required` : `${uploaded.length} uploaded · no required files`;
+    return { course, required, missing, uploaded, paid, next, documentState };
+  };
+  const action = async (name, payload = {}) => {
+    if (!selected) return;
+    if (name === "approve" && !(await confirmAction({ title: "Approve this application?", text: "Paid admissions will require verified payment before enrollment. Free admissions activate immediately.", confirmText: "Yes, approve" }))) return;
+    if (name === "reject" && !(await confirmAction({ title: "Reject this application?", text: "The applicant will be notified. This action cannot be undone.", confirmText: "Yes, reject", danger: true }))) return;
+    setBusy(true);
+    try {
+      const result = await applicationApi.action(selected.id, name, payload);
+      if (name === "request_documents") notifySuccess(result?.notified ? "Missing-document request sent in the applicant’s notification inbox." : "This applicant has no linked account, so the document request could not be delivered.");
+      else notifySuccess(name === "approve" ? "Application approved. Payment verification or enrollment activation will follow the configured fee." : name === "reject" ? "Application rejected and the applicant notified." : "Application marked under review and the applicant notified.");
+      if (name !== "reject") setSelected(null);
+      await reload();
+    } catch (error) { notifyError(message(error)); throw error; }
+    finally { setBusy(false); }
+  };
+  const sendDocumentRequest = async (application) => {
+    if (documents.isLoading || documents.isError) return;
+    const { missing } = stateFor(application);
+    if (!missing.length) return;
+    setBusy(true);
+    try {
+      const result = await applicationApi.action(application.id, "request_documents", { documents: missing });
+      notifySuccess(result?.notified ? `Requested: ${missing.join(", ")}.` : "The applicant has no linked account, so the request could not be delivered.");
+    } catch (error) { notifyError(message(error)); }
+    finally { setBusy(false); setSelected(null); }
+  };
+  const counts = {
+    published: openCards.length,
+    applications: applications.length,
+    documents: applications.filter((item) => stateFor(item).missing.length > 0).length,
+    payments: applications.filter((item) => item.status === "approved" && stateFor(item).paid && item.payment_status !== "paid").length,
+    enrolled: applications.filter((item) => item.status === "approved" && item.approved_student).length,
+  };
+  return <div className="space-y-5">
+    <PageHeader eyebrow="Admissions workflow" title="Admission pipeline" description="Track published admission cards through applicant review, document completion, verified payment and active enrollment. Each applicant has a visible next action." />
+    <div className="grid gap-3 grid-cols-2 xl:grid-cols-5">{[["Published cards", counts.published, "/admin/dashboard/admissions"], ["Applications", counts.applications, "/admin/dashboard/admission-applications"], ["Documents needed", counts.documents, "#pipeline-applicants"], ["Payment verification", counts.payments, "/admin/dashboard/payments"], ["Enrolled", counts.enrolled, "/admin/dashboard/admission-applications"]].map(([title, value, to]) => <Link key={title} to={to} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-emerald-300"><p className="text-xs font-bold uppercase tracking-wide text-slate-500">{title}</p><strong className="mt-1 block text-2xl font-black text-slate-950">{loading ? "…" : value}</strong></Link>)}</div>
+    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-black text-slate-950">Published admission cards</h2><p className="mt-1 text-sm text-slate-500">Cards currently visible for applications.</p></div><Link className="btn btn-outline btn-sm" to="/admin/dashboard/admissions">Manage cards</Link></div>{openCards.length ? <ul className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">{openCards.map((course) => <li key={course.id} className="rounded-lg border border-emerald-100 bg-emerald-50/40 p-3"><p className="font-bold text-slate-900">{course.title}</p><p className="mt-1 text-xs font-semibold text-slate-500">{Number(course.admission_fee || 0) ? `Fee · ৳${course.admission_fee}` : "No admission fee"}</p></li>)}</ul> : <p className="mt-3 rounded-lg bg-slate-50 p-4 text-sm text-slate-500">No published admission cards are currently open.</p>}</section>
+    <section id="pipeline-applicants" className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"><header className="flex flex-wrap items-center justify-between gap-3 border-b p-4"><div><h2 className="font-black text-slate-950">Applicant next actions</h2><p className="mt-1 text-xs text-slate-500">Document counts use required file fields on each admission card.</p></div><Link className="btn btn-outline btn-sm" to="/admin/dashboard/admission-applications">Full application list</Link></header>{documents.isError && <p className="m-4 rounded bg-amber-50 p-3 text-sm text-amber-800">Document totals are unavailable. Open application details to check uploaded files.</p>}{applications.length ? <div className="overflow-x-auto"><table className="table table-sm"><thead><tr><th>Applicant</th><th className="hidden md:table-cell">Card / class</th><th>Documents</th><th className="hidden sm:table-cell">Payment</th><th>Next action</th><th></th></tr></thead><tbody>{applications.map((application) => { const state = stateFor(application); return <tr key={application.id}><td><b className="block">{application.applicant_name}</b><span className="text-xs text-slate-500">{application.application_no} · <Status value={application.status}/></span></td><td className="hidden md:table-cell">{state.course?.title || `Program #${application.course || "—"}`}</td><td>{state.documentState}{state.missing.length > 0 && <p className="mt-1 text-xs font-bold text-amber-700">Missing: {state.missing.join(", ")}</p>}</td><td className="hidden sm:table-cell"><Status value={application.payment_status}/></td><td><b className="text-sm">{state.next}</b>{state.next === "Verify payment" && <Link className="ml-2 text-xs font-bold text-emerald-700 underline" to="/admin/dashboard/payments">Open payments</Link>}</td><td><div className="flex gap-1">{state.missing.length > 0 && ["pending", "under_review"].includes(application.status) && <button disabled={busy || documents.isLoading} className="btn btn-outline btn-xs" onClick={() => sendDocumentRequest(application)}>Request docs</button>}<button className="btn btn-outline btn-xs" onClick={() => setSelected(application)}>Details</button></div></td></tr>; })}</tbody></table></div> : !loading && <div className="p-8 text-center text-sm font-semibold text-slate-500">No applications are in the pipeline yet.</div>}</section>
+    <ApplicationDetailsModal application={selected} course={courseFor(selected || {})} onClose={() => setSelected(null)} onAction={action} busy={busy} />
   </div>;
 }
 

@@ -10,6 +10,7 @@ import { staggerContainer, staggerItem } from "../components/common/motionVarian
 import { getAdmissionPrograms } from "../data/admissionPrograms.js";
 import { API_BASE_URL, admissionService, getApiErrorMessage } from "../services/api.js";
 import { publicAdmissionCardApi } from "../services/resourceApi.js";
+import StudyCategories, { studyCategories, studyCategory } from "../components/common/StudyCategories.jsx";
 
 const containerClass = "mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8";
 const fieldClass = "grid gap-1 text-sm font-bold text-muted";
@@ -44,18 +45,21 @@ export function OnlineAdmissionPage() {
 
   return (
     <>
-      <SEO title="Online Admission" />
-      <PageHeader title="Online Admission" eyebrow="Admission" description="Choose an admission program, review fees, teachers, dates, subjects, and submit the form." />
+      <SEO title="Online Courses" />
+      <PageHeader title="Online Courses" eyebrow="Course" description="Explore courses, review fees, teachers, schedules and subjects, and apply online." />
       <section>
         <div className={containerClass}>
           {loading && <div className="alert mb-6 border-emerald-100 bg-emerald-50 text-emerald-900">Loading admission cards...</div>}
+          <StudyCategories />
+          {[...studyCategories, ...(programs.some(p => studyCategory(p) === "other") ? [{id:"other",label:"Other courses"}] : [])].map(category => <section key={category.id} id={category.id} className="mb-12 scroll-mt-28"><h2 className="mb-5 text-2xl font-black">{category.label}</h2>
+          {!loading && !programs.some(p => studyCategory(p) === category.id) && <p className="text-muted">New courses will be announced here.</p>}
           <motion.div
             variants={staggerContainer}
             initial="hidden"
             animate="show"
             className="grid gap-6 md:grid-cols-2 xl:grid-cols-3"
           >
-            {programs.map((program) => (
+            {programs.filter(program => studyCategory(program) === category.id).map((program) => (
               <motion.article key={program.id} variants={staggerItem} whileHover={{ y: -6 }} className="overflow-hidden rounded-2xl border border-emerald-100 bg-paper shadow-sm transition-shadow hover:shadow-xl">
                 <img src={program.image} alt={program.title} className="h-48 w-full object-cover" />
                 <div className="grid gap-4 p-5">
@@ -81,6 +85,7 @@ export function OnlineAdmissionPage() {
               </motion.article>
             ))}
           </motion.div>
+          </section>)}
         </div>
       </section>
     </>
@@ -364,7 +369,7 @@ function LandingMessage({ title, body, action }) {
 
 function Hero({ program, cta }) {
   return (
-    <section className="relative overflow-hidden text-white" style={{ background: "linear-gradient(135deg, #063b2d 0%, #075a43 55%, #0f7a55 100%)" }}>
+    <section className="relative overflow-hidden text-white" style={{ background: "linear-gradient(135deg, #064e3b 0%, #047857 55%, #059669 100%)" }}>
       <div className={`${containerClass} relative grid gap-10 py-14 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:py-20`}>
         <div>
           {program.heroBadge && (
@@ -777,7 +782,7 @@ function ApplyPanel({ program, appStatus, submit, submitting, submitError, submi
 
 function FinalCta({ program, cta }) {
   return (
-    <section className="pb-28 pt-14 text-white lg:pb-14" style={{ background: "linear-gradient(135deg, #063b2d 0%, #0f7a55 100%)" }}>
+    <section className="pb-28 pt-14 text-white lg:pb-14" style={{ background: "linear-gradient(135deg, #064e3b 0%, #059669 100%)" }}>
       <div className={`${containerClass} grid gap-4 text-center`}>
         <h2 className="text-2xl font-black sm:text-3xl">Ready to Start Your Preparation?</h2>
         <p className="font-semibold text-emerald-50">{program.title} — {program.cta?.subtitle || "Start your structured preparation today."}</p>
